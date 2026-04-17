@@ -19,6 +19,7 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Any
 
+from pyarnes.capture.tool_log import ToolCallLogger
 from pyarnes.harness.errors import (
     HarnessError,
     LLMRecoverableError,
@@ -91,11 +92,15 @@ class AgentLoop:
         tools: Mapping of tool names to their handlers.
         model: The backing LLM client.
         config: Loop tunables.
+        tool_call_logger: Optional JSONL logger that persists every tool
+            invocation to disk.  When ``None`` (the default), file-based
+            logging is skipped.
     """
 
     tools: dict[str, ToolHandler]
     model: ModelClient
     config: LoopConfig = field(default_factory=LoopConfig)
+    tool_call_logger: ToolCallLogger | None = None
 
     async def run(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Execute the agent loop until completion or limit.
@@ -144,40 +149,49 @@ class AgentLoop:
         tool_call_id: str,
         arguments: dict[str, Any],
     ) -> ToolMessage:
-        """Dispatch a single tool call with full error routing."""
+        """Dispatch a single tool call with full error routing.
+
+        When :attr:`tool_call_logger` is set, every invocation (success
+        **and** failure) is appended to the JSONL log file with the tool
+        name, arguments, full result payload, and timestamps.
+        """
         handler = self.tools.get(name)
         if handler is None:
-            return ToolMessage(
+            msg = ToolMessage(
                 tool_call_id=tool_call_id,
                 content=f"Unknown tool: {name}",
                 is_error=True,
             )
+            self._log_tool_call(name, arguments, msg, started_at=None, start_mono=None)
+            return msg
 
         for attempt in range(self.config.max_retries + 1):
+            started_at, start_mono = ToolCallLogger.start_timer()
             try:
                 result = await handler.execute(arguments)
-                logger.info("tool.success", tool=name, attempt=attempt)
-                return ToolMessage(tool_call_id=tool_call_id, content=str(result))
-
             except TransientError as exc:
                 if attempt >= self.config.max_retries:
                     logger.exception("tool.transient_exhausted", tool=name, error=str(exc))
-                    return ToolMessage(
+                    msg = ToolMessage(
                         tool_call_id=tool_call_id,
                         content=f"Transient failure after {attempt + 1} attempts: {exc}",
                         is_error=True,
                     )
+                    self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
+                    return msg
                 delay = self.config.retry_base_delay * (2**attempt)
                 logger.warning("tool.transient_retry", tool=name, attempt=attempt, delay=delay)
                 await asyncio.sleep(delay)
 
             except LLMRecoverableError as exc:
                 logger.warning("tool.llm_recoverable", tool=name, error=str(exc))
-                return ToolMessage(
+                msg = ToolMessage(
                     tool_call_id=tool_call_id,
                     content=f"Error (model can retry): {exc}",
                     is_error=True,
                 )
+                self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
+                return msg
 
             except UserFixableError:
                 raise
@@ -194,5 +208,39 @@ class AgentLoop:
                     original=exc,
                 ) from exc
 
+            else:
+                logger.info("tool.success", tool=name, attempt=attempt)
+                msg = ToolMessage(tool_call_id=tool_call_id, content=str(result))
+                self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
+                return msg
+
         msg = "Retry loop exited without returning — this should be unreachable"  # pragma: no cover
         raise AssertionError(msg)  # pragma: no cover
+
+    # ── internals ──────────────────────────────────────────────────────
+
+    def _log_tool_call(
+        self,
+        tool: str,
+        arguments: dict[str, Any],
+        result: ToolMessage,
+        *,
+        started_at: str | None,
+        start_mono: float | None,
+    ) -> None:
+        """Persist a tool call entry to the JSONL log (if configured)."""
+        if self.tool_call_logger is None:
+            return
+        if started_at is not None and start_mono is not None:
+            finished_at, duration = ToolCallLogger.stop_timer(start_mono)
+        else:
+            finished_at, duration = ToolCallLogger.start_timer()[0], 0.0
+        self.tool_call_logger.log_call(
+            tool,
+            arguments,
+            result=result.content,
+            is_error=result.is_error,
+            started_at=started_at or finished_at,
+            finished_at=finished_at,
+            duration_seconds=duration,
+        )
