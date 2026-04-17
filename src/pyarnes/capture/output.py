@@ -119,7 +119,7 @@ class OutputCapture:
             duration_seconds=duration,
         )
         self._history.append(captured)
-        logger.info("capture.success", **captured.as_dict())
+        logger.info("capture.success tool={tool}", tool=tool_name)
         return captured
 
     def record_failure(  # noqa: PLR0913
@@ -155,7 +155,7 @@ class OutputCapture:
             duration_seconds=duration,
         )
         self._history.append(captured)
-        logger.error("capture.failure", **captured.as_dict())
+        logger.error("capture.failure tool={tool} error={error}", tool=tool_name, error=str(exc))
         return captured
 
     @property

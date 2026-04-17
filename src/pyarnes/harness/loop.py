@@ -116,12 +116,12 @@ class AgentLoop:
             UnexpectedError: On unrecoverable internal failures.
         """
         for iteration in range(self.config.max_iterations):
-            logger.info("loop.iteration", iteration=iteration)
+            logger.info("loop.iteration iteration={iteration}", iteration=iteration)
 
             action = await self.model.next_action(messages)
 
             if action.get("type") == "final_answer":
-                logger.info("loop.completed", iteration=iteration)
+                logger.info("loop.completed iteration={iteration}", iteration=iteration)
                 messages.append(action)
                 return messages
 
@@ -140,7 +140,7 @@ class AgentLoop:
                 }
             )
 
-        logger.warning("loop.max_iterations_reached", limit=self.config.max_iterations)
+        logger.warning("loop.max_iterations_reached limit={limit}", limit=self.config.max_iterations)
         return messages
 
     async def _call_tool(
@@ -171,7 +171,7 @@ class AgentLoop:
                 result = await handler.execute(arguments)
             except TransientError as exc:
                 if attempt >= self.config.max_retries:
-                    logger.exception("tool.transient_exhausted", tool=name, error=str(exc))
+                    logger.exception("tool.transient_exhausted tool={tool} error={error}", tool=name, error=str(exc))
                     msg = ToolMessage(
                         tool_call_id=tool_call_id,
                         content=f"Transient failure after {attempt + 1} attempts: {exc}",
@@ -180,11 +180,16 @@ class AgentLoop:
                     self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
                     return msg
                 delay = self.config.retry_base_delay * (2**attempt)
-                logger.warning("tool.transient_retry", tool=name, attempt=attempt, delay=delay)
+                logger.warning(
+                    "tool.transient_retry tool={tool} attempt={attempt} delay={delay}",
+                    tool=name,
+                    attempt=attempt,
+                    delay=delay,
+                )
                 await asyncio.sleep(delay)
 
             except LLMRecoverableError as exc:
-                logger.warning("tool.llm_recoverable", tool=name, error=str(exc))
+                logger.warning("tool.llm_recoverable tool={tool} error={error}", tool=name, error=str(exc))
                 msg = ToolMessage(
                     tool_call_id=tool_call_id,
                     content=f"Error (model can retry): {exc}",
@@ -209,7 +214,7 @@ class AgentLoop:
                 ) from exc
 
             else:
-                logger.info("tool.success", tool=name, attempt=attempt)
+                logger.info("tool.success tool={tool} attempt={attempt}", tool=name, attempt=attempt)
                 msg = ToolMessage(tool_call_id=tool_call_id, content=str(result))
                 self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
                 return msg

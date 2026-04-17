@@ -67,7 +67,7 @@ class PathGuardrail(Guardrail):
                 continue
             resolved = str(PurePosixPath(value))
             if not any(resolved.startswith(root) for root in self.allowed_roots):
-                logger.warning("guardrail.path_blocked", tool=tool_name, path=resolved)
+                logger.warning("guardrail.path_blocked tool={tool} path={path}", tool=tool_name, path=resolved)
                 raise UserFixableError(
                     message=f"Path '{resolved}' is outside allowed roots {self.allowed_roots}",
                     prompt_hint=f"Allow access to '{resolved}'?",
@@ -96,7 +96,11 @@ class CommandGuardrail(Guardrail):
             return
         for pattern in self.blocked_patterns:
             if re.search(pattern, cmd):
-                logger.warning("guardrail.command_blocked", tool=tool_name, pattern=pattern)
+                logger.warning(
+                    "guardrail.command_blocked tool={tool} pattern={pattern}",
+                    tool=tool_name,
+                    pattern=pattern,
+                )
                 raise UserFixableError(
                     message=f"Command blocked by pattern: {pattern}",
                     prompt_hint="Review and approve this command manually.",
@@ -116,7 +120,7 @@ class ToolAllowlistGuardrail(Guardrail):
     def check(self, tool_name: str, arguments: dict[str, Any]) -> None:  # noqa: ARG002
         """Reject calls to tools not on the allowlist."""
         if self.allowed_tools and tool_name not in self.allowed_tools:
-            logger.warning("guardrail.tool_not_allowed", tool=tool_name)
+            logger.warning("guardrail.tool_not_allowed tool={tool}", tool=tool_name)
             raise UserFixableError(
                 message=f"Tool '{tool_name}' is not in the allowlist",
                 prompt_hint=f"Add '{tool_name}' to the allowed tools?",

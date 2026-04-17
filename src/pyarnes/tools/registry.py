@@ -48,7 +48,7 @@ class ToolRegistry:
             msg = f"Handler for '{name}' does not satisfy ToolHandler (must subclass ToolHandler ABC)"
             raise TypeError(msg)
         self._tools[name] = handler
-        logger.info("registry.registered", tool=name)
+        logger.info("registry.registered tool={tool}", tool=name)
 
     def get(self, name: str) -> ToolHandler | None:
         """Look up a handler by name, returning ``None`` if missing."""
@@ -67,7 +67,7 @@ class ToolRegistry:
             msg = f"Tool '{name}' is not registered"
             raise KeyError(msg)
         del self._tools[name]
-        logger.info("registry.unregistered", tool=name)
+        logger.info("registry.unregistered tool={tool}", tool=name)
 
     @property
     def names(self) -> list[str]:

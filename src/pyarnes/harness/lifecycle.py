@@ -87,7 +87,11 @@ class Lifecycle:
             "timestamp": time.time(),
         }
         self._history.append(event)
-        logger.info("lifecycle.transition", **event)
+        logger.info(
+            "lifecycle.transition from={from_phase} to={to_phase}",
+            from_phase=event["from"],
+            to_phase=event["to"],
+        )
 
     def start(self) -> None:
         """Transition to RUNNING."""
