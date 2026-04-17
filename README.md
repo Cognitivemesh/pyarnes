@@ -9,11 +9,12 @@
 
 - **Four error types** — transient (retry with backoff), LLM-recoverable (return as ToolMessage), user-fixable (interrupt for human input), and unexpected (bubble up for debugging)
 - **Async-first** — built on `asyncio` to maximise performance and avoid GIL contention
-- **JSONL observability** — single logging layer via `structlog` that agents can parse
+- **JSONL observability** — single logging layer via `loguru` that agents can parse
 - **Safety guardrails** — composable path, command, and tool-allowlist checks
 - **Lifecycle FSM** — INIT → RUNNING → PAUSED → COMPLETED / FAILED with full history
+- **Monorepo** — `pyarnes-core` + `pyarnes-harness` as uv workspace packages
 - **Cross-platform task runner** — replaces Make with `uv run tasks <name>`
-- **TDD out of the box** — pytest-watch, pytest-bdd (Gherkin), coverage
+- **TDD out of the box** — pytest-watch, pytest-bdd (Gherkin), pytest-sugar, hypothesis, coverage
 
 ## Quick start
 
@@ -45,10 +46,16 @@ uv run tasks help
 | `uv run tasks watch` | TDD watch mode (pytest-watch) |
 | `uv run tasks security` | Bandit security scan |
 | `uv run tasks pylint` | Pylint (custom rules only) |
+| `uv run tasks radon:cc` | Cyclomatic complexity (min B, filtered) |
+| `uv run tasks radon:mi` | Maintainability index (min B, filtered) |
+| `uv run tasks vulture` | Dead code detection |
+| `uv run tasks complexity` | radon:cc + radon:mi |
 | `uv run tasks md-lint` | Markdown lint |
 | `uv run tasks md-format` | Markdown format |
 | `uv run tasks yaml-lint` | YAML lint |
 | `uv run tasks docs` | Generate docstrings (doq) |
+| `uv run tasks docs:serve` | Serve MkDocs locally |
+| `uv run tasks docs:build` | Build MkDocs site |
 | `uv run tasks check` | lint + typecheck + test |
 | `uv run tasks ci` | Full CI pipeline |
 
@@ -72,25 +79,28 @@ uv run tasks help
 └─────────────────┘                      └─────────────────┘
 ```
 
-## Project structure
+## Monorepo structure
 
 ```text
 pyarnes/
-├── pyproject.toml              # Central config: uv, ruff, ty, pytest, etc.
-├── CLAUDE.md                   # Agent instructions
-├── .claude/                    # Claude Code skills, hooks, memory
-│   ├── settings.json
-│   ├── commands/tdd.md         # TDD Red-Green-Refactor skill
-│   ├── hooks/
-│   └── memory/
-├── src/pyarnes/
-│   ├── harness/                # Agent loop, errors, guardrails, lifecycle
-│   ├── capture/                # Raw output & error recording
-│   ├── observe/                # JSONL structured logging (structlog)
-│   ├── tools/                  # Tool registry
-│   └── tasks/                  # Cross-platform task runner
+├── pyproject.toml              # Root config: uv workspace, ruff, pytest, etc.
+├── mkdocs.yml                  # MkDocs Material documentation site
+├── packages/
+│   ├── core/                   # pyarnes-core (types, errors, lifecycle, logging)
+│   │   ├── pyproject.toml
+│   │   └── src/pyarnes_core/
+│   └── harness/                # pyarnes-harness (loop, guardrails, tools, capture)
+│       ├── pyproject.toml
+│       └── src/pyarnes_harness/
+├── src/pyarnes/                # Root package (re-exports + CLI task runner)
+│   ├── harness/
+│   ├── capture/
+│   ├── observe/
+│   ├── tools/
+│   └── tasks/
+├── docs/                       # MkDocs documentation source
 └── tests/
-    ├── unit/                   # Unit tests
+    ├── unit/
     └── features/               # BDD / Gherkin feature files
 ```
 
@@ -98,31 +108,22 @@ pyarnes/
 
 | Category | Tool | Purpose |
 |---|---|---|
-| Package manager | [uv](https://github.com/astral-sh/uv) | Fast dependency management |
+| Package manager | [uv](https://github.com/astral-sh/uv) | Fast dependency management + workspace |
 | Linting & formatting | [Ruff](https://docs.astral.sh/ruff/) | Blazing-fast linter + formatter |
 | Type checking | [ty](https://github.com/astral-sh/ty) | Fast type checker (Astral) |
-| Security | [Bandit](https://bandit.readthedocs.io/) | Security linter (via Ruff S rules + standalone) |
-| Taint analysis | [Pyre/Pysa](https://pyre-check.org/docs/pysa-basics/) | Data-flow taint tracking (see note below) |
+| Security | [Bandit](https://bandit.readthedocs.io/) | Security linter |
+| Complexity | [Radon](https://radon.readthedocs.io/) | Cyclomatic complexity + maintainability |
+| Dead code | [Vulture](https://github.com/jendrikseipp/vulture) | Unused code detection |
+| Profiling | [pyinstrument](https://github.com/joerick/pyinstrument) | Statistical profiler |
 | Testing | [pytest](https://docs.pytest.org/) | Test framework |
 | BDD | [pytest-bdd](https://pytest-bdd.readthedocs.io/) | Gherkin feature files |
+| Property testing | [Hypothesis](https://hypothesis.readthedocs.io/) | Property-based testing |
 | Coverage | [pytest-cov](https://pytest-cov.readthedocs.io/) | Coverage reporting |
+| Test UX | [pytest-sugar](https://github.com/Teemu/pytest-sugar) | Pretty test output |
 | TDD watcher | [pytest-watch](https://github.com/joeyespo/pytest-watch) | Auto-rerun on file changes |
-| File watcher | [watchfiles](https://watchfiles.helpmanual.io/) | Generic file change monitoring |
-| Custom lint rules | [Pylint](https://pylint.readthedocs.io/) | Complementary rules Ruff doesn't cover |
-| Process control | [pexpect](https://pexpect.readthedocs.io/) | Spawn & control child processes |
-| Docstrings | [doq](https://github.com/heavenshell/py-doq) | Generate pydoc comments |
-| Markdown lint | [pymarkdownlnt](https://github.com/jackdewinter/pymarkdown) | Markdown linter |
-| Markdown format | [mdformat](https://mdformat.readthedocs.io/) | CommonMark formatter |
-| YAML lint | [yamllint](https://yamllint.readthedocs.io/) | YAML linter |
-| Logging | [structlog](https://www.structlog.org/) | JSONL structured logging |
-
-### Note on SonarQube rules
-
-Ruff already implements most SonarQube Python rules through its comprehensive rule sets: `F` (pyflakes), `E`/`W` (pycodestyle), `B` (flake8-bugbear), `S` (flake8-bandit), `C90` (mccabe), `SIM` (simplify), `PERF` (performance), `PL` (pylint), and many more. The `pyproject.toml` enables all relevant sets. For organisation-specific SonarQube rules, add custom Pylint checkers.
-
-### Note on taint analysis
-
-For deep data-flow taint tracking beyond what Bandit/Ruff's `S` rules offer, use [Pyre with Pysa](https://pyre-check.org/docs/pysa-basics/). Pysa is Facebook's static taint analysis tool that traces data flows from sources (e.g. user input) to sinks (e.g. `exec`, `subprocess`). Install separately with `pip install pyre-check`.
+| Documentation | [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) | Documentation site |
+| Logging | [loguru](https://loguru.readthedocs.io/) | JSONL structured logging |
+| Functional | [returns](https://returns.readthedocs.io/) / [toolz](https://toolz.readthedocs.io/) / [funcy](https://funcy.readthedocs.io/) | Functional programming utilities |
 
 ## License
 

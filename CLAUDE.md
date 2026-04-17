@@ -14,6 +14,10 @@ uv run tasks watch       # TDD watch mode
 uv run tasks format      # auto-format
 uv run tasks lint        # ruff lint
 uv run tasks security    # bandit security scan
+uv run tasks radon:cc    # cyclomatic complexity
+uv run tasks vulture     # dead code detection
+uv run tasks complexity  # radon:cc + radon:mi
+uv run tasks docs:serve  # local docs site
 ```
 
 ## Error taxonomy
@@ -25,19 +29,19 @@ uv run tasks security    # bandit security scan
 | `UserFixableError` | Interrupt for human input |
 | `UnexpectedError` | Bubble up for debugging |
 
-## Key architecture
+## Key architecture (monorepo)
 
-- `src/pyarnes/harness/` — agent loop, errors, guardrails, lifecycle
-- `src/pyarnes/capture/` — raw output & error recording
-- `src/pyarnes/observe/` — JSONL structured logging (structlog)
-- `src/pyarnes/tools/` — tool registry
-- `src/pyarnes/tasks/` — cross-platform task runner (replaces Make)
+- `packages/core/` — **pyarnes-core**: types, errors, lifecycle, observe/logging
+- `packages/harness/` — **pyarnes-harness**: loop, guardrails, tools, capture
+- `src/pyarnes/` — root package (re-exports + CLI task runner)
 - `tests/unit/` — unit tests
 - `tests/features/` — BDD feature files (pytest-bdd / Gherkin)
+- `docs/` — MkDocs Material documentation source
 
 ## Conventions
 
 - All code is **async-first** (asyncio) to avoid GIL contention.
-- Logging goes to **stderr** as JSONL; stdout is reserved for tool results.
+- Logging goes to **stderr** as JSONL via **loguru**; stdout is reserved for tool results.
+- Docstrings follow **PEP 257** conventions (Google style).
 - Use `uv run tasks tdd` workflow: Red → Green → Refactor.
 - Types are enforced via `ruff` + `ty`.
