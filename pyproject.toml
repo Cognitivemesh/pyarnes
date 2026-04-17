@@ -1,0 +1,207 @@
+[project]
+name = "pyarnes"
+version = "0.1.0"
+description = "A minimal agentic harness engineering template — verification loops, safety enforcement, and lifecycle management for AI coding tools."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.13"
+authors = [{ name = "Cognitivemesh" }]
+keywords = ["agentic", "harness", "llm", "verification", "safety"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    "structlog>=25.1",
+]
+
+[project.scripts]
+tasks = "pyarnes.tasks:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.backends"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyarnes"]
+
+# ---------------------------------------------------------------------------
+# uv
+# ---------------------------------------------------------------------------
+[tool.uv]
+dev-dependencies = [
+    # Type checking
+    "ty>=0.0.1",
+    # Testing
+    "pytest>=8.0",
+    "pytest-bdd>=8.0",
+    "pytest-cov>=6.0",
+    "pytest-watch>=4.2",
+    "pytest-asyncio>=0.25",
+    # Linting & formatting
+    "ruff>=0.11",
+    "pylint>=3.0",
+    # Security analysis
+    "bandit>=1.9",
+    # Docstring generation
+    "doq>=0.10",
+    # Markdown & YAML
+    "pymarkdownlnt>=0.9",
+    "mdformat>=1.0",
+    "yamllint>=1.35",
+    # Process control
+    "pexpect>=4.9",
+    # File watching
+    "watchfiles>=1.0",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff  –  linting + formatting
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py313"
+src = ["src", "tests"]
+line-length = 120
+
+[tool.ruff.lint]
+# Enable comprehensive rule sets that cover most SonarQube Python rules:
+#   F   – pyflakes (bug detection)
+#   E/W – pycodestyle (style)
+#   I   – isort (import ordering)
+#   N   – pep8-naming
+#   D   – pydocstyle (docstring quality)
+#   UP  – pyupgrade (modernization)
+#   B   – flake8-bugbear (bug patterns)
+#   A   – flake8-builtins (shadowing builtins)
+#   S   – flake8-bandit (security — taint-adjacent)
+#   SIM – flake8-simplify (simplification)
+#   C90 – mccabe complexity
+#   C4  – flake8-comprehensions
+#   T20 – flake8-print (no stray prints)
+#   RET – flake8-return
+#   ARG – flake8-unused-arguments
+#   PTH – flake8-use-pathlib
+#   PERF – perflint (performance)
+#   RUF – ruff-specific rules
+#   ASYNC – flake8-async
+#   LOG – flake8-logging
+#   G   – flake8-logging-format
+#   FBT – flake8-boolean-trap
+#   ICN – flake8-import-conventions
+#   PL  – pylint rules (ported to ruff)
+#   TRY – tryceratops (exception handling)
+#   FLY – flynt (f-string conversion)
+#   FURB – refurb (modernization)
+select = [
+    "F", "E", "W", "I", "N", "D", "UP", "B", "A", "S",
+    "SIM", "C90", "C4", "T20", "RET", "ARG", "PTH", "PERF",
+    "RUF", "ASYNC", "LOG", "G", "FBT", "ICN", "PL", "TRY",
+    "FLY", "FURB",
+]
+ignore = [
+    "D100",   # Missing docstring in public module (too noisy early on)
+    "D104",   # Missing docstring in public package
+    "D203",   # Conflicts with D211 (no-blank-line-before-class)
+    "D213",   # Conflicts with D212 (multi-line-summary-second-line)
+    "S101",   # assert used (fine in tests)
+    "TRY003", # Long exception messages (acceptable)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",   # assert is expected in tests
+    "D",      # Docstrings optional in tests
+    "ARG",    # Unused args common in fixtures
+    "FBT",    # Boolean params fine in tests
+    "PLR2004", # Magic values fine in tests
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["pyarnes"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+# ---------------------------------------------------------------------------
+# ty  –  type checking (Astral)
+# ---------------------------------------------------------------------------
+[tool.ty]
+python-version = "3.13"
+src = ["src"]
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks integration tests",
+]
+addopts = [
+    "--strict-markers",
+    "--tb=short",
+    "-q",
+]
+
+# ---------------------------------------------------------------------------
+# coverage
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["pyarnes"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+fail_under = 50
+
+# ---------------------------------------------------------------------------
+# pylint  –  custom rules only (complement ruff)
+# ---------------------------------------------------------------------------
+[tool.pylint.main]
+load-plugins = []
+disable = "all"
+# Enable only rules that ruff does not cover well:
+enable = [
+    "W0611",  # unused-import (backup)
+    "R0401",  # cyclic-import
+    "E1101",  # no-member (runtime attribute checks)
+    "W0221",  # arguments-differ
+]
+
+[tool.pylint.format]
+max-line-length = 120
+
+# ---------------------------------------------------------------------------
+# bandit  –  security analysis
+# ---------------------------------------------------------------------------
+[tool.bandit]
+targets = ["src"]
+severity = "medium"
+
+# ---------------------------------------------------------------------------
+# yamllint
+# ---------------------------------------------------------------------------
+[tool.yamllint]
+extends = "default"
+
+# ---------------------------------------------------------------------------
+# pymarkdown
+# ---------------------------------------------------------------------------
+[tool.pymarkdown]
+mode = "fix"

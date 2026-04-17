@@ -191,6 +191,13 @@ cython_debug/
 # Ruff stuff:
 .ruff_cache/
 
+# ty type checker
+.ty/
+
+# structlog / JSONL logs
+*.jsonl
+logs/
+
 # PyPI configuration file
 .pypirc
 

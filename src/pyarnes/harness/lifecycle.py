@@ -1,0 +1,106 @@
+"""Lifecycle management for harness sessions.
+
+Tracks phases (INIT → RUNNING → PAUSED → COMPLETED / FAILED) and emits
+structured events so every state transition is visible and debuggable.
+"""
+
+from __future__ import annotations
+
+import enum
+import time
+from dataclasses import dataclass, field
+from typing import Any
+
+from pyarnes.observe.logger import get_logger
+
+logger = get_logger(__name__)
+
+
+class Phase(enum.Enum):
+    """Harness session phases."""
+
+    INIT = "init"
+    RUNNING = "running"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+_VALID_TRANSITIONS: dict[Phase, frozenset[Phase]] = {
+    Phase.INIT: frozenset({Phase.RUNNING, Phase.FAILED}),
+    Phase.RUNNING: frozenset({Phase.PAUSED, Phase.COMPLETED, Phase.FAILED}),
+    Phase.PAUSED: frozenset({Phase.RUNNING, Phase.FAILED}),
+    Phase.COMPLETED: frozenset(),
+    Phase.FAILED: frozenset(),
+}
+
+
+@dataclass(slots=True)
+class Lifecycle:
+    """Finite-state machine for a harness session.
+
+    Attributes:
+        phase: Current lifecycle phase.
+        metadata: Arbitrary key-value pairs attached to the session.
+    """
+
+    phase: Phase = Phase.INIT
+    metadata: dict[str, Any] = field(default_factory=dict)
+    _history: list[dict[str, Any]] = field(default_factory=list, repr=False)
+
+    # ── transitions ────────────────────────────────────────────────────
+
+    def transition(self, target: Phase) -> None:
+        """Move to *target* phase if the transition is valid.
+
+        Args:
+            target: The desired next phase.
+
+        Raises:
+            ValueError: If the transition from the current phase is not allowed.
+        """
+        if target not in _VALID_TRANSITIONS[self.phase]:
+            msg = f"Invalid transition: {self.phase.value} → {target.value}"
+            raise ValueError(msg)
+
+        previous = self.phase
+        self.phase = target
+        event = {
+            "from": previous.value,
+            "to": target.value,
+            "timestamp": time.time(),
+        }
+        self._history.append(event)
+        logger.info("lifecycle.transition", **event)
+
+    def start(self) -> None:
+        """Transition to RUNNING."""
+        self.transition(Phase.RUNNING)
+
+    def pause(self) -> None:
+        """Transition to PAUSED."""
+        self.transition(Phase.PAUSED)
+
+    def resume(self) -> None:
+        """Transition from PAUSED back to RUNNING."""
+        self.transition(Phase.RUNNING)
+
+    def complete(self) -> None:
+        """Transition to COMPLETED."""
+        self.transition(Phase.COMPLETED)
+
+    def fail(self) -> None:
+        """Transition to FAILED."""
+        self.transition(Phase.FAILED)
+
+    # ── introspection ──────────────────────────────────────────────────
+
+    @property
+    def history(self) -> list[dict[str, Any]]:
+        """Return a copy of the transition history."""
+        return list(self._history)
+
+    @property
+    def is_terminal(self) -> bool:
+        """Check whether the lifecycle has reached a terminal phase."""
+        return self.phase in {Phase.COMPLETED, Phase.FAILED}

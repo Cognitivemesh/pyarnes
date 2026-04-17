@@ -1,0 +1,98 @@
+"""Four canonical error types for agentic harness loops.
+
+Error taxonomy
+--------------
+1. **TransientError** — retry with exponential backoff (network blips, rate limits).
+2. **LLMRecoverableError** — return the error as a ``ToolMessage`` so the model
+   can adjust its next action. Keeps the agent loop running.
+3. **UserFixableError** — interrupt execution and surface to a human for input.
+4. **UnexpectedError** — bubble up immediately for debugging / post-mortem.
+
+Inspired by Anthropic's tool-handler pattern (errors become tool results) and
+Stripe's production harness (retry cap at two attempts).
+"""
+
+from __future__ import annotations
+
+import enum
+from dataclasses import dataclass, field
+from typing import Any
+
+
+class Severity(enum.Enum):
+    """Error severity levels."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+@dataclass(frozen=True, slots=True)
+class HarnessError(Exception):
+    """Base error for all harness-specific failures."""
+
+    message: str
+    context: dict[str, Any] = field(default_factory=dict)
+    severity: Severity = Severity.MEDIUM
+
+    def __str__(self) -> str:
+        return self.message
+
+
+# ── 1. Transient — retry with back-off ────────────────────────────────────
+
+
+@dataclass(frozen=True, slots=True)
+class TransientError(HarnessError):
+    """Retriable failure (network timeout, rate-limit, etc.).
+
+    Attributes:
+        max_retries: Upper bound on retry attempts (Stripe-style cap at 2).
+        retry_delay_seconds: Initial delay before the first retry.
+    """
+
+    max_retries: int = 2
+    retry_delay_seconds: float = 1.0
+
+
+# ── 2. LLM-recoverable — feed back as ToolMessage ─────────────────────────
+
+
+@dataclass(frozen=True, slots=True)
+class LLMRecoverableError(HarnessError):
+    """Error the model can recover from by adjusting its next action.
+
+    The harness converts this into a ``ToolMessage`` with ``is_error=True``
+    so the LLM sees the failure as context, not a crash.
+    """
+
+    tool_call_id: str | None = None
+
+
+# ── 3. User-fixable — interrupt for human input ───────────────────────────
+
+
+@dataclass(frozen=True, slots=True)
+class UserFixableError(HarnessError):
+    """Requires human intervention before the loop can continue.
+
+    Attributes:
+        prompt_hint: Suggested question / instructions to show the user.
+    """
+
+    prompt_hint: str = ""
+
+
+# ── 4. Unexpected — bubble up for debugging ────────────────────────────────
+
+
+@dataclass(frozen=True, slots=True)
+class UnexpectedError(HarnessError):
+    """Catch-all for truly unexpected failures.
+
+    Wraps the original exception so callers can inspect the root cause.
+    """
+
+    original: BaseException | None = None
+    severity: Severity = Severity.CRITICAL
