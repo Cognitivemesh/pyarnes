@@ -6,18 +6,32 @@ structured events so every state transition is visible and debuggable.
 
 from __future__ import annotations
 
-import enum
 import time
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any
 
 from pyarnes.observe.logger import get_logger
 
+__all__ = [
+    "Lifecycle",
+    "Phase",
+]
+
 logger = get_logger(__name__)
 
 
-class Phase(enum.Enum):
-    """Harness session phases."""
+class Phase(Enum):
+    """Harness session phases.
+
+    The lifecycle follows a strict state machine:
+
+    * ``INIT``      → ``RUNNING``, ``FAILED``
+    * ``RUNNING``   → ``PAUSED``, ``COMPLETED``, ``FAILED``
+    * ``PAUSED``    → ``RUNNING``, ``FAILED``
+    * ``COMPLETED`` → (terminal)
+    * ``FAILED``    → (terminal)
+    """
 
     INIT = "init"
     RUNNING = "running"
@@ -33,6 +47,8 @@ _VALID_TRANSITIONS: dict[Phase, frozenset[Phase]] = {
     Phase.COMPLETED: frozenset(),
     Phase.FAILED: frozenset(),
 }
+
+_TERMINAL_PHASES: frozenset[Phase] = frozenset({Phase.COMPLETED, Phase.FAILED})
 
 
 @dataclass(slots=True)
@@ -65,7 +81,7 @@ class Lifecycle:
 
         previous = self.phase
         self.phase = target
-        event = {
+        event: dict[str, Any] = {
             "from": previous.value,
             "to": target.value,
             "timestamp": time.time(),
@@ -103,4 +119,4 @@ class Lifecycle:
     @property
     def is_terminal(self) -> bool:
         """Check whether the lifecycle has reached a terminal phase."""
-        return self.phase in {Phase.COMPLETED, Phase.FAILED}
+        return self.phase in _TERMINAL_PHASES

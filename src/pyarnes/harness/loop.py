@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from typing import Any, Protocol, runtime_checkable
+from typing import Any
 
 from pyarnes.harness.errors import (
     HarnessError,
@@ -27,29 +27,15 @@ from pyarnes.harness.errors import (
     UserFixableError,
 )
 from pyarnes.observe.logger import get_logger
+from pyarnes.types import ModelClient, ToolHandler
+
+__all__ = [
+    "AgentLoop",
+    "LoopConfig",
+    "ToolMessage",
+]
 
 logger = get_logger(__name__)
-
-
-# ── Protocols ──────────────────────────────────────────────────────────────
-
-
-@runtime_checkable
-class ToolHandler(Protocol):
-    """Minimal interface every tool must implement."""
-
-    async def execute(self, arguments: dict[str, Any]) -> Any:
-        """Run the tool with the given arguments."""
-        ...  # pragma: no cover
-
-
-@runtime_checkable
-class ModelClient(Protocol):
-    """Minimal interface for the backing LLM."""
-
-    async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
-        """Return the next action (tool_call or final answer)."""
-        ...  # pragma: no cover
 
 
 # ── Data ───────────────────────────────────────────────────────────────────
@@ -57,7 +43,13 @@ class ModelClient(Protocol):
 
 @dataclass(slots=True)
 class ToolMessage:
-    """Result fed back to the model after a tool call."""
+    """Result fed back to the model after a tool call.
+
+    Attributes:
+        tool_call_id: Identifier linking this result to the original call.
+        content: Stringified tool output or error description.
+        is_error: ``True`` when the content describes a failure.
+    """
 
     tool_call_id: str
     content: str
@@ -66,7 +58,13 @@ class ToolMessage:
 
 @dataclass(slots=True)
 class LoopConfig:
-    """Tunables for the agent loop."""
+    """Tunables for the agent loop.
+
+    Attributes:
+        max_iterations: Hard ceiling on loop cycles before forced stop.
+        max_retries: Cap on transient-error retries (Stripe-style, default 2).
+        retry_base_delay: Seconds before the first retry (doubles each attempt).
+    """
 
     max_iterations: int = 50
     max_retries: int = 2

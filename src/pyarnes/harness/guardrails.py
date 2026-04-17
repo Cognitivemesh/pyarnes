@@ -7,30 +7,48 @@ touch.  They are composable — stack multiple guardrails via ``GuardrailChain``
 from __future__ import annotations
 
 import re
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import PurePosixPath
-from typing import Any, Protocol, runtime_checkable
+from typing import Any
 
 from pyarnes.harness.errors import UserFixableError
 from pyarnes.observe.logger import get_logger
 
+__all__ = [
+    "CommandGuardrail",
+    "Guardrail",
+    "GuardrailChain",
+    "PathGuardrail",
+    "ToolAllowlistGuardrail",
+]
+
 logger = get_logger(__name__)
 
 
-@runtime_checkable
-class Guardrail(Protocol):
-    """A single guardrail check."""
+class Guardrail(ABC):
+    """Abstract base for a single guardrail check.
 
+    Subclass and implement :meth:`check` to create a concrete guardrail.
+    The method must raise ``UserFixableError`` if the call violates the
+    guardrail, or return ``None`` silently if it passes.
+    """
+
+    @abstractmethod
     def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
-        """Raise ``UserFixableError`` if the call violates this guardrail."""
-        ...  # pragma: no cover
+        """Raise ``UserFixableError`` if the call violates this guardrail.
+
+        Args:
+            tool_name: The name of the tool being invoked.
+            arguments: Key-value arguments passed to the tool.
+        """
 
 
 # ── Concrete guardrails ───────────────────────────────────────────────────
 
 
 @dataclass(frozen=True, slots=True)
-class PathGuardrail:
+class PathGuardrail(Guardrail):
     """Block tool calls that reference paths outside an allowed set.
 
     Attributes:
@@ -57,7 +75,7 @@ class PathGuardrail:
 
 
 @dataclass(frozen=True, slots=True)
-class CommandGuardrail:
+class CommandGuardrail(Guardrail):
     """Block shell commands matching dangerous patterns.
 
     Attributes:
@@ -86,7 +104,7 @@ class CommandGuardrail:
 
 
 @dataclass(frozen=True, slots=True)
-class ToolAllowlistGuardrail:
+class ToolAllowlistGuardrail(Guardrail):
     """Only permit a pre-approved set of tool names.
 
     Attributes:
@@ -110,11 +128,20 @@ class ToolAllowlistGuardrail:
 
 @dataclass(slots=True)
 class GuardrailChain:
-    """Run a sequence of guardrails; fail on the first violation."""
+    """Run a sequence of guardrails; fail on the first violation.
+
+    Attributes:
+        guardrails: Ordered list of guardrails to evaluate.
+    """
 
     guardrails: list[Guardrail] = field(default_factory=list)
 
     def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
-        """Run every guardrail in order."""
+        """Run every guardrail in order.
+
+        Args:
+            tool_name: The name of the tool being invoked.
+            arguments: Key-value arguments passed to the tool.
+        """
         for guardrail in self.guardrails:
             guardrail.check(tool_name, arguments)

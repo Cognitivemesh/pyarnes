@@ -14,12 +14,13 @@ from pyarnes.harness.errors import (
     UserFixableError,
 )
 from pyarnes.harness.loop import AgentLoop, LoopConfig
+from pyarnes.types import ModelClient, ToolHandler
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 
 @dataclass
-class FakeModel:
+class FakeModel(ModelClient):
     """Model that returns a scripted sequence of actions."""
 
     actions: list[dict[str, Any]]
@@ -32,7 +33,7 @@ class FakeModel:
 
 
 @dataclass
-class EchoTool:
+class EchoTool(ToolHandler):
     """Tool that echoes its arguments."""
 
     async def execute(self, arguments: dict[str, Any]) -> Any:
@@ -40,7 +41,7 @@ class EchoTool:
 
 
 @dataclass
-class FailingTool:
+class FailingTool(ToolHandler):
     """Tool that raises a given exception type."""
 
     exc: BaseException

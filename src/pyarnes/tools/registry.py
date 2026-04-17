@@ -2,24 +2,22 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
-
 from pyarnes.observe.logger import get_logger
+from pyarnes.types import ToolHandler
+
+__all__ = [
+    "ToolRegistry",
+]
 
 logger = get_logger(__name__)
 
 
-@runtime_checkable
-class ToolHandler(Protocol):
-    """Minimal interface every tool must satisfy."""
-
-    async def execute(self, arguments: dict[str, Any]) -> Any:
-        """Run the tool with the given arguments."""
-        ...  # pragma: no cover
-
-
 class ToolRegistry:
     """Central registry for agentic tool handlers.
+
+    Stores :class:`~pyarnes.types.ToolHandler` instances keyed by name.
+    Validates that handlers are proper ``ToolHandler`` subclasses on
+    registration.
 
     Usage::
 
@@ -37,17 +35,17 @@ class ToolRegistry:
 
         Args:
             name: Unique tool name.
-            handler: An object satisfying the ``ToolHandler`` protocol.
+            handler: A ``ToolHandler`` subclass instance.
 
         Raises:
             ValueError: If *name* is already registered.
-            TypeError: If *handler* does not satisfy the ``ToolHandler`` protocol.
+            TypeError: If *handler* is not a ``ToolHandler`` subclass instance.
         """
         if name in self._tools:
             msg = f"Tool '{name}' is already registered"
             raise ValueError(msg)
         if not isinstance(handler, ToolHandler):
-            msg = f"Handler for '{name}' does not satisfy ToolHandler protocol"
+            msg = f"Handler for '{name}' does not satisfy ToolHandler (must subclass ToolHandler ABC)"
             raise TypeError(msg)
         self._tools[name] = handler
         logger.info("registry.registered", tool=name)
@@ -85,3 +83,6 @@ class ToolRegistry:
 
     def __contains__(self, name: str) -> bool:  # noqa: D105
         return name in self._tools
+
+    def __repr__(self) -> str:  # noqa: D105
+        return f"ToolRegistry(tools={self.names!r})"

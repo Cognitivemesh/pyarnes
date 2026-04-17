@@ -14,6 +14,11 @@ from typing import Any
 
 from pyarnes.observe.logger import get_logger
 
+__all__ = [
+    "CapturedOutput",
+    "OutputCapture",
+]
+
 logger = get_logger(__name__)
 
 
@@ -92,7 +97,19 @@ class OutputCapture:
         stderr: str = "",
         duration: float = 0.0,
     ) -> CapturedOutput:
-        """Record a successful tool execution."""
+        """Record a successful tool execution.
+
+        Args:
+            tool_name: Name of the tool that was called.
+            arguments: Arguments passed to the tool.
+            result: The tool's return value.
+            stdout: Captured standard output.
+            stderr: Captured standard error.
+            duration: Wall-clock execution time in seconds.
+
+        Returns:
+            The immutable ``CapturedOutput`` record.
+        """
         captured = CapturedOutput(
             tool_name=tool_name,
             arguments=arguments,
@@ -115,7 +132,19 @@ class OutputCapture:
         stderr: str = "",
         duration: float = 0.0,
     ) -> CapturedOutput:
-        """Record a failed tool execution."""
+        """Record a failed tool execution.
+
+        Args:
+            tool_name: Name of the tool that was called.
+            arguments: Arguments passed to the tool.
+            exc: The exception that was raised.
+            stdout: Captured standard output.
+            stderr: Captured standard error.
+            duration: Wall-clock execution time in seconds.
+
+        Returns:
+            The immutable ``CapturedOutput`` record.
+        """
         captured = CapturedOutput(
             tool_name=tool_name,
             arguments=arguments,
@@ -137,3 +166,9 @@ class OutputCapture:
     def clear(self) -> None:
         """Discard all captured records."""
         self._history.clear()
+
+    def __len__(self) -> int:  # noqa: D105
+        return len(self._history)
+
+    def __repr__(self) -> str:  # noqa: D105
+        return f"OutputCapture(records={len(self._history)})"

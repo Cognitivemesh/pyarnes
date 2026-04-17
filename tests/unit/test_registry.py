@@ -8,11 +8,12 @@ from typing import Any
 import pytest
 
 from pyarnes.tools.registry import ToolRegistry
+from pyarnes.types import ToolHandler
 
 
 @dataclass
-class StubTool:
-    """Satisfies the ToolHandler protocol."""
+class StubTool(ToolHandler):
+    """Satisfies the ToolHandler ABC."""
 
     async def execute(self, arguments: dict[str, Any]) -> Any:
         return "ok"

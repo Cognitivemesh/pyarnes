@@ -14,13 +14,26 @@ Stripe's production harness (retry cap at two attempts).
 
 from __future__ import annotations
 
-import enum
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any
 
+__all__ = [
+    "HarnessError",
+    "LLMRecoverableError",
+    "Severity",
+    "TransientError",
+    "UnexpectedError",
+    "UserFixableError",
+]
 
-class Severity(enum.Enum):
-    """Error severity levels."""
+
+class Severity(Enum):
+    """Error severity levels.
+
+    Used to classify the impact of a harness error so that callers can
+    decide how aggressively to react (e.g. log-only vs. page on-call).
+    """
 
     LOW = "low"
     MEDIUM = "medium"
@@ -30,7 +43,13 @@ class Severity(enum.Enum):
 
 @dataclass(frozen=True, slots=True)
 class HarnessError(Exception):
-    """Base error for all harness-specific failures."""
+    """Base error for all harness-specific failures.
+
+    Attributes:
+        message: Human-readable description of the failure.
+        context: Arbitrary key-value metadata attached to the error.
+        severity: How critical the failure is.
+    """
 
     message: str
     context: dict[str, Any] = field(default_factory=dict)
@@ -65,6 +84,9 @@ class LLMRecoverableError(HarnessError):
 
     The harness converts this into a ``ToolMessage`` with ``is_error=True``
     so the LLM sees the failure as context, not a crash.
+
+    Attributes:
+        tool_call_id: ID of the tool call that triggered this error.
     """
 
     tool_call_id: str | None = None
@@ -92,6 +114,9 @@ class UnexpectedError(HarnessError):
     """Catch-all for truly unexpected failures.
 
     Wraps the original exception so callers can inspect the root cause.
+
+    Attributes:
+        original: The underlying exception, if available.
     """
 
     original: BaseException | None = None

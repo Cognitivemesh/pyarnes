@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from pyarnes.observe.logger import configure_logging, get_logger
+from pyarnes.observe.logger import LogFormat, configure_logging, get_logger
 
-__all__ = ["configure_logging", "get_logger"]
+__all__ = ["LogFormat", "configure_logging", "get_logger"]

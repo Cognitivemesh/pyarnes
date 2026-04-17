@@ -15,6 +15,7 @@ from pyarnes.harness.errors import (
     UserFixableError,
 )
 from pyarnes.harness.loop import AgentLoop, LoopConfig
+from pyarnes.types import ModelClient, ToolHandler
 
 # ── Scenarios ──────────────────────────────────────────────────────────────
 
@@ -43,7 +44,7 @@ def test_unexpected() -> None:
 
 
 @dataclass
-class FakeModel:
+class FakeModel(ModelClient):
     """Scripted model responses."""
 
     actions: list[dict[str, Any]]
@@ -56,7 +57,7 @@ class FakeModel:
 
 
 @dataclass
-class FailTool:
+class FailTool(ToolHandler):
     """Tool that always raises the given exception."""
 
     exc: BaseException

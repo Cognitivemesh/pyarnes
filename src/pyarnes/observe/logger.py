@@ -11,9 +11,28 @@ from __future__ import annotations
 
 import logging
 import sys
+from enum import Enum
 from typing import TextIO
 
 import structlog
+
+__all__ = [
+    "LogFormat",
+    "configure_logging",
+    "get_logger",
+]
+
+
+class LogFormat(Enum):
+    """Supported log output formats.
+
+    Attributes:
+        JSON: One JSON object per line (for CI / production / agent parsing).
+        CONSOLE: Coloured, human-readable output (for local development).
+    """
+
+    JSON = "json"
+    CONSOLE = "console"
 
 
 def configure_logging(
@@ -21,6 +40,7 @@ def configure_logging(
     level: int = logging.INFO,
     json: bool = True,
     stream: TextIO = sys.stderr,
+    fmt: LogFormat | None = None,
 ) -> None:
     """Set up structlog with JSONL (default) or console rendering.
 
@@ -30,9 +50,13 @@ def configure_logging(
     Args:
         level: Minimum log level.
         json: When ``True`` emit JSONL; otherwise pretty-print for humans.
+            Ignored when *fmt* is provided.
         stream: Output stream (defaults to stderr so stdout stays clean
                 for tool results).
+        fmt: Explicit format selection.  When provided, overrides *json*.
     """
+    use_json = fmt == LogFormat.JSON if fmt is not None else json
+
     shared_processors: list[structlog.types.Processor] = [
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
@@ -40,7 +64,7 @@ def configure_logging(
         structlog.processors.StackInfoRenderer(),
     ]
 
-    if json:
+    if use_json:
         renderer: structlog.types.Processor = structlog.processors.JSONRenderer()
         final_processors = [*shared_processors, structlog.processors.format_exc_info, renderer]
     else:
