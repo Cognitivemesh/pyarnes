@@ -163,7 +163,7 @@ class AgentLoop:
 
             except TransientError as exc:
                 if attempt >= self.config.max_retries:
-                    logger.error("tool.transient_exhausted", tool=name, error=str(exc))
+                    logger.exception("tool.transient_exhausted", tool=name, error=str(exc))
                     return ToolMessage(
                         tool_call_id=tool_call_id,
                         content=f"Transient failure after {attempt + 1} attempts: {exc}",
@@ -190,7 +190,7 @@ class AgentLoop:
                     original=exc,
                 ) from exc
 
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 raise UnexpectedError(
                     message=f"Unexpected error in tool '{name}': {exc}",
                     original=exc,

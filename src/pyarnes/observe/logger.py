@@ -42,15 +42,13 @@ def configure_logging(
 
     if json:
         renderer: structlog.types.Processor = structlog.processors.JSONRenderer()
+        final_processors = [*shared_processors, structlog.processors.format_exc_info, renderer]
     else:
         renderer = structlog.dev.ConsoleRenderer()
+        final_processors = [*shared_processors, renderer]
 
     structlog.configure(
-        processors=[
-            *shared_processors,
-            structlog.processors.format_exc_info,
-            renderer,
-        ],
+        processors=final_processors,
         wrapper_class=structlog.make_filtering_bound_logger(level),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(file=stream),

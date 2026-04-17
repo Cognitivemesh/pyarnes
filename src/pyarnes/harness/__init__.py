@@ -13,8 +13,8 @@ from pyarnes.harness.lifecycle import Lifecycle, Phase
 
 __all__ = [
     "HarnessError",
-    "Lifecycle",
     "LLMRecoverableError",
+    "Lifecycle",
     "Phase",
     "TransientError",
     "UnexpectedError",

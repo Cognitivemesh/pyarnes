@@ -29,6 +29,7 @@ class ToolRegistry:
     """
 
     def __init__(self) -> None:
+        """Initialise an empty tool registry."""
         self._tools: dict[str, ToolHandler] = {}
 
     def register(self, name: str, handler: ToolHandler) -> None:
@@ -79,8 +80,8 @@ class ToolRegistry:
         """Return a shallow copy of the internal mapping."""
         return dict(self._tools)
 
-    def __len__(self) -> int:
+    def __len__(self) -> int:  # noqa: D105
         return len(self._tools)
 
-    def __contains__(self, name: str) -> bool:
+    def __contains__(self, name: str) -> bool:  # noqa: D105
         return name in self._tools

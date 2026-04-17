@@ -79,9 +79,10 @@ class OutputCapture:
     """
 
     def __init__(self) -> None:
+        """Initialise an empty capture history."""
         self._history: list[CapturedOutput] = []
 
-    def record_success(
+    def record_success(  # noqa: PLR0913
         self,
         tool_name: str,
         arguments: dict[str, Any],
@@ -104,7 +105,7 @@ class OutputCapture:
         logger.info("capture.success", **captured.as_dict())
         return captured
 
-    def record_failure(
+    def record_failure(  # noqa: PLR0913
         self,
         tool_name: str,
         arguments: dict[str, Any],

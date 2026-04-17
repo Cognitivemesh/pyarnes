@@ -23,7 +23,7 @@ class TestConfigureLogging:
         assert data["event"] == "hello"
         assert data["key"] == "value"
         assert "timestamp" in data
-        assert data["log_level"] == "info"
+        assert data["level"] == "info"
 
     def test_console_output(self) -> None:
         buf = io.StringIO()

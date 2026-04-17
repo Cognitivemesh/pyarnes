@@ -27,16 +27,16 @@ tasks = "pyarnes.tasks:main"
 
 [build-system]
 requires = ["hatchling"]
-build-backend = "hatchling.backends"
+build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyarnes"]
 
 # ---------------------------------------------------------------------------
-# uv
+# Dev dependency group
 # ---------------------------------------------------------------------------
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     # Type checking
     "ty>=0.0.1",
     # Testing

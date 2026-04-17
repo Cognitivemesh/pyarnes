@@ -36,7 +36,7 @@ class HarnessError(Exception):
     context: dict[str, Any] = field(default_factory=dict)
     severity: Severity = Severity.MEDIUM
 
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # noqa: D105
         return self.message
 
 

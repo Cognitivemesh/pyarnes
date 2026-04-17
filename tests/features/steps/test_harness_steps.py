@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import Any
 
-import pytest
 from pytest_bdd import given, parsers, scenario, then, when
 
 from pyarnes.harness.errors import (
@@ -49,7 +49,7 @@ class FakeModel:
     actions: list[dict[str, Any]]
     _idx: int = 0
 
-    async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]:  # noqa: ARG002
+    async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
         action = self.actions[self._idx]
         self._idx += 1
         return action
@@ -61,7 +61,7 @@ class FailTool:
 
     exc: BaseException
 
-    async def execute(self, arguments: dict[str, Any]) -> Any:  # noqa: ARG002
+    async def execute(self, arguments: dict[str, Any]) -> Any:
         raise self.exc
 
 
@@ -101,9 +101,7 @@ def _given_llm_recoverable() -> dict[str, Any]:
 @given("a tool that raises a user-fixable error", target_fixture="harness_ctx")
 def _given_user_fixable() -> dict[str, Any]:
     tool = FailTool(exc=UserFixableError(message="need auth"))
-    model = FakeModel(
-        actions=[{"type": "tool_call", "tool": "t", "id": "c3", "arguments": {}}]
-    )
+    model = FakeModel(actions=[{"type": "tool_call", "tool": "t", "id": "c3", "arguments": {}}])
     loop = AgentLoop(tools={"t": tool}, model=model)
     return {"loop": loop, "result": None, "exc": None}
 
@@ -111,21 +109,17 @@ def _given_user_fixable() -> dict[str, Any]:
 @given("a tool that raises an unexpected exception", target_fixture="harness_ctx")
 def _given_unexpected() -> dict[str, Any]:
     tool = FailTool(exc=RuntimeError("boom"))
-    model = FakeModel(
-        actions=[{"type": "tool_call", "tool": "t", "id": "c4", "arguments": {}}]
-    )
+    model = FakeModel(actions=[{"type": "tool_call", "tool": "t", "id": "c4", "arguments": {}}])
     loop = AgentLoop(tools={"t": tool}, model=model)
     return {"loop": loop, "result": None, "exc": None}
 
 
 @when("the harness executes the tool")
 def _when_execute(harness_ctx: dict[str, Any]) -> None:
-    import asyncio
-
     loop: AgentLoop = harness_ctx["loop"]
     try:
-        harness_ctx["result"] = asyncio.get_event_loop().run_until_complete(loop.run([]))
-    except Exception as e:  # noqa: BLE001
+        harness_ctx["result"] = asyncio.run(loop.run([]))
+    except Exception as e:
         harness_ctx["exc"] = e
 
 

@@ -13,8 +13,7 @@ from pyarnes.harness.errors import (
     UnexpectedError,
     UserFixableError,
 )
-from pyarnes.harness.loop import AgentLoop, LoopConfig, ToolMessage
-
+from pyarnes.harness.loop import AgentLoop, LoopConfig
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -26,7 +25,7 @@ class FakeModel:
     actions: list[dict[str, Any]]
     _index: int = 0
 
-    async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]:  # noqa: ARG002
+    async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
         action = self.actions[self._index]
         self._index += 1
         return action
@@ -46,7 +45,7 @@ class FailingTool:
 
     exc: BaseException
 
-    async def execute(self, arguments: dict[str, Any]) -> Any:  # noqa: ARG002
+    async def execute(self, arguments: dict[str, Any]) -> Any:
         raise self.exc
 
 
@@ -164,9 +163,7 @@ class TestAgentLoop:
     @pytest.mark.asyncio()
     async def test_max_iterations_limit(self) -> None:
         # Model never returns final_answer → loop should stop after max_iterations.
-        actions = [
-            {"type": "tool_call", "tool": "echo", "id": f"c{i}", "arguments": {"text": "go"}} for i in range(10)
-        ]
+        actions = [{"type": "tool_call", "tool": "echo", "id": f"c{i}", "arguments": {"text": "go"}} for i in range(10)]
         model = FakeModel(actions=actions)
         loop = AgentLoop(
             tools={"echo": EchoTool()},
