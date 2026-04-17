@@ -1,0 +1,11 @@
+# markdownlint configuration
+---
+# MD013 — line length
+MD013:
+  line_length: 120
+
+# MD033 — allow inline HTML (common in README badges)
+MD033: false
+
+# MD041 — first line heading (handled by templates)
+MD041: false
