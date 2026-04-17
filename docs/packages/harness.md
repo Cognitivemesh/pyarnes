@@ -7,7 +7,7 @@ Runtime engine for agent execution.
 | Module | Contents |
 |---|---|
 | `pyarnes_harness.loop` | `AgentLoop`, `LoopConfig`, `ToolMessage` |
-| `pyarnes_harness.guardrails` | `Guardrail` ABC, `PathGuardrail`, `CommandGuardrail`, `ToolAllowlistGuardrail`, `GuardrailChain` |
+| `pyarnes_harness.guardrails` | Re-exports from `pyarnes-guardrails` |
 | `pyarnes_harness.tools.registry` | `ToolRegistry` |
 | `pyarnes_harness.capture.output` | `CapturedOutput`, `OutputCapture` |
 | `pyarnes_harness.capture.tool_log` | `ToolCallEntry`, `ToolCallLogger` |
@@ -15,6 +15,7 @@ Runtime engine for agent execution.
 ## Dependencies
 
 - `pyarnes-core` — core types and logging
+- `pyarnes-guardrails` — safety guardrails
 - `returns` — functional result types
 - `toolz` — functional utilities
 - `more-itertools` — extended itertools

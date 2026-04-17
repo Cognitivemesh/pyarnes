@@ -1,8 +1,8 @@
-"""Harness — core agent loop, error handling, guardrails, and lifecycle."""
+"""Harness — core agent loop, error handling, guardrails, and lifecycle (re-exports)."""
 
 from __future__ import annotations
 
-from pyarnes.harness.errors import (
+from pyarnes_core.errors import (
     HarnessError,
     LLMRecoverableError,
     Severity,
@@ -10,8 +10,8 @@ from pyarnes.harness.errors import (
     UnexpectedError,
     UserFixableError,
 )
-from pyarnes.harness.guardrails import Guardrail
-from pyarnes.harness.lifecycle import Lifecycle, Phase
+from pyarnes_core.lifecycle import Lifecycle, Phase
+from pyarnes_guardrails import Guardrail
 
 __all__ = [
     "Guardrail",

@@ -5,7 +5,9 @@ requires-python = ">=3.13"
 [manifest]
 members = [
     "pyarnes",
+    "pyarnes-bench",
     "pyarnes-core",
+    "pyarnes-guardrails",
     "pyarnes-harness",
 ]
 
@@ -744,7 +746,9 @@ dependencies = [
     { name = "funcy" },
     { name = "loguru" },
     { name = "more-itertools" },
+    { name = "pyarnes-bench" },
     { name = "pyarnes-core" },
+    { name = "pyarnes-guardrails" },
     { name = "pyarnes-harness" },
     { name = "returns" },
     { name = "toolz" },
@@ -782,7 +786,9 @@ requires-dist = [
     { name = "funcy", specifier = ">=2.0" },
     { name = "loguru", specifier = ">=0.7" },
     { name = "more-itertools", specifier = ">=10.5" },
+    { name = "pyarnes-bench", editable = "packages/bench" },
     { name = "pyarnes-core", editable = "packages/core" },
+    { name = "pyarnes-guardrails", editable = "packages/guardrails" },
     { name = "pyarnes-harness", editable = "packages/harness" },
     { name = "returns", specifier = ">=0.24" },
     { name = "toolz", specifier = ">=1.0" },
@@ -816,6 +822,17 @@ dev = [
 ]
 
 [[package]]
+name = "pyarnes-bench"
+version = "0.1.0"
+source = { editable = "packages/bench" }
+dependencies = [
+    { name = "pyarnes-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pyarnes-core", editable = "packages/core" }]
+
+[[package]]
 name = "pyarnes-core"
 version = "0.1.0"
 source = { editable = "packages/core" }
@@ -827,6 +844,17 @@ dependencies = [
 requires-dist = [{ name = "loguru", specifier = ">=0.7" }]
 
 [[package]]
+name = "pyarnes-guardrails"
+version = "0.1.0"
+source = { editable = "packages/guardrails" }
+dependencies = [
+    { name = "pyarnes-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pyarnes-core", editable = "packages/core" }]
+
+[[package]]
 name = "pyarnes-harness"
 version = "0.1.0"
 source = { editable = "packages/harness" }
@@ -834,6 +862,7 @@ dependencies = [
     { name = "funcy" },
     { name = "more-itertools" },
     { name = "pyarnes-core" },
+    { name = "pyarnes-guardrails" },
     { name = "returns" },
     { name = "toolz" },
 ]
@@ -843,6 +872,7 @@ requires-dist = [
     { name = "funcy", specifier = ">=2.0" },
     { name = "more-itertools", specifier = ">=10.5" },
     { name = "pyarnes-core", editable = "packages/core" },
+    { name = "pyarnes-guardrails", editable = "packages/guardrails" },
     { name = "returns", specifier = ">=0.24" },
     { name = "toolz", specifier = ">=1.0" },
 ]

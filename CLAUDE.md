@@ -32,7 +32,9 @@ uv run tasks docs:serve  # local docs site
 ## Key architecture (monorepo)
 
 - `packages/core/` — **pyarnes-core**: types, errors, lifecycle, observe/logging
-- `packages/harness/` — **pyarnes-harness**: loop, guardrails, tools, capture
+- `packages/harness/` — **pyarnes-harness**: loop, tools, capture
+- `packages/guardrails/` — **pyarnes-guardrails**: composable safety guardrails
+- `packages/bench/` — **pyarnes-bench**: evaluation and benchmarking toolkit
 - `src/pyarnes/` — root package (re-exports + CLI task runner)
 - `tests/unit/` — unit tests
 - `tests/features/` — BDD feature files (pytest-bdd / Gherkin)

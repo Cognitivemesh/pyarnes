@@ -63,6 +63,8 @@ nav:
   - Packages:
       - pyarnes-core: packages/core.md
       - pyarnes-harness: packages/harness.md
+      - pyarnes-guardrails: packages/guardrails.md
+      - pyarnes-bench: packages/bench.md
   - API Reference:
       - Core Types: api/types.md
       - Errors: api/errors.md

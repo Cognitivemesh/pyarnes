@@ -12,7 +12,7 @@
 - **JSONL observability** — single logging layer via `loguru` that agents can parse
 - **Safety guardrails** — composable path, command, and tool-allowlist checks
 - **Lifecycle FSM** — INIT → RUNNING → PAUSED → COMPLETED / FAILED with full history
-- **Monorepo** — `pyarnes-core` + `pyarnes-harness` as uv workspace packages
+- **Monorepo** — `pyarnes-core` + `pyarnes-harness` + `pyarnes-guardrails` + `pyarnes-bench` as uv workspace packages
 - **Cross-platform task runner** — replaces Make with `uv run tasks <name>`
 - **TDD out of the box** — pytest-watch, pytest-bdd (Gherkin), pytest-sugar, hypothesis, coverage
 
@@ -89,10 +89,16 @@ pyarnes/
 │   ├── core/                   # pyarnes-core (types, errors, lifecycle, logging)
 │   │   ├── pyproject.toml
 │   │   └── src/pyarnes_core/
-│   └── harness/                # pyarnes-harness (loop, guardrails, tools, capture)
+│   ├── harness/                # pyarnes-harness (loop, tools, capture)
+│   │   ├── pyproject.toml
+│   │   └── src/pyarnes_harness/
+│   ├── guardrails/             # pyarnes-guardrails (composable safety guardrails)
+│   │   ├── pyproject.toml
+│   │   └── src/pyarnes_guardrails/
+│   └── bench/                  # pyarnes-bench (evaluation & benchmarking)
 │       ├── pyproject.toml
-│       └── src/pyarnes_harness/
-├── src/pyarnes/                # Root package (re-exports + CLI task runner)
+│       └── src/pyarnes_bench/
+├── src/pyarnes/                # Root package (thin re-exports + CLI task runner)
 │   ├── harness/
 │   ├── capture/
 │   ├── observe/
