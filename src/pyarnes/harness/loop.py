@@ -196,5 +196,5 @@ class AgentLoop:
                     original=exc,
                 ) from exc
 
-        # Unreachable — kept for type-checker satisfaction.
-        return ToolMessage(tool_call_id=tool_call_id, content="unreachable", is_error=True)  # pragma: no cover
+        msg = "Retry loop exited without returning — this should be unreachable"  # pragma: no cover
+        raise AssertionError(msg)  # pragma: no cover

@@ -163,14 +163,19 @@ class TestAgentLoop:
     @pytest.mark.asyncio()
     async def test_max_iterations_limit(self) -> None:
         # Model never returns final_answer → loop should stop after max_iterations.
-        actions = [{"type": "tool_call", "tool": "echo", "id": f"c{i}", "arguments": {"text": "go"}} for i in range(10)]
+        max_iter = 3
+        num_tool_calls = max_iter + 1  # more than max_iterations to ensure the loop stops
+        actions = [
+            {"type": "tool_call", "tool": "echo", "id": f"c{i}", "arguments": {"text": "go"}}
+            for i in range(num_tool_calls)
+        ]
         model = FakeModel(actions=actions)
         loop = AgentLoop(
             tools={"echo": EchoTool()},
             model=model,
-            config=LoopConfig(max_iterations=3),
+            config=LoopConfig(max_iterations=max_iter),
         )
         result = await loop.run([])
-        # Should have exactly 3 iterations worth of messages (action + tool result each)
+        # Should have exactly max_iter iterations worth of tool results
         tool_results = [m for m in result if m.get("role") == "tool"]
-        assert len(tool_results) == 3
+        assert len(tool_results) == max_iter

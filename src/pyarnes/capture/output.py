@@ -122,7 +122,7 @@ class OutputCapture:
             stdout=stdout,
             stderr=stderr,
             error=str(exc),
-            traceback_str=traceback.format_exception(exc).__str__(),
+            traceback_str="".join(traceback.format_exception(exc)),
             duration_seconds=duration,
         )
         self._history.append(captured)
