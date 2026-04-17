@@ -7,8 +7,8 @@ from typing import Any
 
 import pytest
 
-from pyarnes.tools.registry import ToolRegistry
-from pyarnes.types import ToolHandler
+from pyarnes_core.types import ToolHandler
+from pyarnes_harness.tools.registry import ToolRegistry
 
 
 @dataclass

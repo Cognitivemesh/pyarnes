@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pyarnes.observe.logger import configure_logging
+from pyarnes_core.observe.logger import configure_logging
 
 
 def pytest_configure() -> None:

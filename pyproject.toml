@@ -182,7 +182,7 @@ addopts = [
 # coverage
 # ---------------------------------------------------------------------------
 [tool.coverage.run]
-source = ["pyarnes"]
+source = ["pyarnes_core", "pyarnes_harness", "pyarnes_guardrails", "pyarnes_bench"]
 branch = true
 
 [tool.coverage.report]

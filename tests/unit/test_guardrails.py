@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from pyarnes.harness.errors import UserFixableError
-from pyarnes.harness.guardrails import (
+from pyarnes_core.errors import UserFixableError
+from pyarnes_guardrails import (
     CommandGuardrail,
     GuardrailChain,
     PathGuardrail,

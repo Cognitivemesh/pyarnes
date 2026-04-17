@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pyarnes.capture.output import CapturedOutput, OutputCapture
+from pyarnes_harness.capture.output import CapturedOutput, OutputCapture
 
 
 class TestCapturedOutput:

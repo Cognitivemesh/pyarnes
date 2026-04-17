@@ -7,14 +7,14 @@ from typing import Any
 
 import pytest
 
-from pyarnes.harness.errors import (
+from pyarnes_core.errors import (
     LLMRecoverableError,
     TransientError,
     UnexpectedError,
     UserFixableError,
 )
-from pyarnes.harness.loop import AgentLoop, LoopConfig
-from pyarnes.types import ModelClient, ToolHandler
+from pyarnes_core.types import ModelClient, ToolHandler
+from pyarnes_harness.loop import AgentLoop, LoopConfig
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 

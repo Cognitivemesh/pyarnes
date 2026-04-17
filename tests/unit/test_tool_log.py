@@ -10,9 +10,9 @@ from typing import Any
 
 import pytest
 
-from pyarnes.capture.tool_log import ToolCallEntry, ToolCallLogger
-from pyarnes.harness.loop import AgentLoop, LoopConfig
-from pyarnes.types import ModelClient, ToolHandler
+from pyarnes_core.types import ModelClient, ToolHandler
+from pyarnes_harness.capture.tool_log import ToolCallEntry, ToolCallLogger
+from pyarnes_harness.loop import AgentLoop, LoopConfig
 
 
 class TestToolCallEntry:

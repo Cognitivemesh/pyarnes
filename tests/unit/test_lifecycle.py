@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from pyarnes.harness.lifecycle import Lifecycle, Phase
+from pyarnes_core.lifecycle import Lifecycle, Phase
 
 
 class TestLifecycle:

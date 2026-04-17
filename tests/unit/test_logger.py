@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import json
 
-from pyarnes.observe.logger import configure_logging, get_logger
+from pyarnes_core.observe.logger import configure_logging, get_logger
 
 
 class TestConfigureLogging:
