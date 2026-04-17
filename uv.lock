@@ -2,6 +2,13 @@ version = 1
 revision = 3
 requires-python = ">=3.13"
 
+[manifest]
+members = [
+    "pyarnes",
+    "pyarnes-core",
+    "pyarnes-harness",
+]
+
 [[package]]
 name = "anyio"
 version = "4.13.0"
@@ -737,6 +744,8 @@ dependencies = [
     { name = "funcy" },
     { name = "loguru" },
     { name = "more-itertools" },
+    { name = "pyarnes-core" },
+    { name = "pyarnes-harness" },
     { name = "returns" },
     { name = "toolz" },
 ]
@@ -773,6 +782,8 @@ requires-dist = [
     { name = "funcy", specifier = ">=2.0" },
     { name = "loguru", specifier = ">=0.7" },
     { name = "more-itertools", specifier = ">=10.5" },
+    { name = "pyarnes-core", editable = "packages/core" },
+    { name = "pyarnes-harness", editable = "packages/harness" },
     { name = "returns", specifier = ">=0.24" },
     { name = "toolz", specifier = ">=1.0" },
 ]
@@ -802,6 +813,38 @@ dev = [
     { name = "vulture", specifier = ">=2.14" },
     { name = "watchfiles", specifier = ">=1.0" },
     { name = "yamllint", specifier = ">=1.35" },
+]
+
+[[package]]
+name = "pyarnes-core"
+version = "0.1.0"
+source = { editable = "packages/core" }
+dependencies = [
+    { name = "loguru" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "loguru", specifier = ">=0.7" }]
+
+[[package]]
+name = "pyarnes-harness"
+version = "0.1.0"
+source = { editable = "packages/harness" }
+dependencies = [
+    { name = "funcy" },
+    { name = "more-itertools" },
+    { name = "pyarnes-core" },
+    { name = "returns" },
+    { name = "toolz" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "funcy", specifier = ">=2.0" },
+    { name = "more-itertools", specifier = ">=10.5" },
+    { name = "pyarnes-core", editable = "packages/core" },
+    { name = "returns", specifier = ">=0.24" },
+    { name = "toolz", specifier = ">=1.0" },
 ]
 
 [[package]]

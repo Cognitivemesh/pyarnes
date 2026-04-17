@@ -19,6 +19,8 @@ classifiers = [
 ]
 
 dependencies = [
+    "pyarnes-core",
+    "pyarnes-harness",
     "loguru>=0.7",
     "returns>=0.24",
     "toolz>=1.0",
@@ -83,7 +85,7 @@ dev = [
 # ---------------------------------------------------------------------------
 [tool.ruff]
 target-version = "py313"
-src = ["src", "tests"]
+src = ["src", "tests", "packages/core/src", "packages/harness/src"]
 line-length = 120
 
 [tool.ruff.lint]
@@ -146,7 +148,7 @@ max-complexity = 10
 convention = "google"
 
 [tool.ruff.lint.isort]
-known-first-party = ["pyarnes"]
+known-first-party = ["pyarnes", "pyarnes_core", "pyarnes_harness"]
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -224,6 +226,10 @@ package = true
 
 [tool.uv.workspace]
 members = ["packages/*"]
+
+[tool.uv.sources]
+pyarnes-core = { workspace = true }
+pyarnes-harness = { workspace = true }
 
 # ---------------------------------------------------------------------------
 # pymarkdown
