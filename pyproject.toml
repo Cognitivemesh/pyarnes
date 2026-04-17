@@ -23,6 +23,7 @@ dependencies = [
     "pyarnes-harness",
     "pyarnes-guardrails",
     "pyarnes-bench",
+    "pyarnes-api",
     "loguru>=0.7",
     "returns>=0.24",
     "toolz>=1.0",
@@ -80,6 +81,8 @@ dev = [
     "pexpect>=4.9",
     # File watching
     "watchfiles>=1.0",
+    # API testing
+    "httpx>=0.28",
 ]
 
 # ---------------------------------------------------------------------------
@@ -87,7 +90,7 @@ dev = [
 # ---------------------------------------------------------------------------
 [tool.ruff]
 target-version = "py313"
-src = ["src", "tests", "packages/core/src", "packages/harness/src", "packages/guardrails/src", "packages/bench/src"]
+src = ["src", "tests", "packages/core/src", "packages/harness/src", "packages/guardrails/src", "packages/bench/src", "packages/api/src"]
 line-length = 120
 
 [tool.ruff.lint]
@@ -150,7 +153,7 @@ max-complexity = 10
 convention = "google"
 
 [tool.ruff.lint.isort]
-known-first-party = ["pyarnes", "pyarnes_core", "pyarnes_harness", "pyarnes_guardrails", "pyarnes_bench"]
+known-first-party = ["pyarnes", "pyarnes_core", "pyarnes_harness", "pyarnes_guardrails", "pyarnes_bench", "pyarnes_api"]
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -234,6 +237,7 @@ pyarnes-core = { workspace = true }
 pyarnes-harness = { workspace = true }
 pyarnes-guardrails = { workspace = true }
 pyarnes-bench = { workspace = true }
+pyarnes-api = { workspace = true }
 
 # ---------------------------------------------------------------------------
 # pymarkdown
