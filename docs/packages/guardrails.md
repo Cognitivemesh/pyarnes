@@ -1,13 +1,29 @@
 # pyarnes-guardrails
 
-Composable safety guardrails for the pyarnes agentic harness.
+Composable safety guardrails that validate tool calls before execution.
 
-## Modules
+## What it provides
 
-| Module | Contents |
+| Class | Purpose |
 |---|---|
-| `pyarnes_guardrails.guardrails` | `Guardrail` ABC, `PathGuardrail`, `CommandGuardrail`, `ToolAllowlistGuardrail`, `GuardrailChain` |
+| `Guardrail` | Abstract base class — implement `check()` for custom guardrails |
+| `PathGuardrail` | Block access to paths outside allowed roots |
+| `CommandGuardrail` | Block dangerous shell commands (sudo, rm -rf /, etc.) |
+| `ToolAllowlistGuardrail` | Only allow pre-approved tool names |
+| `GuardrailChain` | Stack multiple guardrails — first violation stops the chain |
+
+## How guardrails work
+
+Every guardrail has a single method:
+
+```python
+def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
+```
+
+- If the call is safe → returns `None`
+- If the call is dangerous → raises `UserFixableError` with a message and prompt hint
 
 ## Dependencies
 
-- `pyarnes-core` — error types and logging
+- `pyarnes-core` — `UserFixableError` error type and logging
+

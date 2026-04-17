@@ -95,14 +95,13 @@ pyarnes/
 │   ├── guardrails/             # pyarnes-guardrails (composable safety guardrails)
 │   │   ├── pyproject.toml
 │   │   └── src/pyarnes_guardrails/
-│   └── bench/                  # pyarnes-bench (evaluation & benchmarking)
+│   ├── bench/                  # pyarnes-bench (evaluation & benchmarking)
+│   │   ├── pyproject.toml
+│   │   └── src/pyarnes_bench/
+│   └── api/                    # pyarnes-api (OpenAPI REST interface)
 │       ├── pyproject.toml
-│       └── src/pyarnes_bench/
-├── src/pyarnes/                # Root package (thin re-exports + CLI task runner)
-│   ├── harness/
-│   ├── capture/
-│   ├── observe/
-│   ├── tools/
+│       └── src/pyarnes_api/
+├── src/pyarnes/                # Root package (CLI task runner only)
 │   └── tasks/
 ├── docs/                       # MkDocs documentation source
 └── tests/

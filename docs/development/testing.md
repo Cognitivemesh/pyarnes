@@ -12,28 +12,59 @@ uv run tasks watch         # TDD watch mode
 
 ```text
 tests/
-├── conftest.py            # shared fixtures
-├── unit/                  # unit tests
-│   ├── test_capture.py
-│   ├── test_errors.py
-│   ├── test_guardrails.py
-│   ├── test_lifecycle.py
-│   ├── test_logger.py
-│   ├── test_loop.py
-│   ├── test_registry.py
-│   └── test_tool_log.py
-└── features/              # BDD / Gherkin
-    ├── harness.feature
+├── conftest.py                      # shared fixtures (logging config)
+├── unit/                            # unit tests
+│   ├── test_api.py                  # OpenAPI endpoint tests
+│   ├── test_capture.py              # OutputCapture / CapturedOutput
+│   ├── test_errors.py               # four-error taxonomy
+│   ├── test_guardrails.py           # path, command, tool-allowlist guardrails
+│   ├── test_lifecycle.py            # lifecycle FSM transitions
+│   ├── test_logger.py               # JSONL and console logging
+│   ├── test_loop.py                 # AgentLoop error routing
+│   ├── test_registry.py             # ToolRegistry CRUD
+│   └── test_tool_log.py             # JSONL tool-call logger
+└── features/                        # BDD / Gherkin acceptance tests
+    ├── harness.feature              # error-handling scenarios
+    ├── acceptance.feature           # user acceptance test scenarios
     └── steps/
-        └── test_harness_steps.py
+        ├── test_harness_steps.py    # step implementations
+        └── test_acceptance_steps.py # acceptance test steps
 ```
+
+## Unit tests
+
+Unit tests use `pytest` and import directly from the workspace packages:
+
+```python
+from pyarnes_core.errors import TransientError
+from pyarnes_harness.loop import AgentLoop, LoopConfig
+from pyarnes_guardrails import PathGuardrail
+```
+
+## BDD / Gherkin acceptance tests
+
+Feature files in `tests/features/` use `pytest-bdd` to express user-facing scenarios in plain English:
+
+```gherkin
+Feature: Agent harness error handling
+  Scenario: Transient error triggers retry
+    Given a tool that raises a transient error
+    When the harness executes the tool
+    Then the tool is retried up to the configured limit
+    And the error is returned as a tool message
+```
+
+Step definitions are in `tests/features/steps/`.
 
 ## Testing libraries
 
-- **pytest** — test framework
-- **pytest-bdd** — Gherkin BDD scenarios
-- **pytest-asyncio** — async test support
-- **pytest-cov** — coverage reporting
-- **pytest-sugar** — nicer test output
-- **hypothesis** — property-based testing
-- **pyinstrument** — profiling
+| Library | Purpose |
+|---|---|
+| **pytest** | Test framework |
+| **pytest-bdd** | Gherkin BDD scenarios |
+| **pytest-asyncio** | Async test support |
+| **pytest-cov** | Coverage reporting |
+| **pytest-sugar** | Pretty test output |
+| **hypothesis** | Property-based testing |
+| **httpx** | API test client (via FastAPI TestClient) |
+

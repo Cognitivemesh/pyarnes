@@ -35,7 +35,8 @@ uv run tasks docs:serve  # local docs site
 - `packages/harness/` — **pyarnes-harness**: loop, tools, capture
 - `packages/guardrails/` — **pyarnes-guardrails**: composable safety guardrails
 - `packages/bench/` — **pyarnes-bench**: evaluation and benchmarking toolkit
-- `src/pyarnes/` — root package (re-exports + CLI task runner)
+- `packages/api/` — **pyarnes-api**: OpenAPI REST interface (FastAPI)
+- `src/pyarnes/` — root package (CLI task runner only)
 - `tests/unit/` — unit tests
 - `tests/features/` — BDD feature files (pytest-bdd / Gherkin)
 - `docs/` — MkDocs Material documentation source

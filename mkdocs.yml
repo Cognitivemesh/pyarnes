@@ -34,10 +34,6 @@ theme:
 
 plugins:
   - search
-  - monorepo
-  - coverage:
-      page_name: coverage
-      html_report_dir: htmlcov
 
 markdown_extensions:
   - admonition
@@ -65,6 +61,7 @@ nav:
       - pyarnes-harness: packages/harness.md
       - pyarnes-guardrails: packages/guardrails.md
       - pyarnes-bench: packages/bench.md
+      - pyarnes-api: packages/api.md
   - API Reference:
       - Core Types: api/types.md
       - Errors: api/errors.md
@@ -77,4 +74,3 @@ nav:
   - Development:
       - Tasks: development/tasks.md
       - Testing: development/testing.md
-      - Coverage: coverage
