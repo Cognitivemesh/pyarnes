@@ -18,6 +18,12 @@ _exclude:
   - "uv.lock"
   - ".jj/**"
   - "specs/**"    # spec/PR drafts — monorepo-internal, never shipped to adopters
+  # Dev-time hooks ship only when enable_dev_hooks is true (Spec 04).
+  - "{% if not enable_dev_hooks %}.claude/hooks{% endif %}"
+  - "{% if not enable_dev_hooks %}.claude/hooks/**{% endif %}"
+  - "{% if not enable_dev_hooks %}.claude/settings.json{% endif %}"
+  - "{% if not enable_dev_hooks %}tests/bench{% endif %}"
+  - "{% if not enable_dev_hooks %}tests/bench/**{% endif %}"
 
 # ---------------------------------------------------------------------------
 # Prompts
@@ -58,7 +64,7 @@ adopter_shape:
 enable_dev_hooks:
   type: bool
   help: "Wire pyarnes into Claude Code hooks to harness the coding agent during development? (Adopter C pattern)"
-  default: false
+  default: "{{ adopter_shape == 'rtm-toggl-agile' }}"
 
 # ---------------------------------------------------------------------------
 # Computed values — not asked, just derived

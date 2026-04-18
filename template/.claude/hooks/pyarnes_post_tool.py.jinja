@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""Claude Code PostToolUse hook — append the tool call to the audit trail.
+
+Reads a JSON event from stdin and writes one JSONL record per call to
+``.pyarnes/agent_tool_calls.jsonl`` via ``ToolCallLogger``. The same schema
+the shipped runtime uses — so adopters can grep both streams with one query.
+"""
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+from pyarnes_harness.capture import ToolCallLogger
+
+_LOG_DIR = Path(".pyarnes")
+_LOG_DIR.mkdir(exist_ok=True)
+
+
+def main() -> int:
+    """Entry point; always exits 0 — the post-hook never blocks the agent."""
+    event = json.load(sys.stdin)
+    logger = ToolCallLogger(path=_LOG_DIR / "agent_tool_calls.jsonl")
+    started_raw = event.get("started_at")
+    finished_raw = event.get("finished_at")
+    duration: float | None = None
+    if isinstance(started_raw, (int, float)) and isinstance(finished_raw, (int, float)):
+        duration = float(finished_raw) - float(started_raw)
+    logger.log_call(
+        event.get("tool_name", "unknown"),
+        event.get("tool_input", {}),
+        result=str(event.get("tool_response", "")),
+        is_error=bool(event.get("is_error", False)),
+        started_at=str(started_raw) if started_raw is not None else None,
+        finished_at=str(finished_raw) if finished_raw is not None else None,
+        duration_seconds=duration,
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

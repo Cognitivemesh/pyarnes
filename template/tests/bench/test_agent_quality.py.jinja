@@ -1,0 +1,46 @@
+"""Scaffold: score the coding agent against labeled scenarios.
+
+Adopter extends this as the corpus grows. The test asserts a minimum
+pass rate on whatever scenarios exist; CI wires it into a nightly job.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from pyarnes_bench import EvalResult, EvalSuite, ExactMatchScorer
+
+SCENARIOS = Path(__file__).parent / "scenarios"
+
+
+def _load_scenarios() -> list[dict]:
+    if not SCENARIOS.exists():
+        return []
+    return [
+        {"id": path.stem, "expected": path.read_text().strip()}
+        for path in SCENARIOS.glob("*.txt")
+    ]
+
+
+@pytest.mark.asyncio
+async def test_agent_pass_rate() -> None:
+    """Stub: each scenario is scored with ``ExactMatchScorer`` against the expected value."""
+    scenarios = _load_scenarios()
+    if not scenarios:
+        pytest.skip("No scenarios under tests/bench/scenarios/*.txt yet.")
+    suite = EvalSuite(name="coding_agent")
+    scorer = ExactMatchScorer()
+    for scenario in scenarios:
+        actual = scenario["expected"]  # replace with `await run_coding_agent(...)`
+        score = scorer.score(expected=scenario["expected"], actual=actual)
+        suite.add(EvalResult(
+            scenario=scenario["id"],
+            expected=scenario["expected"],
+            actual=actual,
+            score=score,
+            passed=score >= 1.0,
+        ))
+    summary = suite.summary()
+    assert summary["pass_rate"] >= 0.80, summary

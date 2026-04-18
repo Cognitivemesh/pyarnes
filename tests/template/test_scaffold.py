@@ -108,3 +108,45 @@ def test_blank_has_no_shape_specific_deps(source_dir: Path, tmp_path: Path) -> N
     assert "presidio-analyzer" not in pyproject
     assert "boto3" not in pyproject
     assert "httpx" not in pyproject
+
+
+def test_dev_hooks_ship_only_when_enabled(source_dir: Path, tmp_path: Path) -> None:
+    """``.claude/hooks/`` and ``tests/bench/`` appear iff ``enable_dev_hooks`` is true."""
+    dest_off = tmp_path / "no-hooks"
+    copier.run_copy(
+        str(source_dir),
+        str(dest_off),
+        defaults=True,
+        unsafe=True,
+        data={
+            "project_name": "no-hooks",
+            "project_description": "hooks off",
+            "adopter_shape": "blank",
+            "enable_dev_hooks": False,
+        },
+    )
+    assert not (dest_off / ".claude" / "hooks" / "pyarnes_pre_tool.py").exists()
+    assert not (dest_off / ".claude" / "settings.json").exists()
+    assert not (dest_off / "tests" / "bench").exists()
+
+    dest_on = tmp_path / "with-hooks"
+    copier.run_copy(
+        str(source_dir),
+        str(dest_on),
+        defaults=True,
+        unsafe=True,
+        data={
+            "project_name": "with-hooks",
+            "project_description": "hooks on",
+            "adopter_shape": "rtm-toggl-agile",
+            "enable_dev_hooks": True,
+        },
+    )
+    assert (dest_on / ".claude" / "hooks" / "pyarnes_pre_tool.py").is_file()
+    assert (dest_on / ".claude" / "hooks" / "pyarnes_post_tool.py").is_file()
+    assert (dest_on / ".claude" / "settings.json").is_file()
+    assert (dest_on / "tests" / "bench" / "test_agent_quality.py").is_file()
+
+    settings = (dest_on / ".claude" / "settings.json").read_text()
+    assert "PreToolUse" in settings
+    assert "pyarnes_pre_tool.py" in settings

@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""Claude Code PreToolUse hook — guardrail gate for the coding agent.
+
+Reads a JSON event from stdin, imports the pyarnes guardrail chain, and
+exits with code 2 (block) if any guardrail rejects the intended tool call.
+See the Adopter C meta-use pattern: docs/architecture/meta-use.md.
+"""
+from __future__ import annotations
+
+import json
+import sys
+
+from pyarnes_core.errors import UserFixableError
+from pyarnes_core.observe.logger import LogFormat, configure_logging, get_logger
+from pyarnes_guardrails import (
+    CommandGuardrail,
+    GuardrailChain,
+    PathGuardrail,
+    ToolAllowlistGuardrail,
+)
+
+configure_logging(fmt=LogFormat.JSON, level="INFO")
+log = get_logger("coding_agent.pre_tool")
+
+CHAIN = GuardrailChain(guardrails=[
+    PathGuardrail(
+        allowed_roots=("{{ _copier_conf.dst_path | string }}",),
+        path_keys=("path", "file_path", "directory", "target"),
+    ),
+    CommandGuardrail(),
+    ToolAllowlistGuardrail(allowed_tools=frozenset({
+        "Read", "Write", "Edit", "Glob", "Grep", "Bash", "TodoWrite",
+    })),
+])
+
+
+def main() -> int:
+    """Entry point; returns the exit code Claude Code honours."""
+    event = json.load(sys.stdin)
+    tool = event.get("tool_name", "")
+    args = event.get("tool_input", {})
+    log.info("tool.pre tool={tool}", tool=tool)
+    try:
+        CHAIN.check(tool, args)
+    except UserFixableError as exc:
+        log.warning("tool.pre.block tool={tool} reason={reason}", tool=tool, reason=str(exc))
+        print(json.dumps({"decision": "block", "reason": str(exc)}))
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

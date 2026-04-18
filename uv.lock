@@ -5,6 +5,7 @@ requires-python = ">=3.13"
 [manifest]
 members = [
     "example-pii-pipeline",
+    "example-rtm-toggl-agile",
     "example-s3-sweep",
     "pyarnes",
     "pyarnes-bench",
@@ -366,6 +367,27 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "pyarnes-core", editable = "packages/core" },
+    { name = "pyarnes-guardrails", editable = "packages/guardrails" },
+    { name = "pyarnes-harness", editable = "packages/harness" },
+    { name = "typer", specifier = ">=0.15" },
+]
+
+[[package]]
+name = "example-rtm-toggl-agile"
+version = "0.1.0"
+source = { editable = "packages/example-rtm-toggl-agile" }
+dependencies = [
+    { name = "pyarnes-bench" },
+    { name = "pyarnes-core" },
+    { name = "pyarnes-guardrails" },
+    { name = "pyarnes-harness" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pyarnes-bench", editable = "packages/bench" },
     { name = "pyarnes-core", editable = "packages/core" },
     { name = "pyarnes-guardrails", editable = "packages/guardrails" },
     { name = "pyarnes-harness", editable = "packages/harness" },
@@ -876,6 +898,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "example-pii-pipeline" },
+    { name = "example-rtm-toggl-agile" },
     { name = "example-s3-sweep" },
     { name = "funcy" },
     { name = "loguru" },
@@ -920,6 +943,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "example-pii-pipeline", editable = "packages/example-pii-pipeline" },
+    { name = "example-rtm-toggl-agile", editable = "packages/example-rtm-toggl-agile" },
     { name = "example-s3-sweep", editable = "packages/example-s3-sweep" },
     { name = "funcy", specifier = ">=2.0" },
     { name = "loguru", specifier = ">=0.7" },

@@ -26,6 +26,7 @@ dependencies = [
     "pyarnes-tasks",
     "example-pii-pipeline",
     "example-s3-sweep",
+    "example-rtm-toggl-agile",
     "loguru>=0.7",
     "returns>=0.24",
     "toolz>=1.0",
@@ -42,7 +43,12 @@ build-backend = "hatchling.build"
 # ---------------------------------------------------------------------------
 [tool.pyarnes-tasks]
 sources = ["packages"]
-tests = ["tests", "packages/example-pii-pipeline/tests", "packages/example-s3-sweep/tests"]
+tests = [
+    "tests",
+    "packages/example-pii-pipeline/tests",
+    "packages/example-s3-sweep/tests",
+    "packages/example-rtm-toggl-agile/tests",
+]
 
 # ---------------------------------------------------------------------------
 # Dev dependency group
@@ -273,6 +279,7 @@ pyarnes-bench = { workspace = true }
 pyarnes-tasks = { workspace = true }
 example-pii-pipeline = { workspace = true }
 example-s3-sweep = { workspace = true }
+example-rtm-toggl-agile = { workspace = true }
 
 # ---------------------------------------------------------------------------
 # pymarkdown
