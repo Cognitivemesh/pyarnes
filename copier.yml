@@ -45,6 +45,21 @@ pyarnes_ref:
   help: "Which pyarnes git ref to pin dependencies to (branch, tag, or commit)"
   default: "main"
 
+adopter_shape:
+  type: str
+  help: "Which reference shape best fits this project?"
+  default: "blank"
+  choices:
+    - "blank"
+    - "pii-redaction"
+    - "s3-sweep"
+    - "rtm-toggl-agile"
+
+enable_dev_hooks:
+  type: bool
+  help: "Wire pyarnes into Claude Code hooks to harness the coding agent during development? (Adopter C pattern)"
+  default: false
+
 # ---------------------------------------------------------------------------
 # Computed values — not asked, just derived
 # ---------------------------------------------------------------------------

@@ -82,6 +82,8 @@ dev = [
     "pexpect>=4.9",
     # File watching
     "watchfiles>=1.0",
+    # Template smoke tests (Spec 02)
+    "copier>=9.4",
 ]
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,75 @@
+"""Agent pipeline for {{ project_name }}.
+
+Builds a ``ToolRegistry``, composes a ``GuardrailChain``, and runs an
+``AgentLoop``. The adopter owns this file — pyarnes provides only the
+library surface. Extend ``run_pipeline`` to fit the real use case.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from pyarnes_core.observe.logger import configure_logging, get_logger
+from pyarnes_harness import (
+    AgentLoop,
+    GuardrailChain,
+    LoopConfig,
+    PathGuardrail,
+    ToolAllowlistGuardrail,
+    ToolCallLogger,
+    ToolRegistry,
+)
+
+from {{ project_module }}.guardrails import custom_guardrails
+from {{ project_module }}.tools import register_tools
+
+if TYPE_CHECKING:
+    from pyarnes_core.types import ModelClient
+
+log = get_logger(__name__)
+
+
+async def run_pipeline(
+    model: ModelClient,
+    *,
+    working_dir: str,
+    messages: list[dict] | None = None,
+) -> list[dict]:
+    """Run the {{ adopter_shape }} agent pipeline.
+
+    Args:
+        model: The ``ModelClient`` subclass bridging pyarnes to an LLM provider.
+        working_dir: Root directory the agent is allowed to read from and write to.
+        messages: Initial conversation; falls back to a single user kickoff prompt.
+
+    Returns:
+        The full message history emitted by ``AgentLoop.run``.
+    """
+    configure_logging(level="INFO")
+
+    registry = ToolRegistry()
+    register_tools(registry)
+
+    chain = GuardrailChain(
+        guardrails=[
+            PathGuardrail(allowed_roots=(working_dir,)),
+            ToolAllowlistGuardrail(allowed_tools=frozenset(registry.names)),
+            *custom_guardrails(),
+        ],
+    )
+
+    loop = AgentLoop(
+        tools=registry.as_dict(),
+        model=model,
+        config=LoopConfig(max_iterations=50),
+        tool_call_logger=ToolCallLogger(path="logs/tool_calls.jsonl"),
+    )
+
+    opening = messages or [
+        {"role": "user", "content": "Begin the {{ adopter_shape }} workflow."},
+    ]
+    log.info("pipeline.start shape={shape}", shape="{{ adopter_shape }}")
+    # Adopter dispatches tool calls through `chain.check(tool, args)` before
+    # invoking the registered handler — `AgentLoop` does not auto-apply
+    # guardrails. See docs/packages/guardrails.md.
+    return await loop.run(opening)

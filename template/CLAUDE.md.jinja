@@ -32,9 +32,14 @@ All four types live in `pyarnes_core.errors`.
 
 ## Project layout
 
-- `src/{{ project_module }}/` — your project's source code
+- `src/{{ project_module }}/pipeline.py` — the `AgentLoop` builder (registry + chain + loop)
+- `src/{{ project_module }}/cli.py` — Typer CLI; entry point `{{ project_module }}`
+- `src/{{ project_module }}/tools/` — project-specific `ToolHandler` subclasses
+- `src/{{ project_module }}/guardrails.py` — project-specific `Guardrail` subclasses
 - `tests/` — your tests (start empty; the python-test skill scaffolds as needed)
 - `docs/` — MkDocs Material documentation source
+
+**Adopter shape:** `{{ adopter_shape }}`{% if adopter_shape != "blank" %} — starter stubs under `tools/` and `guardrails.py` reflect this shape. Extend them with real integrations.{% endif %}
 
 ## pyarnes dependencies (installed via git URLs)
 

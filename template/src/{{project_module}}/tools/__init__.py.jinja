@@ -1,0 +1,101 @@
+"""Tool handlers registered with ``pyarnes_harness.ToolRegistry``.
+
+Each adopter-specific tool subclasses ``pyarnes_core.types.ToolHandler``.
+``register_tools`` is the single entry point the pipeline calls.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from pyarnes_core.types import ToolHandler
+
+if TYPE_CHECKING:
+    from pyarnes_harness import ToolRegistry
+
+
+{% if adopter_shape == "pii-redaction" -%}
+class ExtractPdfText(ToolHandler):
+    """Extract raw text from a PDF at ``arguments['path']``."""
+
+    async def execute(self, arguments: dict) -> str:
+        path = arguments["path"]
+        # Replace with: `from kreuzberg import extract_file; await extract_file(path)`
+        return f"[stub extracted text from {path}]"
+
+
+class DetectPii(ToolHandler):
+    """Return a list of PII spans detected in ``arguments['text']``."""
+
+    async def execute(self, arguments: dict) -> list[dict]:
+        _ = arguments["text"]
+        return []
+
+
+def register_tools(registry: ToolRegistry) -> None:
+    """Register every PII-pipeline tool on ``registry``."""
+    registry.register("extract_pdf_text", ExtractPdfText())
+    registry.register("detect_pii", DetectPii())
+{%- elif adopter_shape == "s3-sweep" -%}
+class ListObjects(ToolHandler):
+    """List every key in ``arguments['bucket']``."""
+
+    async def execute(self, arguments: dict) -> list[str]:
+        _ = arguments["bucket"]
+        return []
+
+
+class VerifyObject(ToolHandler):
+    """Compare local file metadata against the remote S3 metadata."""
+
+    async def execute(self, arguments: dict) -> dict:
+        return {"key": arguments["key"], "verified": True}
+
+
+class DeleteBucket(ToolHandler):
+    """Delete ``arguments['bucket']`` — gated by ``VerificationCompleteGuardrail``."""
+
+    async def execute(self, arguments: dict) -> str:
+        return f"deleted {arguments['bucket']}"
+
+
+def register_tools(registry: ToolRegistry) -> None:
+    """Register every S3-sweep tool on ``registry``."""
+    registry.register("list_objects", ListObjects())
+    registry.register("verify_object", VerifyObject())
+    registry.register("delete_bucket", DeleteBucket())
+{%- elif adopter_shape == "rtm-toggl-agile" -%}
+class ListRtmTasks(ToolHandler):
+    """List tasks for ``arguments['list_id']`` in Remember-The-Milk."""
+
+    async def execute(self, arguments: dict) -> list[dict]:
+        _ = arguments["list_id"]
+        return []
+
+
+class ListTogglEntries(ToolHandler):
+    """List time entries for ``arguments['workspace_id']`` in Toggl."""
+
+    async def execute(self, arguments: dict) -> list[dict]:
+        _ = arguments["workspace_id"]
+        return []
+
+
+class CreateStory(ToolHandler):
+    """Create a story in the unified agile backend."""
+
+    async def execute(self, arguments: dict) -> dict:
+        return {"story_id": "stub", "title": arguments.get("title", "")}
+
+
+def register_tools(registry: ToolRegistry) -> None:
+    """Register every RTM/Toggl/agile tool on ``registry``."""
+    registry.register("list_rtm_tasks", ListRtmTasks())
+    registry.register("list_toggl_entries", ListTogglEntries())
+    registry.register("create_story", CreateStory())
+{%- else -%}
+def register_tools(registry: ToolRegistry) -> None:
+    """Register this project's tools. Extend as the pipeline grows."""
+    # registry.register("my_tool", MyToolHandler())
+    _ = registry
+{%- endif %}
