@@ -1,0 +1,59 @@
+# Copier configuration for the pyarnes project template.
+# Rendered with:
+#
+#   uvx copier copy gh:Cognitivemesh/pyarnes <destination>
+#
+# Every question has a default so a developer can hit Enter through all of
+# them. No author name or email is asked — pyproject.toml omits `authors`
+# and the developer fills it in later if they want.
+
+_min_copier_version: "9.0.0"
+_subdirectory: template
+
+# `_subdirectory: template` already scopes what Copier sees. The excludes below
+# are kept as belt-and-braces / documentation for monorepo-only paths. Do NOT
+# add "src/**" here — that would also mask the template's own
+# `src/{{project_module}}/` source tree, leaving generated projects empty.
+_exclude:
+  - "uv.lock"
+  - ".jj/**"
+  - "specs/**"    # spec/PR drafts — monorepo-internal, never shipped to adopters
+
+# ---------------------------------------------------------------------------
+# Prompts
+# ---------------------------------------------------------------------------
+project_name:
+  type: str
+  help: "Project name (used in pyproject.toml and docs, defaults to the destination directory name)"
+  default: "{{ _copier_conf.dst_path.name }}"
+
+project_description:
+  type: str
+  help: "One-line project description"
+  default: "A pyarnes-based project"
+
+python_version:
+  type: str
+  help: "Minimum Python version required"
+  default: "3.13"
+  choices:
+    - "3.13"
+    - "3.14"
+
+pyarnes_ref:
+  type: str
+  help: "Which pyarnes git ref to pin dependencies to (branch, tag, or commit)"
+  default: "main"
+
+# ---------------------------------------------------------------------------
+# Computed values — not asked, just derived
+# ---------------------------------------------------------------------------
+project_module:
+  type: str
+  when: false
+  default: "{{ project_name | lower | replace('-', '_') | replace(' ', '_') }}"
+
+current_year:
+  type: str
+  when: false
+  default: "{{ '%Y' | strftime }}"

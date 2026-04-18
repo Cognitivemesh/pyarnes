@@ -1,0 +1,32 @@
+# Installation
+
+## Prerequisites
+
+- **Python {{ python_version }}+**
+- **[uv](https://github.com/astral-sh/uv)** — fast Python package manager
+
+## Install
+
+```bash
+uv sync
+```
+
+This installs the pyarnes packages (pulled from the pyarnes repo via git URLs) plus all dev tooling (ruff, ty, pytest, bandit, etc.).
+
+## Verify installation
+
+```bash
+uv run tasks check
+```
+
+Expected output: lint and typecheck pass; `test` is a no-op because no `tests/` directory exists yet (see [Quick Start](quickstart.md) for how to scaffold your first test).
+
+## Pulling template updates
+
+When improvements land in the pyarnes template upstream, fold them into this project with a single task:
+
+```bash
+uv run tasks update
+```
+
+This wraps `copier update` under the hood — you don't need to know Copier's flags. Conflicts (if any) are surfaced interactively.

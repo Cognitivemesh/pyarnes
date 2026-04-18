@@ -1,8 +1,10 @@
-# Pyarnes — Project Instructions
+# {{ project_name }} — Project Instructions
 
 ## What is this?
 
-A minimal agentic harness engineering template. It does **not** replace Claude Code, Cursor, or Codex — it **collaborates** with them by adding verification loops, safety enforcement, and lifecycle management that these tools lack.
+{{ project_description }}
+
+Built on top of the [pyarnes](https://github.com/Cognitivemesh/pyarnes) agentic harness, which provides verification loops, safety guardrails, and lifecycle management that AI coding tools miss.
 
 ## Quick commands
 
@@ -14,13 +16,10 @@ uv run tasks watch       # TDD watch mode
 uv run tasks format      # auto-format
 uv run tasks lint        # ruff lint
 uv run tasks security    # bandit security scan
-uv run tasks radon:cc    # cyclomatic complexity
-uv run tasks vulture     # dead code detection
-uv run tasks complexity  # radon:cc + radon:mi
-uv run tasks docs:serve  # local docs site
+uv run tasks update      # pull latest pyarnes template improvements (wraps copier)
 ```
 
-## Error taxonomy
+## Error taxonomy (from pyarnes)
 
 | Type | Behaviour |
 |---|---|
@@ -29,25 +28,30 @@ uv run tasks docs:serve  # local docs site
 | `UserFixableError` | Interrupt for human input |
 | `UnexpectedError` | Bubble up for debugging |
 
-## Key architecture (monorepo)
+All four types live in `pyarnes_core.errors`.
 
-- `packages/core/` — **pyarnes-core**: types, errors, lifecycle, observe/logging
-- `packages/harness/` — **pyarnes-harness**: loop, tools, capture
-- `packages/guardrails/` — **pyarnes-guardrails**: composable safety guardrails
-- `packages/bench/` — **pyarnes-bench**: evaluation and benchmarking toolkit
-- `packages/tasks/` — **pyarnes-tasks**: cross-platform task runner (the `tasks` CLI)
-- `tests/unit/` — unit tests
-- `tests/features/` — BDD feature files (pytest-bdd / Gherkin)
+## Project layout
+
+- `src/{{ project_module }}/` — your project's source code
+- `tests/` — your tests (start empty; the python-test skill scaffolds as needed)
 - `docs/` — MkDocs Material documentation source
-- `template/` + `copier.yml` — Copier template used by `uvx copier copy gh:Cognitivemesh/pyarnes <dest>`
-  to scaffold new projects that depend on pyarnes packages via git URLs.
+
+## pyarnes dependencies (installed via git URLs)
+
+| Package | What it provides |
+|---|---|
+| `pyarnes_core` | Types (`ToolHandler`, `ModelClient`), error taxonomy, lifecycle FSM, JSONL logging |
+| `pyarnes_harness` | `AgentLoop`, `ToolRegistry`, output capture, tool-call logger |
+| `pyarnes_guardrails` | `PathGuardrail`, `CommandGuardrail`, `GuardrailChain` |
+| `pyarnes_bench` | Evaluation scoring framework |
+| `pyarnes_tasks` | The `tasks` CLI that `uv run tasks …` invokes |
 
 ## Conventions
 
 - All code is **async-first** (asyncio) to avoid GIL contention.
 - Logging goes to **stderr** as JSONL via **loguru**; stdout is reserved for tool results.
 - Docstrings follow **PEP 257** conventions (Google style).
-- Use `uv run tasks tdd` workflow: Red → Green → Refactor.
+- Use Red → Green → Refactor TDD workflow when adding behaviour.
 - Types are enforced via `ruff` + `ty`.
 
 ## Functional utilities (included, use them)

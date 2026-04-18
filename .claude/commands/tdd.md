@@ -11,7 +11,7 @@ Follow the strict TDD cycle for every change:
 
 ## 🟢 Green — Make it pass with the simplest code
 
-1. Write the **minimum** production code in `src/pyarnes/` to make the failing test pass.
+1. Write the **minimum** production code in `packages/<name>/src/` to make the failing test pass.
 2. Run `uv run tasks test` — all tests **must pass**.
 3. Do not add features, optimisations, or abstractions yet.
 

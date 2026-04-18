@@ -1,0 +1,46 @@
+# Tasks
+
+All development workflows go through `uv run tasks <name>`. Run `uv run tasks help` for the full list.
+
+## Core tasks
+
+| Task | What it does |
+|---|---|
+| `lint` | Ruff lint (`src` + `tests` if present) |
+| `lint:fix` | Ruff lint with auto-fix |
+| `format` | Ruff format |
+| `format:check` | Verify formatting without changes |
+| `typecheck` | `ty` type check (`src`) |
+| `test` | Run pytest (no-op when `tests/` is absent) |
+| `test:cov` | pytest with coverage report |
+| `watch` | pytest-watch for TDD |
+| `security` | Bandit security scan |
+| `radon:cc` | Cyclomatic complexity report |
+| `radon:mi` | Maintainability-index report |
+| `vulture` | Dead-code detection |
+
+## Composites
+
+| Task | Combines |
+|---|---|
+| `check` | `lint` + `typecheck` + `test` |
+| `ci` | `format:check` + `lint` + `typecheck` + `test:cov` + `security` |
+| `complexity` | `radon:cc` + `radon:mi` |
+
+## Template maintenance
+
+| Task | What it does |
+|---|---|
+| `update` | Pulls latest pyarnes template improvements (wraps `uvx copier update`) |
+
+## Configuration
+
+The `tasks` CLI reads `[tool.pyarnes-tasks]` from `pyproject.toml`:
+
+```toml
+[tool.pyarnes-tasks]
+sources = ["src"]        # code roots — ruff / ty / bandit / radon / vulture targets
+tests = ["tests"]         # pytest test roots (silently skipped if missing)
+```
+
+Missing paths are dropped from each command line, so `uv run tasks check` works on a freshly-scaffolded project that has no `tests/` yet.

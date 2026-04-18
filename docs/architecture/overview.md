@@ -7,12 +7,13 @@ pyarnes is a **uv workspace monorepo**. Each package has its own `pyproject.toml
 ```text
 pyarnes/
 ├── packages/
-│   ├── core/         → pyarnes-core    (types, errors, lifecycle, logging)
-│   ├── harness/      → pyarnes-harness (loop, tools, capture)
+│   ├── core/         → pyarnes-core       (types, errors, lifecycle, logging)
+│   ├── harness/      → pyarnes-harness    (loop, tools, capture)
 │   ├── guardrails/   → pyarnes-guardrails (safety checks)
-│   ├── bench/        → pyarnes-bench   (evaluation framework)
-│   └── api/          → pyarnes-api     (FastAPI REST interface)
-├── src/pyarnes/      → root package    (CLI task runner only)
+│   ├── bench/        → pyarnes-bench      (evaluation framework)
+│   └── tasks/        → pyarnes-tasks      (cross-platform task runner)
+├── template/         → Copier template scaffolded into new projects
+├── copier.yml        → Prompts for `uvx copier copy gh:Cognitivemesh/pyarnes`
 └── tests/
     ├── unit/         → unit tests for all packages
     └── features/     → BDD / Gherkin acceptance tests
@@ -21,14 +22,13 @@ pyarnes/
 ## Dependency graph
 
 ```text
-pyarnes-api
-  ├── pyarnes-harness
-  │     ├── pyarnes-core (loguru)
-  │     └── pyarnes-guardrails
-  │           └── pyarnes-core
-  ├── pyarnes-bench
-  │     └── pyarnes-core
-  └── fastapi + uvicorn
+pyarnes-harness
+  ├── pyarnes-core (loguru)
+  └── pyarnes-guardrails
+        └── pyarnes-core
+
+pyarnes-bench
+  └── pyarnes-core
 ```
 
 `pyarnes-core` is the foundation — every other package depends on it for error types and logging.

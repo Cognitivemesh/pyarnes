@@ -1,0 +1,51 @@
+# {{ project_name }}
+
+> {{ project_description }}
+
+Built on [pyarnes](https://github.com/Cognitivemesh/pyarnes) — an agentic harness engineering template that adds verification loops, safety guardrails, and lifecycle management on top of AI coding tools.
+
+## Quick start
+
+```bash
+uv sync                  # install dependencies (pyarnes packages + dev tooling)
+uv run tasks help        # list available tasks
+uv run tasks check       # lint + typecheck + test
+uv run tasks watch       # TDD watch mode
+```
+
+## Writing your first test
+
+This project starts with no `tests/` directory. When you're ready to write a test, ask Claude Code:
+
+> "Write a test for my `Greeter` class"
+
+The bundled **python-test skill** (`.claude/skills/python-test/`) scaffolds `tests/unit/` and your first test file for you, following the pyarnes TDD conventions (async-first, Red → Green → Refactor).
+
+## Pulling template updates
+
+When the pyarnes template evolves, you can fold the improvements in with a single task:
+
+```bash
+uv run tasks update      # wraps `uvx copier update` behind the scenes
+```
+
+Conflicts (if any) are surfaced interactively — review, resolve, commit.
+
+## What's in the box
+
+| Tool | Purpose |
+|---|---|
+| [uv](https://github.com/astral-sh/uv) | Dependency management & task execution |
+| [Ruff](https://docs.astral.sh/ruff/) | Linting & formatting |
+| [ty](https://github.com/astral-sh/ty) | Type checking |
+| [pytest](https://docs.pytest.org/) + pytest-bdd + hypothesis | Testing |
+| [Bandit](https://bandit.readthedocs.io/) | Security scanning |
+| [Radon](https://radon.readthedocs.io/) | Complexity metrics |
+| [Vulture](https://github.com/jendrikseipp/vulture) | Dead-code detection |
+| [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) | Documentation site |
+
+Run `uv run tasks help` for the full list of tasks.
+
+## License
+
+MIT

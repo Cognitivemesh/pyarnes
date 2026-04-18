@@ -25,17 +25,33 @@ pyarnes solves all of these with a single `AgentLoop` + guardrails + lifecycle F
 | **Guardrails** | Composable checks: path allowlists, command blocklists, tool allowlists |
 | **Lifecycle FSM** | INIT → RUNNING → PAUSED → COMPLETED / FAILED with history |
 | **JSONL logging** | Every event logged as structured JSON to stderr via loguru |
-| **OpenAPI** | REST API for managing sessions, checking guardrails, and running evals |
 | **Eval framework** | Score agent outputs with pluggable scorers (exact match, custom) |
 
-## Quick start
+## Two ways to use pyarnes
+
+### A. As a template — bootstrap your own project
 
 ```bash
-uv sync                  # install everything
+uvx copier copy gh:Cognitivemesh/pyarnes my-awesome-agent
+cd my-awesome-agent
+uv sync                  # pulls the 5 pyarnes-* packages as git-URL deps
+uv run tasks check       # lint + typecheck
+```
+
+No PyPI publishing, no copied source, no `packages/` or `tests/` in your repo — just five `pyarnes-*` dependencies pinned via git URL. Full walkthrough: [Use as template](template.md).
+
+### B. As a monorepo — contribute to pyarnes itself
+
+```bash
+git clone https://github.com/Cognitivemesh/pyarnes.git
+cd pyarnes
+uv sync                  # install all workspace packages + dev deps
 uv run tasks check       # lint + typecheck + test
 uv run tasks watch       # TDD watch mode
 uv run tasks help        # see all tasks
 ```
+
+See [Evolving pyarnes](development/evolving.md) for the contributor workflow, adding a new package, editing the template, and the feature-spec process.
 
 ## Packages
 
@@ -45,5 +61,4 @@ uv run tasks help        # see all tasks
 | [`pyarnes-harness`](packages/harness.md) | Agent loop, tool registry, output capture |
 | [`pyarnes-guardrails`](packages/guardrails.md) | Composable safety guardrails |
 | [`pyarnes-bench`](packages/bench.md) | Evaluation and benchmarking toolkit |
-| [`pyarnes-api`](packages/api.md) | OpenAPI REST interface (FastAPI) |
 

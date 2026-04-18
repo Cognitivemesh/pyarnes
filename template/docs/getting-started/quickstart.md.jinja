@@ -1,0 +1,55 @@
+# Quick Start
+
+## 1. Define a tool handler
+
+```python
+from dataclasses import dataclass
+from typing import Any
+from pathlib import Path
+
+from pyarnes_core.types import ToolHandler
+
+
+@dataclass
+class ReadFileTool(ToolHandler):
+    """Read a file from the workspace."""
+
+    async def execute(self, arguments: dict[str, Any]) -> str:
+        path = Path(arguments["path"])
+        return path.read_text()
+```
+
+## 2. Wire up the agent loop
+
+```python
+import asyncio
+
+from pyarnes_harness.loop import AgentLoop, LoopConfig
+from pyarnes_harness.tools.registry import ToolRegistry
+
+registry = ToolRegistry()
+registry.register("read_file", ReadFileTool())
+
+loop = AgentLoop(
+    tools=registry.as_dict(),
+    model=MyModel(),
+    config=LoopConfig(max_iterations=10, max_retries=2),
+)
+
+messages = asyncio.run(loop.run([{"role": "user", "content": "Read main.py"}]))
+```
+
+See the full [pyarnes docs](https://github.com/Cognitivemesh/pyarnes) for `ModelClient` patterns, guardrails, and JSONL tool-call logging.
+
+## 3. Write your first test
+
+This project starts with no `tests/` directory. When you're ready, ask Claude Code:
+
+> "Write a test for my `ReadFileTool` class"
+
+The bundled **python-test skill** scaffolds the `tests/` tree and your first test file, following pyarnes TDD conventions (async-first, Red → Green → Refactor). Then:
+
+```bash
+uv run tasks test        # now runs something
+uv run tasks watch       # TDD watch mode
+```

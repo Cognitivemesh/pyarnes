@@ -12,25 +12,40 @@
 - **JSONL observability** — single logging layer via `loguru` that agents can parse
 - **Safety guardrails** — composable path, command, and tool-allowlist checks
 - **Lifecycle FSM** — INIT → RUNNING → PAUSED → COMPLETED / FAILED with full history
-- **Monorepo** — `pyarnes-core` + `pyarnes-harness` + `pyarnes-guardrails` + `pyarnes-bench` as uv workspace packages
+- **Monorepo** — `pyarnes-core` + `pyarnes-harness` + `pyarnes-guardrails` + `pyarnes-bench` + `pyarnes-tasks` as independent uv workspace packages
 - **Cross-platform task runner** — replaces Make with `uv run tasks <name>`
 - **TDD out of the box** — pytest-watch, pytest-bdd (Gherkin), pytest-sugar, hypothesis, coverage
 
-## Quick start
+## Two ways to use pyarnes
+
+### A. Start a new agentic-harness project from the pyarnes template
+
+If you're building **your own project** and want to adopt pyarnes as the foundation:
 
 ```bash
-# Install dependencies
-uv sync
-
-# Run all checks (lint + typecheck + test)
-uv run tasks check
-
-# TDD watch mode
-uv run tasks watch
-
-# See all available tasks
-uv run tasks help
+uvx copier copy gh:Cognitivemesh/pyarnes my-awesome-agent
+cd my-awesome-agent
+uv sync                   # pulls the 5 pyarnes-* packages from git URLs
+uv run tasks check        # lint + typecheck
 ```
+
+No PyPI publishing, no copied source — your project **depends on** the pyarnes packages via git URL. Later, `uv run tasks update` pulls template improvements into your project (wraps `copier update` under the hood).
+
+Full walkthrough: [docs/template.md](docs/template.md).
+
+### B. Work on pyarnes itself
+
+If you're **contributing to pyarnes** (adding a new package, editing the template, writing a feature spec):
+
+```bash
+git clone https://github.com/Cognitivemesh/pyarnes.git
+cd pyarnes
+uv sync                   # installs all 5 workspace packages + dev deps
+uv run tasks check        # lint + typecheck + test
+uv run tasks watch        # TDD watch mode
+```
+
+See [docs/development/evolving.md](docs/development/evolving.md) for the full contributor workflow, how to add a new package, how to edit the template, and how to smoke-test the result. Feature specs live in [`specs/`](specs/).
 
 ## Available tasks
 
@@ -83,7 +98,8 @@ uv run tasks help
 
 ```text
 pyarnes/
-├── pyproject.toml              # Root config: uv workspace, ruff, pytest, etc.
+├── pyproject.toml              # Root workspace: dev deps + shared tool config
+├── copier.yml                  # Prompts for `uvx copier copy gh:Cognitivemesh/pyarnes`
 ├── mkdocs.yml                  # MkDocs Material documentation site
 ├── packages/
 │   ├── core/                   # pyarnes-core (types, errors, lifecycle, logging)
@@ -98,11 +114,10 @@ pyarnes/
 │   ├── bench/                  # pyarnes-bench (evaluation & benchmarking)
 │   │   ├── pyproject.toml
 │   │   └── src/pyarnes_bench/
-│   └── api/                    # pyarnes-api (OpenAPI REST interface)
+│   └── tasks/                  # pyarnes-tasks (cross-platform task runner)
 │       ├── pyproject.toml
-│       └── src/pyarnes_api/
-├── src/pyarnes/                # Root package (CLI task runner only)
-│   └── tasks/
+│       └── src/pyarnes_tasks/
+├── template/                   # Copier template — rendered into new projects
 ├── docs/                       # MkDocs documentation source
 └── tests/
     ├── unit/
@@ -128,7 +143,7 @@ pyarnes/
 | TDD watcher | [pytest-watch](https://github.com/joeyespo/pytest-watch) | Auto-rerun on file changes |
 | Documentation | [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) | Documentation site |
 | Logging | [loguru](https://loguru.readthedocs.io/) | JSONL structured logging |
-| Functional | [returns](https://returns.readthedocs.io/) / [toolz](https://toolz.readthedocs.io/) / [funcy](https://funcy.readthedocs.io/) | Functional programming utilities |
+| Functional | [returns](https://returns.readthedocs.io/) / [toolz](https://toolz.readthedocs.io/) / [funcy](https://funcy.readthedocs.io/) / [more-itertools](https://more-itertools.readthedocs.io/) | Railway-oriented errors, data pipelines, collection helpers, advanced iterables — see `CLAUDE.md` for usage guidance |
 
 ## License
 

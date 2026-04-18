@@ -1,8 +1,5 @@
-site_name: pyarnes
-site_description: A minimal agentic harness engineering template for Python
-site_url: https://cognitivemesh.github.io/pyarnes/
-repo_url: https://github.com/Cognitivemesh/pyarnes
-repo_name: Cognitivemesh/pyarnes
+site_name: {{ project_name }}
+site_description: {{ project_description }}
 
 theme:
   name: material
@@ -52,27 +49,5 @@ nav:
   - Getting Started:
       - Installation: getting-started/installation.md
       - Quick Start: getting-started/quickstart.md
-      - Use as template: template.md
-  - Architecture:
-      - Overview: architecture/overview.md
-      - Error Taxonomy: architecture/errors.md
-      - Lifecycle: architecture/lifecycle.md
-  - Packages:
-      - pyarnes-core: packages/core.md
-      - pyarnes-harness: packages/harness.md
-      - pyarnes-guardrails: packages/guardrails.md
-      - pyarnes-bench: packages/bench.md
-      - pyarnes-tasks: packages/tasks.md
-  - Code Reference:
-      - Core Types: api/types.md
-      - Errors: api/errors.md
-      - Lifecycle: api/lifecycle.md
-      - Agent Loop: api/loop.md
-      - Guardrails: api/guardrails.md
-      - Tool Registry: api/registry.md
-      - Capture: api/capture.md
-      - Logging: api/logging.md
   - Development:
       - Tasks: development/tasks.md
-      - Testing: development/testing.md
-      - Evolving pyarnes: development/evolving.md
