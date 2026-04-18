@@ -54,8 +54,8 @@ Sequential specs decomposing the approved "library-first, adopter owns the CLI, 
 |----|----------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|------------|
 | 01 | [`01-core-stable-api-surface.md`](01-core-stable-api-surface.md)                             | `CHANGELOG.md` + semver policy + `tests/unit/test_stable_surface.py`    | —          |
 | 02 | [`02-template-adopter-scaffold.md`](02-template-adopter-scaffold.md)                         | Copier `adopter_shape` + starter pipeline/cli/tools/guardrails          | 01         |
-| 03 | [`03-examples-adopter-a-and-b.md`](03-examples-adopter-a-and-b.md)                           | `packages/example-pii-pipeline/` + `packages/example-s3-sweep/`         | 01, 02     |
-| 04 | [`04-template-adopter-c-meta-use.md`](04-template-adopter-c-meta-use.md)                     | `packages/example-rtm-toggl-agile/` + `.claude/hooks/` + bench scaffold | 01, 02, 03 |
+| 03 | [`03-examples-adopter-a-and-b.md`](03-examples-adopter-a-and-b.md)                           | Design rationale for the `pii-redaction` + `s3-sweep` template shapes   | 01, 02     |
+| 04 | [`04-template-adopter-c-meta-use.md`](04-template-adopter-c-meta-use.md)                     | `rtm-toggl-agile` shape + `.claude/hooks/` + bench scaffold             | 01, 02, 03 |
 | 05 | [`05-docs-distribution-and-meta-use.md`](05-docs-distribution-and-meta-use.md)               | `distribution.md` + `meta-use.md` + contributor guides + nav update     | 01–04      |
 
 ### Code-graph feature (PR-01 → PR-06)

@@ -24,9 +24,6 @@ dependencies = [
     "pyarnes-guardrails",
     "pyarnes-bench",
     "pyarnes-tasks",
-    "example-pii-pipeline",
-    "example-s3-sweep",
-    "example-rtm-toggl-agile",
     "loguru>=0.7",
     "returns>=0.24",
     "toolz>=1.0",
@@ -43,12 +40,7 @@ build-backend = "hatchling.build"
 # ---------------------------------------------------------------------------
 [tool.pyarnes-tasks]
 sources = ["packages"]
-tests = [
-    "tests",
-    "packages/example-pii-pipeline/tests",
-    "packages/example-s3-sweep/tests",
-    "packages/example-rtm-toggl-agile/tests",
-]
+tests = ["tests"]
 
 # ---------------------------------------------------------------------------
 # Dev dependency group
@@ -161,17 +153,6 @@ ignore = [
     "FBT",    # Boolean params fine in tests
     "PLR2004", # Magic values fine in tests
 ]
-"packages/example-*/**/*.py" = [
-    "S101",    # Reference code, asserts fine
-    "D102",    # Base class already documents tool-handler contract
-    "D107",    # Short fake-class __init__ methods
-    "ARG002",  # Guardrail.check(tool_name, args) accepts unused in demos
-    "ASYNC240", # pathlib OK in reference handlers (not trio)
-    "PLR0913", # Reference-pipeline functions thread through registry/logger; 6 kwargs stays readable
-    "PLR2004", # Magic values fine in pedagogical fixtures
-    "PERF401", # List loops fine at demo scale
-    "S324",    # md5 (non-security) fine for etag fixtures
-]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
@@ -278,9 +259,6 @@ pyarnes-harness = { workspace = true }
 pyarnes-guardrails = { workspace = true }
 pyarnes-bench = { workspace = true }
 pyarnes-tasks = { workspace = true }
-example-pii-pipeline = { workspace = true }
-example-s3-sweep = { workspace = true }
-example-rtm-toggl-agile = { workspace = true }
 
 # ---------------------------------------------------------------------------
 # pymarkdown

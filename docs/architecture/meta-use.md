@@ -1,20 +1,20 @@
 # Meta-use — pyarnes harnessing the coding agent
 
-Adopter C — the RTM + Toggl → unified agile reference implementation —
-opts into a pattern the other two adopters do not: **pyarnes is imported
-twice**. Once by the shipped product (same as Adopter A and B), and once
-by the Copier-generated Claude Code hooks that run *around* the coding
-agent as it edits the project.
+The `rtm-toggl-agile` template shape opts into a pattern the other shapes
+do not: **pyarnes is imported twice**. Once by the shipped product (same
+as the `pii-redaction` and `s3-sweep` shapes), and once by the
+Copier-generated Claude Code hooks that run *around* the coding agent as
+it edits the project.
 
 Same packages, two consumption patterns, one library.
 
 ## Anatomy of the dev-time harness
 
-| Requirement (Adopter C) | pyarnes surface used | How it's wired |
+| Requirement | pyarnes surface used | How it's wired |
 |---|---|---|
 | Track what the coding agent did | `get_logger`, `configure_logging`, `LogFormat` | `.claude/hooks/pyarnes_pre_tool.py` calls `get_logger("coding_agent.pre_tool")`; output lands in `.pyarnes/dev.jsonl`. |
 | Gate what the coding agent tries | `GuardrailChain`, `PathGuardrail`, `CommandGuardrail`, `ToolAllowlistGuardrail` | Pre-tool-use hook composes a chain and calls `chain.check(tool, args)`. Violations exit with code 2 + a `{"decision": "block", "reason": …}` payload. |
-| Audit trail of every tool call | `ToolCallLogger` (from `pyarnes_harness.capture`) | Post-tool-use hook appends one JSONL record per call to `.pyarnes/agent_tool_calls.jsonl`. |
+| Audit trail of every tool call | `ToolCallLogger` (top-level `pyarnes_harness`) | Post-tool-use hook appends one JSONL record per call to `.pyarnes/agent_tool_calls.jsonl`. |
 | Score the coding agent | `EvalSuite`, `EvalResult`, `Scorer`, `ExactMatchScorer` | `tests/bench/test_agent_quality.py` loads labeled scenarios, runs the coding agent, collects scores into an `EvalSuite`, asserts minimum pass rate. |
 
 ## The shipped hooks (from the template)
@@ -59,7 +59,7 @@ logger.log_call(
 
 Both files live under [`template/.claude/hooks/`](https://github.com/Cognitivemesh/pyarnes/tree/main/template/.claude/hooks)
 and ship only when the adopter answers `enable_dev_hooks: true` at scaffold
-time (default for `adopter_shape=rtm-toggl-agile`, off otherwise).
+time (default when `adopter_shape=rtm-toggl-agile`, off otherwise).
 
 ## `.pyarnes/` directory layout
 
@@ -75,9 +75,9 @@ The JSONL schema mirrors what the shipped runtime writes — so a single
 
 ## Why the same library for both sides
 
-- **One surface to learn.** The contributors writing Adopter C's shipped
-  pipeline and the ones tightening the dev-time guardrails read the same
-  docs and import from the same modules.
+- **One surface to learn.** The contributors writing the shipped pipeline
+  and the ones tightening the dev-time guardrails read the same docs and
+  import from the same modules.
 - **Guardrails tested against themselves.** A bug in `CommandGuardrail`
   surfaces both in the shipped pipeline and in the coding agent's session —
   twice the chances of catching it.
@@ -94,6 +94,7 @@ The JSONL schema mirrors what the shipped runtime writes — so a single
 - Route `.pyarnes/dev.jsonl` to your observability stack by configuring
   loguru sinks in the pre-tool hook's preamble.
 
-See the
-[reference Adopter C implementation](https://github.com/Cognitivemesh/pyarnes/tree/main/packages/example-rtm-toggl-agile)
-for the end-to-end example.
+The canonical wiring for this pattern lives in the Copier template under
+[`template/.claude/hooks/`](https://github.com/Cognitivemesh/pyarnes/tree/main/template/.claude/hooks)
+and is stamped into every generated project that sets
+`enable_dev_hooks: true`.
