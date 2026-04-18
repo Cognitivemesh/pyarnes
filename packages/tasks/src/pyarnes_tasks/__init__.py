@@ -12,12 +12,8 @@ Usage::
     uv run tasks md-lint     # markdown lint
     uv run tasks yaml-lint   # yaml lint
 
-Configuration lives in ``pyproject.toml`` under ``[tool.pyarnes-tasks]``::
-
-    [tool.pyarnes-tasks]
-    sources = ["src"]       # ruff / ty / bandit / radon / vulture targets
-    tests = ["tests"]        # pytest test roots (silently skipped if missing)
-    packages = []            # extra roots for monorepos
+Configuration lives in ``pyproject.toml`` under ``[tool.pyarnes-tasks]``.
+See ``packages/tasks/README.md`` for the full reference.
 """
 
 from __future__ import annotations

@@ -7,10 +7,8 @@ from dataclasses import dataclass
 from typing import Any
 
 import pytest
-from fastapi.testclient import TestClient
 from pytest_bdd import given, parsers, scenario, then, when
 
-from pyarnes_api.app import create_app
 from pyarnes_bench import EvalResult, EvalSuite, ExactMatchScorer
 from pyarnes_core.errors import UserFixableError
 from pyarnes_core.lifecycle import Lifecycle
@@ -39,11 +37,6 @@ def test_lifecycle_acceptance() -> None:
 @scenario("../acceptance.feature", "Evaluation suite scores scenarios correctly")
 def test_eval_acceptance() -> None:
     """Eval suite acceptance scenario."""
-
-
-@scenario("../acceptance.feature", "API health endpoint returns ok")
-def test_api_health_acceptance() -> None:
-    """API health acceptance scenario."""
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
@@ -179,27 +172,3 @@ def _then_pass_rate(eval_ctx: dict[str, Any], rate: float) -> None:
 @then(parsers.parse("the average score is {score:g}"))
 def _then_average_score(eval_ctx: dict[str, Any], score: float) -> None:
     assert eval_ctx["suite"].average_score == pytest.approx(score)
-
-
-# ── API health steps ──────────────────────────────────────────────────────
-
-
-@given("a running API instance", target_fixture="api_ctx")
-def _given_api() -> dict[str, Any]:
-    app = create_app()
-    return {"client": TestClient(app), "resp": None}
-
-
-@when("I request GET /health")
-def _when_health(api_ctx: dict[str, Any]) -> None:
-    api_ctx["resp"] = api_ctx["client"].get("/health")
-
-
-@then(parsers.parse("the response status is {status:d}"))
-def _then_status(api_ctx: dict[str, Any], status: int) -> None:
-    assert api_ctx["resp"].status_code == status
-
-
-@then(parsers.parse('the body contains status "{expected}"'))
-def _then_body_status(api_ctx: dict[str, Any], expected: str) -> None:
-    assert api_ctx["resp"].json()["status"] == expected

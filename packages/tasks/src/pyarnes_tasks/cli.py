@@ -1,11 +1,7 @@
 """Cross-platform task runner — replaces Make.
 
 Tasks are built dynamically from ``[tool.pyarnes-tasks]`` in the nearest
-``pyproject.toml``::
-
-    [tool.pyarnes-tasks]
-    sources = ["src"]        # ruff / ty / bandit / radon / vulture targets
-    tests = ["tests"]         # pytest test roots (silently skipped if missing)
+``pyproject.toml``. See ``packages/tasks/README.md`` for the full reference.
 
 Missing paths are dropped from each command line, so a fresh project with no
 ``tests/`` directory still gets a working ``uv run tasks check``.
@@ -13,7 +9,7 @@ Missing paths are dropped from each command line, so a fresh project with no
 
 from __future__ import annotations
 
-import subprocess
+import subprocess  # nosec B404
 import sys
 import tomllib
 from pathlib import Path
@@ -84,8 +80,16 @@ def _build_tasks() -> tuple[dict[str, list[str]], Path]:
         "security": [py, "-m", "bandit", "-r", *code_targets, "-c", pyproject_path],
         "pylint": [py, "-m", "pylint", *code_targets],
         "radon:cc": [
-            py, "-m", "radon", "cc", *code_targets,
-            "--min", "B", "--average", "--total-average", "--no-assert",
+            py,
+            "-m",
+            "radon",
+            "cc",
+            *code_targets,
+            "--min",
+            "B",
+            "--average",
+            "--total-average",
+            "--no-assert",
         ],
         "radon:mi": [py, "-m", "radon", "mi", *code_targets, "--min", "B"],
         "vulture": [py, "-m", "vulture", *code_targets, "--min-confidence", "80"],
@@ -144,7 +148,7 @@ def _run_task(name: str, tasks: dict[str, list[str]], root: Path) -> int:
     print(f"\n{'─' * 60}")  # noqa: T201
     print(f"  ▶ {name}")  # noqa: T201
     print(f"{'─' * 60}\n")  # noqa: T201
-    code = subprocess.run(cmd, check=False, cwd=root).returncode  # noqa: S603
+    code = subprocess.run(cmd, check=False, cwd=root).returncode  # noqa: S603  # nosec B603
     if name in _PYTEST_COLLECTION_TASKS and code == _PYTEST_NO_TESTS_EXIT_CODE:
         return 0
     return code

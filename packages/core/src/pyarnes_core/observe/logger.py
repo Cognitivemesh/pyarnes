@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import sys
 from enum import Enum
-from typing import TextIO
+from typing import Any, TextIO
 
 from loguru import logger
 
@@ -37,9 +37,9 @@ class LogFormat(Enum):
     CONSOLE = "console"
 
 
-def _json_serializer(message: object) -> str:
+def _json_serializer(message: Any) -> str:
     """Serialize a loguru record as a single JSON line."""
-    record = message.record  # type: ignore[union-attr]
+    record = message.record
     payload = {
         "timestamp": record["time"].isoformat(),
         "level": record["level"].name.lower(),
@@ -49,7 +49,7 @@ def _json_serializer(message: object) -> str:
     return json.dumps(payload, default=str, ensure_ascii=False)
 
 
-def _json_sink(message: object) -> None:
+def _json_sink(message: Any) -> None:
     """Write a JSONL-formatted log line to the configured stream."""
     line = _json_serializer(message)
     _active_stream.write(line + "\n")
@@ -103,7 +103,7 @@ def configure_logging(
         )
 
 
-def get_logger(name: str | None = None) -> logger.__class__:  # type: ignore[name-defined]
+def get_logger(name: str | None = None) -> Any:
     """Return a bound loguru logger.
 
     Args:

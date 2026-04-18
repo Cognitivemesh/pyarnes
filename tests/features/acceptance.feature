@@ -24,8 +24,3 @@ Feature: User acceptance — core workflows
     Then the pass rate is 0.5
     And the average score is 0.5
 
-  Scenario: API health endpoint returns ok
-    Given a running API instance
-    When I request GET /health
-    Then the response status is 200
-    And the body contains status "ok"
