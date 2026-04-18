@@ -20,9 +20,10 @@ def build_registry() -> ToolRegistry:
     return registry
 
 
-def build_guardrail_chain(allowed_roots: tuple[str, ...]) -> GuardrailChain:
+def build_guardrail_chain(
+    registry: ToolRegistry, allowed_roots: tuple[str, ...],
+) -> GuardrailChain:
     """Return the chain the adopter invokes before each tool dispatch."""
-    registry = build_registry()
     return GuardrailChain(guardrails=[
         PathGuardrail(allowed_roots=allowed_roots),
         ToolAllowlistGuardrail(allowed_tools=frozenset(registry.names)),
@@ -38,6 +39,10 @@ async def redact(
 ) -> str:
     """Run the full extract → detect → redact → render sequence.
 
+    Adopters typically drive this loop with ``AgentLoop``. The dispatch is
+    spelt out inline here so readers see the three-part contract (register
+    → compose → dispatch) without it being hidden behind a helper.
+
     Args:
         input_path: File to redact.
         title: Optional markdown heading; defaults to the file stem.
@@ -47,13 +52,12 @@ async def redact(
     Returns:
         The final redacted markdown document.
     """
-    registry = build_registry()
-    tools = registry.as_dict()
-
     from pathlib import Path  # noqa: PLC0415
 
+    registry = build_registry()
+    tools = registry.as_dict()
     roots = allowed_roots or (str(Path(input_path).resolve().parent),)
-    chain = build_guardrail_chain(allowed_roots=roots)
+    chain = build_guardrail_chain(registry, allowed_roots=roots)
 
     async def invoke(name: str, args: dict) -> Any:
         chain.check(name, args)

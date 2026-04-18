@@ -1,50 +1,29 @@
 """Dev-hook behaviour tests — run the shipped hooks against synthetic events.
 
-Proves the Spec 04 contract: the pre-tool-use hook blocks dangerous tool
-calls with exit code 2 and the post-tool-use hook appends a JSONL record
-to ``.pyarnes/agent_tool_calls.jsonl``.
+The pre-tool-use hook must block dangerous tool calls with exit code 2.
+The post-tool-use hook must append a JSONL record to
+``.pyarnes/agent_tool_calls.jsonl``.
 """
 
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
-copier = pytest.importorskip("copier")
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-
-
-@pytest.fixture(scope="module")
-def source_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    src = tmp_path_factory.mktemp("pyarnes_src_hooks")
-    shutil.copytree(REPO_ROOT, src, dirs_exist_ok=True, ignore=shutil.ignore_patterns(
-        ".git", ".venv", "node_modules", "__pycache__",
-    ))
-    return src
-
 
 @pytest.fixture
-def hooks_project(source_dir: Path, tmp_path: Path) -> Path:
-    dest = tmp_path / "hooks-project"
-    copier.run_copy(
-        str(source_dir),
-        str(dest),
-        defaults=True,
-        unsafe=True,
-        data={
-            "project_name": "hooks-project",
-            "project_description": "hooks project",
-            "adopter_shape": "rtm-toggl-agile",
-            "enable_dev_hooks": True,
-        },
+def hooks_project(run_copy, tmp_path: Path) -> Path:
+    return run_copy(
+        tmp_path / "hooks-project",
+        project_name="hooks-project",
+        project_description="hooks project",
+        adopter_shape="rtm-toggl-agile",
+        enable_dev_hooks=True,
     )
-    return dest
 
 
 def _run_hook(script: Path, event: dict, cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -114,7 +93,6 @@ def test_post_tool_hook_appends_jsonl(hooks_project: Path) -> None:
     log_file = hooks_project / ".pyarnes" / "agent_tool_calls.jsonl"
     assert log_file.is_file()
     record = json.loads(log_file.read_text().strip().splitlines()[-1])
-    # Public ToolCallEntry fields: tool, arguments, result, is_error, …
     assert record["tool"] == "Edit"
     assert record["is_error"] is False
-    assert "duration_seconds" in record
+    assert record["duration_seconds"] == pytest.approx(0.5)

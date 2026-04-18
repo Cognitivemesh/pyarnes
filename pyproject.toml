@@ -90,7 +90,7 @@ dev = [
     "pexpect>=4.9",
     # File watching
     "watchfiles>=1.0",
-    # Template smoke tests (Spec 02)
+    # Template smoke tests (tests/template/)
     "copier>=9.4",
 ]
 
@@ -167,6 +167,7 @@ ignore = [
     "D107",    # Short fake-class __init__ methods
     "ARG002",  # Guardrail.check(tool_name, args) accepts unused in demos
     "ASYNC240", # pathlib OK in reference handlers (not trio)
+    "PLR0913", # Reference-pipeline functions thread through registry/logger; 6 kwargs stays readable
     "PLR2004", # Magic values fine in pedagogical fixtures
     "PERF401", # List loops fine at demo scale
     "S324",    # md5 (non-security) fine for etag fixtures

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 import time
+from collections import deque
 
 from pyarnes_core.errors import UserFixableError
 from pyarnes_guardrails import Guardrail
@@ -25,14 +26,15 @@ class ApiQuotaGuardrail(Guardrail):
 
     def __init__(self, calls_per_minute: int = 60) -> None:
         self.calls_per_minute = calls_per_minute
-        self._history: list[float] = []
+        self._history: deque[float] = deque()
 
     def check(self, tool_name: str, arguments: dict) -> None:
         if not tool_name.startswith(("list_rtm", "list_toggl")):
             return
         now = time.monotonic()
         window_start = now - 60
-        self._history = [t for t in self._history if t >= window_start]
+        while self._history and self._history[0] < window_start:
+            self._history.popleft()
         if len(self._history) >= self.calls_per_minute:
             raise UserFixableError(
                 message=f"rate limit exceeded ({self.calls_per_minute} calls/minute)",

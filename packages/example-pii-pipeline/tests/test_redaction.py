@@ -53,7 +53,7 @@ def test_guardrail_blocks_unredacted_markdown() -> None:
 
 def test_guardrail_chain_tool_allowlist() -> None:
     """Unknown tool names are rejected by the allowlist guardrail."""
-    chain = build_guardrail_chain(allowed_roots=(".",))
+    chain = build_guardrail_chain(build_registry(), allowed_roots=(".",))
     with pytest.raises(UserFixableError):
         chain.check("untrusted_tool", {})
 

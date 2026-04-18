@@ -35,10 +35,15 @@ def build_chain(
     ])
 
 
-async def download(s3: FakeS3, bucket: str, dest_dir: str, logger: ToolCallLogger | None = None) -> list[dict]:
+async def download(
+    s3: FakeS3,
+    bucket: str,
+    dest_dir: str,
+    logger: ToolCallLogger | None = None,
+    registry: ToolRegistry | None = None,
+) -> list[dict]:
     """Download every object in ``bucket`` to ``dest_dir``. Returns the download log."""
-    registry = build_registry(s3=s3)
-    tools = registry.as_dict()
+    tools = (registry or build_registry(s3=s3)).as_dict()
     keys = await tools["list_objects"].execute({"bucket": bucket})
     entries = []
     for key in keys:
@@ -51,11 +56,15 @@ async def download(s3: FakeS3, bucket: str, dest_dir: str, logger: ToolCallLogge
 
 
 async def verify(
-    s3: FakeS3, bucket: str, entries: list[dict], manifest_path: str, logger: ToolCallLogger | None = None,
+    s3: FakeS3,
+    bucket: str,
+    entries: list[dict],
+    manifest_path: str,
+    logger: ToolCallLogger | None = None,
+    registry: ToolRegistry | None = None,
 ) -> list[dict]:
     """Verify every downloaded object; write the manifest; return verification records."""
-    registry = build_registry(s3=s3)
-    tools = registry.as_dict()
+    tools = (registry or build_registry(s3=s3)).as_dict()
     records = []
     for entry in entries:
         record = await tools["verify_object"].execute(
@@ -74,9 +83,10 @@ async def sweep(
     manifest_path: str,
     allowed_buckets: frozenset[str],
     logger: ToolCallLogger | None = None,
+    registry: ToolRegistry | None = None,
 ) -> str:
     """Delete ``bucket`` after the guardrail chain confirms every object is verified."""
-    registry = build_registry(s3=s3)
+    registry = registry or build_registry(s3=s3)
     tools = registry.as_dict()
     chain = build_chain(
         allowed_roots=(".",),
