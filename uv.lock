@@ -4,12 +4,23 @@ requires-python = ">=3.13"
 
 [manifest]
 members = [
+    "example-pii-pipeline",
+    "example-s3-sweep",
     "pyarnes",
     "pyarnes-bench",
     "pyarnes-core",
     "pyarnes-guardrails",
     "pyarnes-harness",
     "pyarnes-tasks",
+]
+
+[[package]]
+name = "annotated-doc"
+version = "0.0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/57/ba/046ceea27344560984e26a590f90bc7f4a75b06701f653222458922b558c/annotated_doc-0.0.4.tar.gz", hash = "sha256:fbcda96e87e9c92ad167c2e53839e57503ecfda18804ea28102353485033faa4", size = 7288, upload-time = "2025-11-10T22:07:42.062Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1e/d3/26bf1008eb3d2daa8ef4cacc7f3bfdc11818d111f7e2d0201bc6e3b49d45/annotated_doc-0.0.4-py3-none-any.whl", hash = "sha256:571ac1dc6991c450b25a9c2d84a3705e2ae7a53467b5d111c24fa8baabbed320", size = 5303, upload-time = "2025-11-10T22:07:40.673Z" },
 ]
 
 [[package]]
@@ -340,6 +351,44 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/9f/67/d5611975faaa5e4a920f4b19e4caccd5df0facb925687850f1e45f5876f2/dunamai-1.26.1.tar.gz", hash = "sha256:3b46007bd65b00b4824ead0a1aee365fd22d0ec2b9c219497d4fd48f52860c8b", size = 45567, upload-time = "2026-04-04T14:07:11.17Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fa/bc/8b8ec5a4bfc5b9cf3ce27a118339e994f88410be5677c96493e0ea28e76d/dunamai-1.26.1-py3-none-any.whl", hash = "sha256:2727d939c5b4257cb01ea404372803b477f5176e5a347c43beaf89cd5072e853", size = 27332, upload-time = "2026-04-04T14:07:10.079Z" },
+]
+
+[[package]]
+name = "example-pii-pipeline"
+version = "0.1.0"
+source = { editable = "packages/example-pii-pipeline" }
+dependencies = [
+    { name = "pyarnes-core" },
+    { name = "pyarnes-guardrails" },
+    { name = "pyarnes-harness" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pyarnes-core", editable = "packages/core" },
+    { name = "pyarnes-guardrails", editable = "packages/guardrails" },
+    { name = "pyarnes-harness", editable = "packages/harness" },
+    { name = "typer", specifier = ">=0.15" },
+]
+
+[[package]]
+name = "example-s3-sweep"
+version = "0.1.0"
+source = { editable = "packages/example-s3-sweep" }
+dependencies = [
+    { name = "pyarnes-core" },
+    { name = "pyarnes-guardrails" },
+    { name = "pyarnes-harness" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "pyarnes-core", editable = "packages/core" },
+    { name = "pyarnes-guardrails", editable = "packages/guardrails" },
+    { name = "pyarnes-harness", editable = "packages/harness" },
+    { name = "typer", specifier = ">=0.15" },
 ]
 
 [[package]]
@@ -826,6 +875,8 @@ name = "pyarnes"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "example-pii-pipeline" },
+    { name = "example-s3-sweep" },
     { name = "funcy" },
     { name = "loguru" },
     { name = "more-itertools" },
@@ -868,6 +919,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "example-pii-pipeline", editable = "packages/example-pii-pipeline" },
+    { name = "example-s3-sweep", editable = "packages/example-s3-sweep" },
     { name = "funcy", specifier = ">=2.0" },
     { name = "loguru", specifier = ">=0.7" },
     { name = "more-itertools", specifier = ">=10.5" },
@@ -1457,6 +1510,15 @@ wheels = [
 ]
 
 [[package]]
+name = "shellingham"
+version = "1.5.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/15/8b3609fd3830ef7b27b655beb4b4e9c62313a4e8da8c676e142cc210d58e/shellingham-1.5.4.tar.gz", hash = "sha256:8dbca0739d487e5bd35ab3ca4b36e11c4078f3a234bfce294b0a0291363404de", size = 10310, upload-time = "2023-10-24T04:13:40.426Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/f9/0595336914c5619e5f28a1fb793285925a8cd4b432c9da0a987836c7f822/shellingham-1.5.4-py2.py3-none-any.whl", hash = "sha256:7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686", size = 9755, upload-time = "2023-10-24T04:13:38.866Z" },
+]
+
+[[package]]
 name = "six"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1595,6 +1657,21 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/50/9f/ac42dc223d7e0950e97a1854567a8b3e7fe09ad7375adbf91bfb43290482/ty-0.0.31-py3-none-win32.whl", hash = "sha256:7286587aacf3eef0956062d6492b893b02f82b0f22c5e230008e13ff0d216a8b", size = 10187657, upload-time = "2026-04-15T15:48:04.264Z" },
     { url = "https://files.pythonhosted.org/packages/75/3e/57ba7ea7ecb2f4751644ba91756e2be70e33ef5952c0c41a256a0e4c2437/ty-0.0.31-py3-none-win_amd64.whl", hash = "sha256:81134e25d2a2562ab372f24de8f9bd05034d27d30377a5d7540f259791c6234c", size = 11205258, upload-time = "2026-04-15T15:47:53.759Z" },
     { url = "https://files.pythonhosted.org/packages/88/39/bca669095ccf0a400af941fdf741578d4c2d6719f1b7f10e6dbec10aa862/ty-0.0.31-py3-none-win_arm64.whl", hash = "sha256:e9cb15fad26545c6a608f40f227af3a5513cb376998ca6feddd47ca7d93ffafa", size = 10590392, upload-time = "2026-04-15T15:47:57.968Z" },
+]
+
+[[package]]
+name = "typer"
+version = "0.24.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "annotated-doc" },
+    { name = "click" },
+    { name = "rich" },
+    { name = "shellingham" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f5/24/cb09efec5cc954f7f9b930bf8279447d24618bb6758d4f6adf2574c41780/typer-0.24.1.tar.gz", hash = "sha256:e39b4732d65fbdcde189ae76cf7cd48aeae72919dea1fdfc16593be016256b45", size = 118613, upload-time = "2026-02-21T16:54:40.609Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4a/91/48db081e7a63bb37284f9fbcefda7c44c277b18b0e13fbc36ea2335b71e6/typer-0.24.1-py3-none-any.whl", hash = "sha256:112c1f0ce578bfb4cab9ffdabc68f031416ebcc216536611ba21f04e9aa84c9e", size = 56085, upload-time = "2026-02-21T16:54:41.616Z" },
 ]
 
 [[package]]
