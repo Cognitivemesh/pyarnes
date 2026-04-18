@@ -119,6 +119,18 @@ When you want generated projects to be able to pin to a stable version:
 
 No PyPI publishing is involved — the entire distribution story rides on git URLs.
 
+## Stable API surface
+
+Adopters pin pyarnes by git ref (`pyarnes_ref` in their Copier answers) and rely on a stable set of public symbols across `pyarnes-core`, `pyarnes-harness`, `pyarnes-guardrails`, and `pyarnes-bench`. The authoritative list lives in [`CHANGELOG.md`](https://github.com/Cognitivemesh/pyarnes/blob/main/CHANGELOG.md) and is enforced in CI by `tests/unit/test_stable_surface.py`.
+
+When you change any of these packages, three rules apply:
+
+1. **Removing or renaming a public symbol is a MAJOR change.** The stability test will fail; update the test, `CHANGELOG.md`, and plan a release announcement.
+2. **Adding a new public symbol is MINOR.** Export it via `__all__`, add it to `CHANGELOG.md` and to `STABLE_SURFACE` in `tests/unit/test_stable_surface.py`.
+3. **Private surfaces** — any `_`-prefixed attribute, log event string, `ToolCallLogger` JSONL field *order*, and the concrete `Lifecycle.history` list type — may change in any release. Do not depend on them from adopter code.
+
+`pyarnes-tasks` is intentionally excluded from this contract because it's dev-infrastructure, not a library. Its stable surface is the CLI — the task names and their `[tool.pyarnes-tasks]` keys — documented in `docs/packages/tasks.md`.
+
 ## Known constraints
 
 - Python 3.13+ only. The template pins `>=3.13` and pyarnes's own code uses 3.13 features (match statements, frozen slotted dataclasses).
