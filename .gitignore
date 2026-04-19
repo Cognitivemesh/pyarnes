@@ -155,10 +155,7 @@ venv.bak/
 /site
 
 # Graph tools (opt-in via `uv sync --group graph`)
-# graphify outputs to docs/assets/graph/; .gitkeep is tracked, rest is regenerated.
-docs/assets/graph/*
-!docs/assets/graph/.gitkeep
-# code-review-graph's working dir
+docs/assets/graph/
 .code-review-graph/
 
 # mypy

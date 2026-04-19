@@ -1,6 +1,0 @@
-flowchart LR
-    A[Land PRs on main] --> B[uv run tasks check]
-    B --> C[Bump CHANGELOG Unreleased<br/>into vX.Y.Z section]
-    C --> D[git tag vX.Y.Z]
-    D --> E[git push --tags]
-    E --> F[Announce]

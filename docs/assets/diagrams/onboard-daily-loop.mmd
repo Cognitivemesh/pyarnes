@@ -1,8 +1,0 @@
-flowchart LR
-    Clone[git clone] --> Sync[uv sync]
-    Sync --> Check[uv run tasks check]
-    Check --> Watch[uv run tasks watch]
-    Watch --> Edit[Edit code]
-    Edit --> Watch
-    Watch --> Commit[Commit + PR]
-    Commit --> Check

@@ -1,8 +1,0 @@
-flowchart TD
-    Tool[Tool raises exception]
-    Tool --> Classify{Error type?}
-    Classify -->|TransientError| Retry[Retry up to 2x<br/>with exponential backoff]
-    Classify -->|LLMRecoverableError| Feedback[ToolMessage is_error=True<br/>model self-corrects]
-    Classify -->|UserFixableError| Human[Raise to caller<br/>human intervenes]
-    Classify -->|anything else| Bubble[Wrap in UnexpectedError<br/>raise to caller]
-    Retry -->|exhausted| Feedback

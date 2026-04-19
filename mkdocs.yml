@@ -51,10 +51,6 @@ plugins:
   - tags
   - section-index
   - glightbox
-  - git-revision-date-localized:
-      enable_creation_date: true
-      type: date
-      fallback_to_build_date: true
   - redirects:
       redirect_maps:
         template.md: adopter/bootstrap/scaffold.md
@@ -135,9 +131,6 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - toc:
       permalink: true
-
-not_in_nav: |
-  /assets/diagrams/README.md
 
 nav:
   - Home: index.md
