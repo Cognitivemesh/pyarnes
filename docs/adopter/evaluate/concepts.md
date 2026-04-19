@@ -29,7 +29,7 @@ The library is small on purpose. Six rules explain every decision.
 
 1. **Async-first** — all tool execution uses `asyncio` to avoid GIL contention. The `AgentLoop` dispatches tool calls as async operations. *(If you have never written async Python: it means the loop can wait on slow operations like LLM calls without freezing everything else. You do not need to understand asyncio internals to use pyarnes.)*
 
-2. **Structured logging** — every event is emitted as JSONL on **stderr** via `loguru`. Stdout is reserved for tool results. See [Logging](../../reference/logging.md) for configuration.
+2. **Structured logging** — every event is emitted as JSONL on **stderr** via `loguru`. Stdout is reserved for tool results. See [Logging](logging.md) for configuration.
 
 3. **Error taxonomy** — four error types ensure failures are always routed correctly: retry, feed back, interrupt, or bubble up. See the [full error table](#four-error-types) below.
 
@@ -50,7 +50,7 @@ When a tool fails, pyarnes classifies the failure into one of four categories an
 | `UserFixableError` | Missing API key, permission denied | Interrupts the loop for human input |
 | `UnexpectedError` | Bug in your tool code | Bubbles up for debugging |
 
-Full routing diagram and field reference: [reference/errors.md](../../reference/errors.md).
+Full routing diagram and field reference: [Error taxonomy](errors.md).
 
 ## Session lifecycle
 
@@ -68,7 +68,7 @@ stateDiagram-v2
     FAILED --> [*]
 ```
 
-Full transition table and REST API: [reference/lifecycle.md](../../reference/lifecycle.md).
+Full transition table and REST API: [Lifecycle](lifecycle.md).
 
 ## Next step
 

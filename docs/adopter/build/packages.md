@@ -52,7 +52,7 @@ logger = get_logger(__name__)
 logger.info("starting up")
 ```
 
-Reference: [types](../../reference/types.md) · [errors](../../reference/errors.md) · [lifecycle](../../reference/lifecycle.md) · [logging](../../reference/logging.md)
+Reference: [pyarnes-core deep dive](../../maintainer/packages/core.md) · [error taxonomy](../evaluate/errors.md) · [lifecycle](../evaluate/lifecycle.md) · [logging](../evaluate/logging.md)
 
 ## pyarnes-harness
 
@@ -77,7 +77,7 @@ The runtime engine that drives agent execution.
 
 **Dependencies:** `pyarnes-core` · `pyarnes-guardrails` · `returns`, `toolz`, `more-itertools`, `funcy` (functional utilities).
 
-Reference: [loop](../../reference/loop.md) · [registry](../../reference/registry.md) · [capture](../../reference/capture.md)
+Reference: [pyarnes-harness deep dive](../../maintainer/packages/harness.md) — covers the agent loop, tool registry, and capture system.
 
 ## pyarnes-guardrails
 
@@ -102,7 +102,7 @@ def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
 
 **Dependencies:** `pyarnes-core` — `UserFixableError` error type and logging.
 
-Reference: [guardrails](../../reference/guardrails.md)
+Reference: [pyarnes-guardrails deep dive](../../maintainer/packages/guardrails.md)
 
 ## pyarnes-bench
 

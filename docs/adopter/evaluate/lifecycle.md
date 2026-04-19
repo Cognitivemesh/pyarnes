@@ -1,7 +1,7 @@
 ---
-persona: both
+persona: adopter
 level: L2
-tags: [reference, lifecycle]
+tags: [adopter, evaluate, lifecycle]
 ---
 
 # Lifecycle

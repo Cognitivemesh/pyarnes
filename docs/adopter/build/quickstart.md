@@ -155,4 +155,4 @@ curl -X POST http://localhost:8000/api/v1/eval \
 ## See also
 
 - [Packages overview](packages.md) — what each `pyarnes-*` package provides.
-- [Agent Loop reference](../../reference/loop.md), [Guardrails reference](../../reference/guardrails.md), [Capture reference](../../reference/capture.md).
+- [pyarnes-harness deep dive](../../maintainer/packages/harness.md) (agent loop, capture) · [pyarnes-guardrails deep dive](../../maintainer/packages/guardrails.md).

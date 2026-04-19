@@ -57,4 +57,4 @@ You do not need to be a Python expert. pyarnes hides most of the async / datacla
 
 ## Need the API details?
 
-All public symbols live under [Reference](../reference/types.md) — the stable surface both adopters and maintainers rely on.
+Public-API signatures live alongside their owning package under [Maintainer › Packages](../maintainer/packages/core.md). Adopter-facing concepts (error taxonomy, lifecycle FSM, logging) live in [Evaluate](evaluate/errors.md).

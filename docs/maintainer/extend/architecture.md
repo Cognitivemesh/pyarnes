@@ -149,4 +149,4 @@ The canonical wiring for this pattern lives in the Copier template under [`templ
 
 - [Extension rules](rules.md) — what must go where when adding new surfaces.
 - [Evolving workflow](workflow.md) — full contributor walkthrough.
-- [Reference → Errors](../../reference/errors.md) and [Reference → Lifecycle](../../reference/lifecycle.md).
+- [Error taxonomy](../../adopter/evaluate/errors.md) and [Lifecycle](../../adopter/evaluate/lifecycle.md) (shared with adopters).

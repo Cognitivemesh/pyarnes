@@ -81,4 +81,4 @@ pyarnes solves all of these with a single `AgentLoop` + guardrails + lifecycle F
 
 ## Reference
 
-All public symbols live under [Reference](reference/types.md) — the stable API surface both adopters and maintainers rely on.
+Public-API signatures live alongside their owning package under [Maintainer › Packages](maintainer/packages/core.md). Adopter-facing concepts (error taxonomy, lifecycle FSM, logging) live in [Adopter › Evaluate](adopter/evaluate/errors.md).

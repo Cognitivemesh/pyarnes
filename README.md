@@ -45,7 +45,7 @@ uv run tasks check        # lint + typecheck + test
 uv run tasks watch        # TDD watch mode
 ```
 
-See [docs/maintainer/onboard/setup.md](docs/maintainer/onboard/setup.md) for the full contributor workflow, [docs/maintainer/extend/workflow.md](docs/maintainer/extend/workflow.md) for adding packages and editing the template, and [docs/maintainer/extend/template.md](docs/maintainer/extend/template.md) for smoke-testing the result. Feature specs live in [`specs/`](specs/).
+See [docs/maintainer/onboard/setup.md](docs/maintainer/onboard/setup.md) for the full contributor workflow, [docs/maintainer/extend/workflow.md](docs/maintainer/extend/workflow.md) for adding packages and editing the template, and [docs/maintainer/extend/template.md](docs/maintainer/extend/template.md) for smoke-testing the result. For a practical walkthrough of how each package works internally — module layout, key flows, extension points, and the public API for each surface — see [docs/maintainer/packages/](docs/maintainer/packages/). Claude Code skills that ship with the template are documented at [docs/maintainer/extend/skills.md](docs/maintainer/extend/skills.md); adopters see [docs/adopter/build/skills.md](docs/adopter/build/skills.md). Feature specs live in [`specs/`](specs/).
 
 ## Available tasks
 

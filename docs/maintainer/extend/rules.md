@@ -17,7 +17,7 @@ Rules of thumb for contributors adding new surfaces without breaking adopters.
 1. Code lives under `packages/guardrails/src/pyarnes_guardrails/`. If it's general-purpose (adopter-agnostic), add it to `guardrails.py`. If it belongs to one adopter pattern, add it under that adopter's `guardrails.py` instead.
 2. Export general-purpose guardrails from `packages/guardrails/src/pyarnes_guardrails/__init__.py` — add the class name to `__all__` and update `CHANGELOG.md` under `## [Unreleased] → Added`.
 3. Add the class to `STABLE_SURFACE["pyarnes_guardrails"]` in `tests/unit/test_stable_surface.py`.
-4. Add an example to `docs/reference/guardrails.md` showing the `check(tool_name, arguments)` contract.
+4. Add an example to `docs/maintainer/packages/guardrails.md § Public API` showing the `check(tool_name, arguments)` contract.
 5. Write a unit test in `tests/unit/test_guardrails.py` covering (a) the blocking case with `UserFixableError` and (b) the pass-through case where the guardrail does not apply.
 
 ## Adding a new `Scorer` subclass
@@ -45,7 +45,7 @@ Checklist before merging:
 - [ ] Export from the package `__init__.py` via `__all__`.
 - [ ] Add to `CHANGELOG.md → ## [Unreleased] → Added`.
 - [ ] Add to `STABLE_SURFACE` in `tests/unit/test_stable_surface.py`.
-- [ ] Mention in the relevant reference page under `docs/reference/`.
+- [ ] Mention in the owning package's deep-dive under `docs/maintainer/packages/` (add to its `## Public API` section).
 - [ ] Ship with at least one unit test plus, if the symbol is user-facing behaviour, a Gherkin feature under `tests/features/`.
 
 ## What to leave private
