@@ -63,6 +63,28 @@ uvx copier update              # round-trip — should apply cleanly with no con
 
 The `scripts/smoke-template.sh` helper automates the structural portion and is invoked before tagging a release.
 
+## Optional graph tools
+
+Two opt-in CLIs build token-efficient code/docs graphs for AI-assistant context. Install via the dedicated group:
+
+```bash
+uv sync --group graph
+```
+
+| Tool | PyPI | What it does |
+|---|---|---|
+| `code-review-graph` | `code-review-graph` | Incremental repo graph + blast-radius queries; ships an MCP server with 28 tools |
+| `graphify` | `graphifyy` (double-y on PyPI) | Multimodal knowledge graph from a folder (code + docs + images) → interactive `graph.html` |
+
+Task-runner entries (skipped silently when the group is not synced):
+
+```bash
+uv run tasks graph:blast packages/core/src/pyarnes_core/errors.py   # impact cone
+uv run tasks graph:render                                            # writes docs/assets/graph/
+```
+
+Adopters can opt in at scaffold time via the `enable_code_graph` Copier question — that wires `code-review-graph`'s MCP server into the generated project's `.claude/mcp.json`.
+
 ## See also
 
 - [Extension rules](rules.md) — invariants that every change must preserve.

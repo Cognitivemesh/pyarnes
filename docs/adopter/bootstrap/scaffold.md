@@ -19,7 +19,8 @@ flowchart TD
     Q3 --> Q4[pyarnes_ref]
     Q4 --> Q5[adopter_shape]
     Q5 --> Q6[enable_dev_hooks]
-    Q6 --> Gen[Copier generates project]
+    Q6 --> Q7[enable_code_graph]
+    Q7 --> Gen[Copier generates project]
     Gen --> Sync[uv sync<br/>resolves 5 pyarnes-* deps]
     Sync --> Check[uv run tasks check]
 ```
@@ -40,6 +41,7 @@ uvx copier copy gh:Cognitivemesh/pyarnes my-awesome-agent
 | `pyarnes_ref` | `main` | git ref that the five pyarnes deps pin to |
 | `adopter_shape` | `blank` | reference shape (blank / pii-redaction / s3-sweep / rtm-toggl-agile) |
 | `enable_dev_hooks` | auto | wire pyarnes into Claude Code dev-time hooks |
+| `enable_code_graph` | `false` | wire `code-review-graph` MCP server into `.claude/mcp.json` for blast-radius context |
 
 **No author name or email is asked.** The generated `pyproject.toml` omits the `authors` field — PEP 621 allows that, and developers can add it later.
 

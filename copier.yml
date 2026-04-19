@@ -24,6 +24,8 @@ _exclude:
   - "{% if not enable_dev_hooks %}.claude/settings.json{% endif %}"
   - "{% if not enable_dev_hooks %}tests/bench{% endif %}"
   - "{% if not enable_dev_hooks %}tests/bench/**{% endif %}"
+  # MCP wiring for code-review-graph ships only when enable_code_graph is true.
+  - "{% if not enable_code_graph %}.claude/mcp.json{% endif %}"
 
 # ---------------------------------------------------------------------------
 # Prompts
@@ -65,6 +67,11 @@ enable_dev_hooks:
   type: bool
   help: "Wire pyarnes into Claude Code hooks to harness the coding agent during development? (Adopter C pattern)"
   default: "{{ adopter_shape == 'rtm-toggl-agile' }}"
+
+enable_code_graph:
+  type: bool
+  help: "Wire code-review-graph MCP server into .claude/mcp.json? (adds blast-radius context for your agent)"
+  default: false
 
 # ---------------------------------------------------------------------------
 # Computed values — not asked, just derived

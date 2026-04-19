@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant You
+    participant uv
+    participant Workspace as pyarnes workspace
+    You->>uv: uv sync
+    uv->>Workspace: resolve 5 pyarnes-* packages
+    Workspace-->>uv: lockfile written
+    uv-->>You: env ready
+    You->>uv: uv run tasks check
+    uv->>Workspace: lint + typecheck + test
+    Workspace-->>You: green ✓

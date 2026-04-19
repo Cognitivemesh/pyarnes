@@ -90,6 +90,14 @@ dev = [
     "copier>=9.4",
 ]
 
+# Optional graph-tools group — install with `uv sync --group graph`.
+# These build token-efficient code/docs graphs for AI-assistant context.
+# Kept out of `dev` because they pull heavy native deps (tree-sitter, Whisper).
+graph = [
+    "code-review-graph>=0.1",   # blast-radius CLI + MCP server (28 tools)
+    "graphifyy>=0.1",           # multimodal knowledge-graph CLI (pkg name double-y)
+]
+
 # ---------------------------------------------------------------------------
 # Ruff  –  linting + formatting
 # ---------------------------------------------------------------------------
