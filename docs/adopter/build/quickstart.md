@@ -127,31 +127,6 @@ Each line in the JSONL file looks like:
 {"tool": "read_file", "arguments": {"path": "a.py"}, "result": "...", "is_error": false, "started_at": "2026-04-17T15:00:00+00:00", "finished_at": "2026-04-17T15:00:01+00:00", "duration_seconds": 0.42}
 ```
 
-## 6. Use the REST API
-
-Start the API server and manage everything over HTTP:
-
-```bash
-uv run uvicorn pyarnes_api.app:app --reload
-```
-
-```bash
-# Check guardrails
-curl -X POST http://localhost:8000/api/v1/guardrails/check \
-  -H "Content-Type: application/json" \
-  -d '{"tool_name": "shell", "arguments": {"command": "ls -la"}}'
-
-# Manage lifecycle
-curl -X POST http://localhost:8000/api/v1/lifecycle/transition \
-  -H "Content-Type: application/json" \
-  -d '{"action": "start"}'
-
-# Run evaluations
-curl -X POST http://localhost:8000/api/v1/eval \
-  -H "Content-Type: application/json" \
-  -d '{"scenarios": [{"scenario": "test1", "expected": "hello", "actual": "hello"}]}'
-```
-
 ## See also
 
 - [Packages overview](packages.md) — what each `pyarnes-*` package provides.

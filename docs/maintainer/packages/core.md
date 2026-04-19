@@ -45,7 +45,7 @@ See the canonical routing diagram and field reference: [Error taxonomy](../../ad
 
 ### Lifecycle transition
 
-See the canonical state diagram, valid transitions, and REST API: [Lifecycle](../../adopter/evaluate/lifecycle.md). Each transition writes a structured event via `get_logger("pyarnes_core.lifecycle")` and appends to `Lifecycle.history`. Invalid transitions raise `ValueError` — the FSM refuses silently-wrong state.
+See the canonical state diagram and valid transitions: [Lifecycle](../../adopter/evaluate/lifecycle.md). Each transition writes a structured event via `get_logger("pyarnes_core.lifecycle")` and appends to `Lifecycle.history`. Invalid transitions raise `ValueError` — the FSM refuses silently-wrong state.
 
 ## Public API
 

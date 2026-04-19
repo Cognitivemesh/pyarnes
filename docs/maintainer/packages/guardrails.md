@@ -147,15 +147,6 @@ chain = GuardrailChain(guardrails=[
 chain.check("shell", {"command": "ls -la", "path": "/workspace/src"})
 ```
 
-### Via the HTTP API
-
-```bash
-curl -X POST http://localhost:8000/api/v1/guardrails/check \
-  -H "Content-Type: application/json" \
-  -d '{"tool_name": "shell", "arguments": {"command": "sudo rm -rf /"}}'
-# {"allowed": false, "violation": "Command blocked by pattern: \\bsudo\\b"}
-```
-
 ## Extension points
 
 - **Domain guardrail:** subclass `Guardrail`, implement `check()`. Example: a `VerificationCompleteGuardrail` that blocks `delete_bucket` until a `VerifyStore.is_complete(bucket)` flag flips. Drop it into a chain — no registration needed.

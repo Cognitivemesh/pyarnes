@@ -83,4 +83,3 @@ Step definitions are in `tests/features/steps/`.
 | **pytest-cov** | Coverage reporting |
 | **pytest-sugar** | Pretty test output |
 | **hypothesis** | Property-based testing |
-| **httpx** | API test client (via FastAPI TestClient) |

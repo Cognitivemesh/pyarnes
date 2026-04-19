@@ -45,7 +45,7 @@ Tool failures route through one of four categories — `TransientError` (retry),
 
 ## Session lifecycle
 
-Every agent session is a tiny state machine — `INIT → RUNNING ↔ PAUSED → COMPLETED | FAILED`. You can always ask "what phase is this session in?" and get a definite answer. Full state diagram, transition table, and REST API: [Lifecycle](lifecycle.md).
+Every agent session is a tiny state machine — `INIT → RUNNING ↔ PAUSED → COMPLETED | FAILED`. You can always ask "what phase is this session in?" and get a definite answer. Full state diagram and transition table: [Lifecycle](lifecycle.md).
 
 ## Next step
 
