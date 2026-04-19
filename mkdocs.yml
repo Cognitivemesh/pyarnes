@@ -49,6 +49,61 @@ theme:
 plugins:
   - search
   - tags
+  - section-index
+  - glightbox
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: date
+      fallback_to_build_date: true
+  - redirects:
+      redirect_maps:
+        template.md: adopter/bootstrap/scaffold.md
+        getting-started/installation.md: adopter/bootstrap/install.md
+        getting-started/quickstart.md: adopter/build/quickstart.md
+        getting-started/distribution.md: adopter/evaluate/distribution.md
+        architecture/overview.md: maintainer/extend/architecture.md
+        architecture/errors.md: reference/errors.md
+        architecture/lifecycle.md: reference/lifecycle.md
+        architecture/meta-use.md: maintainer/extend/architecture.md
+        packages/core.md: adopter/build/packages.md
+        packages/harness.md: adopter/build/packages.md
+        packages/guardrails.md: adopter/build/packages.md
+        packages/bench.md: adopter/build/packages.md
+        packages/tasks.md: adopter/build/tasks.md
+        api/types.md: reference/types.md
+        api/errors.md: reference/errors.md
+        api/lifecycle.md: reference/lifecycle.md
+        api/loop.md: reference/loop.md
+        api/guardrails.md: reference/guardrails.md
+        api/registry.md: reference/registry.md
+        api/capture.md: reference/capture.md
+        api/logging.md: reference/logging.md
+        development/tasks.md: adopter/build/tasks.md
+        development/testing.md: maintainer/onboard/testing.md
+        development/extending.md: maintainer/extend/rules.md
+        development/evolving.md: maintainer/onboard/setup.md
+        development/template.md: maintainer/extend/template.md
+        development/release.md: maintainer/release.md
+
+extra:
+  analytics:
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/thumb-up-outline
+          name: Yes, this page was helpful
+          data: good
+          note: Thanks for your feedback.
+        - icon: material/thumb-down-outline
+          name: This page could be improved
+          data: bad
+          note: >-
+            Thanks — please
+            <a href="https://github.com/Cognitivemesh/pyarnes/issues/new" target="_blank">open an issue</a>
+            so we can improve this page.
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Cognitivemesh/pyarnes
 
 extra_css:
   - stylesheets/extra.css
@@ -119,3 +174,4 @@ nav:
       - Tool registry: reference/registry.md
       - Capture: reference/capture.md
       - Logging: reference/logging.md
+      - MCP tools (optional): reference/mcp-tools.md
