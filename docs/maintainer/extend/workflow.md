@@ -79,9 +79,11 @@ uv sync --group graph
 Task-runner entries (skipped silently when the group is not synced):
 
 ```bash
-uv run tasks graph:blast packages/core/src/pyarnes_core/errors.py   # impact cone
-uv run tasks graph:render                                            # writes docs/assets/graph/
+uv run tasks graph:blast -- packages/core/src/pyarnes_core/errors.py   # impact cone
+uv run tasks graph:render                                               # writes docs/assets/graph/
 ```
+
+The `--` separator forwards every argument after it to the task's underlying command, so `graph:blast` receives the file path as its positional argument.
 
 Adopters can opt in at scaffold time via the `enable_code_graph` Copier question — that wires `code-review-graph`'s MCP server into the generated project's `.claude/mcp.json`.
 
