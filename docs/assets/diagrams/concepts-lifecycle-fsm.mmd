@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> INIT
+    INIT --> RUNNING: start()
+    RUNNING --> PAUSED: pause()
+    PAUSED --> RUNNING: resume()
+    RUNNING --> COMPLETED: complete()
+    INIT --> FAILED: fail()
+    RUNNING --> FAILED: fail()
+    PAUSED --> FAILED: fail()
+    COMPLETED --> [*]
+    FAILED --> [*]

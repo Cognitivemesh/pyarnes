@@ -1,8 +1,49 @@
+---
+tags: [home]
+hide:
+  - navigation
+---
+
 # pyarnes
 
 > A minimal agentic harness engineering template for Python.
 
 **pyarnes** adds verification loops, safety enforcement, and lifecycle management that AI coding tools miss. It captures raw outputs and errors, feeds that reality back to the model, applies guardrails around what the system can touch, and makes every step visible and debuggable.
+
+## Pick your path
+
+```mermaid
+flowchart LR
+    Home([You are here])
+    Home --> Adopter{I want to<br/>use pyarnes}
+    Home --> Maintainer{I want to<br/>work on pyarnes}
+    Adopter --> E1[Evaluate]
+    Adopter --> B1[Bootstrap]
+    Adopter --> Bu1[Build]
+    Maintainer --> O1[Onboard]
+    Maintainer --> Ex1[Extend]
+    Maintainer --> R1[Release]
+```
+
+<div class="grid cards" markdown>
+
+- :material-package-variant:{ .lg .middle } **Adopter** &nbsp;{ .badge-adopter }
+
+    ---
+
+    Scaffold a new project that depends on pyarnes via git URLs. Build your own agent on top.
+
+    [:octicons-arrow-right-24: Start the adopter journey](adopter/index.md){ .md-button .md-button--primary }
+
+- :material-tools:{ .lg .middle } **Maintainer** &nbsp;{ .badge-maintainer }
+
+    ---
+
+    Contribute to pyarnes itself — packages, template, releases.
+
+    [:octicons-arrow-right-24: Start the maintainer journey](maintainer/index.md){ .md-button }
+
+</div>
 
 ## What problem does it solve?
 
@@ -27,38 +68,17 @@ pyarnes solves all of these with a single `AgentLoop` + guardrails + lifecycle F
 | **JSONL logging** | Every event logged as structured JSON to stderr via loguru |
 | **Eval framework** | Score agent outputs with pluggable scorers (exact match, custom) |
 
-## Two ways to use pyarnes
+## Three journeys per persona
 
-### A. As a template — bootstrap your own project
+| Persona | Journey | Starts at |
+|---|---|---|
+| **Adopter** | Evaluate | [Core concepts](adopter/evaluate/concepts.md) |
+| **Adopter** | Bootstrap | [Scaffold a project](adopter/bootstrap/scaffold.md) |
+| **Adopter** | Build | [Quick start](adopter/build/quickstart.md) |
+| **Maintainer** | Onboard | [Dev setup](maintainer/onboard/setup.md) |
+| **Maintainer** | Extend | [Architecture & meta-use](maintainer/extend/architecture.md) |
+| **Maintainer** | Release | [Release workflow](maintainer/release.md) |
 
-```bash
-uvx copier copy gh:Cognitivemesh/pyarnes my-awesome-agent
-cd my-awesome-agent
-uv sync                  # pulls the 5 pyarnes-* packages as git-URL deps
-uv run tasks check       # lint + typecheck
-```
+## Reference
 
-No PyPI publishing, no copied source, no `packages/` or `tests/` in your repo — just five `pyarnes-*` dependencies pinned via git URL. Full walkthrough: [Use as template](template.md).
-
-### B. As a monorepo — contribute to pyarnes itself
-
-```bash
-git clone https://github.com/Cognitivemesh/pyarnes.git
-cd pyarnes
-uv sync                  # install all workspace packages + dev deps
-uv run tasks check       # lint + typecheck + test
-uv run tasks watch       # TDD watch mode
-uv run tasks help        # see all tasks
-```
-
-See [Evolving pyarnes](development/evolving.md) for the contributor workflow, adding a new package, editing the template, and the feature-spec process.
-
-## Packages
-
-| Package | Description |
-|---|---|
-| [`pyarnes-core`](packages/core.md) | Types, errors, lifecycle, JSONL logging |
-| [`pyarnes-harness`](packages/harness.md) | Agent loop, tool registry, output capture |
-| [`pyarnes-guardrails`](packages/guardrails.md) | Composable safety guardrails |
-| [`pyarnes-bench`](packages/bench.md) | Evaluation and benchmarking toolkit |
-
+All public symbols live under [Reference](reference/types.md) — the stable API surface both adopters and maintainers rely on.

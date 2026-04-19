@@ -1,0 +1,10 @@
+flowchart LR
+    Core[pyarnes-core<br/>types, errors, lifecycle, logging]
+    Guardrails[pyarnes-guardrails<br/>safety checks]
+    Harness[pyarnes-harness<br/>loop, registry, capture]
+    Bench[pyarnes-bench<br/>evaluation]
+
+    Guardrails --> Core
+    Harness --> Core
+    Harness --> Guardrails
+    Bench --> Core

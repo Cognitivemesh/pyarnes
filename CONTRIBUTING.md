@@ -30,7 +30,7 @@ The TDD discipline is **Red → Green → Refactor**.
   library-first posture and double as CI regression tests.
 - `template/` + `copier.yml` — the Copier template adopters use to
   scaffold their projects. See
-  [`docs/development/template.md`](docs/development/template.md).
+  [`docs/maintainer/extend/template.md`](docs/maintainer/extend/template.md).
 - `tests/unit/` — unit tests. `tests/features/` — Gherkin/pytest-bdd.
   `tests/template/` — Copier template smoke tests.
 - `specs/` — feature specifications. Non-trivial work starts with a spec
@@ -50,11 +50,11 @@ The TDD discipline is **Red → Green → Refactor**.
 
 ## Links
 
-- Full contributor docs: [`docs/development/`](docs/development/)
+- Full contributor docs: [`docs/maintainer/`](docs/maintainer/)
 - Stable surface and semver policy: [`CHANGELOG.md`](CHANGELOG.md)
-- Release workflow: [`docs/development/release.md`](docs/development/release.md)
-- Extending the library without breaking adopters: [`docs/development/extending.md`](docs/development/extending.md)
-- Evolving the Copier template: [`docs/development/template.md`](docs/development/template.md)
+- Release workflow: [`docs/maintainer/release.md`](docs/maintainer/release.md)
+- Extending the library without breaking adopters: [`docs/maintainer/extend/rules.md`](docs/maintainer/extend/rules.md)
+- Evolving the Copier template: [`docs/maintainer/extend/template.md`](docs/maintainer/extend/template.md)
 
 ## Reporting issues
 

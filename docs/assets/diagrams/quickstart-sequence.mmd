@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant User
+    participant Loop as AgentLoop
+    participant Guard as GuardrailChain
+    participant Tool as ReadFileTool
+    participant Model as MyModel
+
+    User->>Loop: run([{role: user, content: Read main.py}])
+    Loop->>Model: next_action(messages)
+    Model-->>Loop: tool_call(read_file, {path: ...})
+    Loop->>Guard: check(read_file, {path: ...})
+    Guard-->>Loop: ok
+    Loop->>Tool: execute({path: ...})
+    Tool-->>Loop: file contents
+    Loop->>Model: next_action(messages + tool_result)
+    Model-->>Loop: final_answer
+    Loop-->>User: messages

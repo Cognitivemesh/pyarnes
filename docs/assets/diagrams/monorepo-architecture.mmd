@@ -1,0 +1,11 @@
+graph TB
+    Core[pyarnes-core<br/>types, errors, lifecycle, logging]
+    Guardrails[pyarnes-guardrails]
+    Harness[pyarnes-harness<br/>loop, registry, capture]
+    Bench[pyarnes-bench]
+    Tasks[pyarnes-tasks<br/>CLI entrypoint]
+
+    Guardrails --> Core
+    Harness --> Core
+    Harness --> Guardrails
+    Bench --> Core
