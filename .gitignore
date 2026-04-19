@@ -10,8 +10,6 @@ __pycache__/
 .Python
 /build/
 develop-eggs/
-# `build/` above is anchored to the repo root so it does not shadow
-# docs/adopter/build/ (a nav section named "Build").
 dist/
 downloads/
 eggs/

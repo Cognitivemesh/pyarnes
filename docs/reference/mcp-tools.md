@@ -32,15 +32,7 @@ From any terminal with the `graph` group installed:
 uvx code-review-graph list-tools
 ```
 
-The server's tool catalogue is maintained upstream — see the [code-review-graph README](https://github.com/tirth8205/code-review-graph) for the current list. Common categories:
-
-| Category | Example tools | What they do |
-|---|---|---|
-| Graph build & refresh | `index`, `refresh`, `watch` | Build or incrementally update the SQLite graph for the current repo |
-| Blast radius | `blast`, `impact`, `reverse-deps` | Show which callers / files are affected by a change |
-| Semantic search | `search`, `nearest` | Find code by meaning, not just by name |
-| Export | `export-graphml`, `export-cypher`, `export-obsidian` | Snapshot the graph for external visualization |
-| Community detection | `communities`, `architecture` | Group related code into implicit modules |
+The exact tool names and signatures live in the [code-review-graph README](https://github.com/tirth8205/code-review-graph) and evolve upstream. Typical capabilities include: building/refreshing an incremental code graph, querying the blast radius of a file or function, semantic search across the repo, exporting to GraphML / Neo4j Cypher / Obsidian, and community detection for implicit modules. Run `uvx code-review-graph list-tools` for the authoritative list in your pinned version.
 
 ## Running without MCP
 

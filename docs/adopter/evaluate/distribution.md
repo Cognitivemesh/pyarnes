@@ -31,11 +31,11 @@ The split matters because it keeps `pyarnes-harness` CLI-free (a 40-line Typer c
 
 ## The three reference adopters
 
-The monorepo ships three in-tree reference implementations under [`packages/example-*`](https://github.com/Cognitivemesh/pyarnes/tree/main/packages). Each is selectable at scaffold time via the Copier `adopter_shape` question:
+The pyarnes repo no longer ships in-tree example packages — three reference shapes are documented as specs in [`specs/`](https://github.com/Cognitivemesh/pyarnes/tree/main/specs). Each is selectable at scaffold time via the Copier `adopter_shape` question:
 
-- **Adopter A — `pii-redaction`**: document ingest → text extraction → PII detection → redaction → markdown → TF-IDF keyword ranking.
-- **Adopter B — `s3-sweep`**: list bucket → download all objects → verify checksum → **`delete_bucket` gated by `VerificationCompleteGuardrail`**.
-- **Adopter C — `rtm-toggl-agile`**: RTM tasks + Toggl time entries → normalised agile backend. Opts into the meta-use pattern (Claude Code hooks import the pyarnes surface to harness the coding agent itself).
+- **Adopter A — `pii-redaction`**: document ingest → text extraction → PII detection → redaction → markdown → TF-IDF keyword ranking. See [`specs/03-examples-adopter-a-and-b.md`](https://github.com/Cognitivemesh/pyarnes/blob/main/specs/03-examples-adopter-a-and-b.md).
+- **Adopter B — `s3-sweep`**: list bucket → download all objects → verify checksum → **`delete_bucket` gated by `VerificationCompleteGuardrail`**. Same spec as Adopter A.
+- **Adopter C — `rtm-toggl-agile`**: RTM tasks + Toggl time entries → normalised agile backend. Opts into the meta-use pattern (Claude Code hooks import the pyarnes surface to harness the coding agent itself). See [`specs/04-template-adopter-c-meta-use.md`](https://github.com/Cognitivemesh/pyarnes/blob/main/specs/04-template-adopter-c-meta-use.md).
 
 A fourth `blank` shape stamps out a minimal scaffold without shape-specific stubs.
 

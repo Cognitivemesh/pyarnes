@@ -134,7 +134,8 @@ def _print_help(tasks: dict[str, list[str]]) -> None:
         print(f"  {comp:<16} -> {' + '.join(parts)}")  # noqa: T201
 
 
-def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: list[str] | None = None) -> int:
+def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: tuple[str, ...] = ()) -> int:
+    # Composite tasks ignore `extra` — they dispatch to sub-tasks that each take their own args.
     if name in COMPOSITE_TASKS:
         for sub in COMPOSITE_TASKS[name]:
             code = _run_task(sub, tasks, root)
@@ -148,11 +149,10 @@ def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: list[st
         _print_help(tasks)
         return 1
 
-    full_cmd = [*cmd, *(extra or [])]
     print(f"\n{'─' * 60}")  # noqa: T201
     print(f"  ▶ {name}")  # noqa: T201
     print(f"{'─' * 60}\n")  # noqa: T201
-    code = subprocess.run(full_cmd, check=False, cwd=root).returncode  # noqa: S603  # nosec B603
+    code = subprocess.run([*cmd, *extra], check=False, cwd=root).returncode  # noqa: S603  # nosec B603
     if name in _PYTEST_COLLECTION_TASKS and code == _PYTEST_NO_TESTS_EXIT_CODE:
         return 0
     return code
@@ -161,9 +161,7 @@ def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: list[st
 def main() -> NoReturn:
     """Entry-point: ``uv run tasks <task> [task ...] [-- extra-args]``.
 
-    A ``--`` separator forwards remaining arguments to the **last** task
-    in the list — useful for tasks that accept file paths or flags, e.g.
-    ``uv run tasks graph:blast -- packages/core/src/file.py``.
+    ``--`` forwards everything after it to the last task.
     """
     tasks, root = _build_tasks()
     args = sys.argv[1:]
@@ -171,17 +169,16 @@ def main() -> NoReturn:
         _print_help(tasks)
         raise SystemExit(0)
 
-    # Split on `--`: task names on the left, forwarded args on the right.
-    if "--" in args:
+    try:
         sep = args.index("--")
-        task_names, extra = args[:sep], args[sep + 1 :]
+    except ValueError:
+        task_names, extra = args, ()
     else:
-        task_names, extra = args, []
+        task_names, extra = args[:sep], tuple(args[sep + 1 :])
 
+    last = len(task_names) - 1
     for i, task_name in enumerate(task_names):
-        # Only the last task receives the forwarded extra args.
-        task_extra = extra if i == len(task_names) - 1 else None
-        code = _run_task(task_name, tasks, root, task_extra)
+        code = _run_task(task_name, tasks, root, extra if i == last else ())
         if code != 0:
             raise SystemExit(code)
     raise SystemExit(0)
