@@ -28,26 +28,7 @@ Anything under `template/.claude/skills/` is stamped into every scaffolded proje
 
 ## Anatomy of a SKILL.md
 
-```markdown
----
-name: skill-name
-description: One-sentence purpose. Must include trigger phrasing so Claude Code activates on the right utterances ("Use when the user asks to X, Y, or Z").
----
-
-# skill-name — short H1
-
-## When this skill activates
-
-Typical user phrasings (bullet list).
-
-## What the skill does
-
-Numbered steps the agent should execute. Be specific about file paths,
-the task runner commands to use (`uv run tasks …`), and the conventions
-to follow (async-first, structured logging, Red → Green → Refactor, etc.).
-```
-
-The frontmatter `name` is how Claude Code references the skill internally. The `description` is what the user sees in auto-complete / skill-picker.
+See the SKILL.md anatomy block in [Adopter › Skills § Adding your own skills](../../adopter/build/skills.md#adding-your-own-skills). The authoring shape is the same; the only difference maintainer-side is the location (`template/.claude/skills/` so the skill ships into every scaffolded project, instead of a single project's `.claude/skills/`).
 
 ## Adding a new skill
 

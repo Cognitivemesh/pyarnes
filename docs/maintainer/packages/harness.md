@@ -10,27 +10,19 @@ The runtime engine that drives agent execution — the async loop, the tool regi
 
 ## Module layout
 
+Inter-package deps live in [Architecture § Package graph](../extend/architecture.md#package-graph). Internal layout:
+
 ```mermaid
 graph TB
-    subgraph pyarnes_harness
-        Loop[loop.py<br/>AgentLoop, LoopConfig, ToolMessage]
-        Registry[tools/registry.py<br/>ToolRegistry]
-        Output[capture/output.py<br/>OutputCapture, CapturedOutput]
-        ToolLog[capture/tool_log.py<br/>ToolCallLogger, ToolCallEntry]
-        GuardrailsReexport[guardrails.py<br/>re-exports pyarnes-guardrails]
-    end
-
-    Core[pyarnes-core<br/>types, errors, lifecycle, logger]
-    Guardrails[pyarnes-guardrails]
+    Loop[loop.py<br/>AgentLoop, LoopConfig, ToolMessage]
+    Registry[tools/registry.py<br/>ToolRegistry]
+    Output[capture/output.py<br/>OutputCapture, CapturedOutput]
+    ToolLog[capture/tool_log.py<br/>ToolCallLogger, ToolCallEntry]
+    GuardrailsReexport[guardrails.py<br/>re-exports pyarnes-guardrails]
 
     Loop --> Registry
     Loop --> ToolLog
     Loop -.optional.-> GuardrailsReexport
-    Loop --> Core
-    Registry --> Core
-    Output --> Core
-    ToolLog --> Core
-    GuardrailsReexport --> Guardrails
 ```
 
 | Module | Role |
@@ -43,9 +35,9 @@ graph TB
 
 ## Why this package exists
 
+Repo-wide rules (async, no-CLI, JSONL-on-stderr, …) live in [Architecture § Cross-cutting design principles](../extend/architecture.md#cross-cutting-design-principles). Package-specific reasons:
+
 - **One loop, not N.** Every pyarnes adopter needs the same four-error routing, the same retry budget, the same captured-output discipline. Moving that into adopter code would duplicate it N times and drift.
-- **Async-first.** `asyncio` keeps tool calls concurrent (if the adopter wants) and avoids blocking the loop on I/O-bound tool work. `execute()` is async; the loop awaits it.
-- **No CLI.** By policy — a Typer/argparse entry point in an adopter's `main.py` is strictly more expressive than a declarative CLI here. See [Extension rules](../extend/rules.md).
 - **Registry is its own object.** Registering tools at module scope is tempting but leaks shared state. `ToolRegistry` instances are cheap; pass `registry.as_dict()` into `AgentLoop`.
 - **Capture is optional and orthogonal.** `OutputCapture` and `ToolCallLogger` can be dropped without changing the loop's behaviour. Different adopters want different observability stacks.
 

@@ -10,17 +10,14 @@ Lightweight evaluation and benchmarking toolkit. Score agent outputs, aggregate 
 
 ## Module layout
 
+Inter-package deps live in [Architecture § Package graph](../extend/architecture.md#package-graph). Internal layout:
+
 ```mermaid
 graph TB
-    subgraph pyarnes_bench
-        Eval[eval.py<br/>EvalResult, EvalSuite]
-        Scorer[scorer.py<br/>Scorer ABC<br/>ExactMatchScorer]
-    end
+    Eval[eval.py<br/>EvalResult, EvalSuite]
+    Scorer[scorer.py<br/>Scorer ABC<br/>ExactMatchScorer]
 
-    Core[pyarnes-core<br/>logger]
     Eval --> Scorer
-    Eval --> Core
-    Scorer --> Core
 ```
 
 | Module | Role |
@@ -30,9 +27,10 @@ graph TB
 
 ## Why this package exists
 
-- **Adopter evaluation, not library benchmarks.** This package exists so adopters can measure whether their agent pipeline actually works. Not for benchmarking pyarnes itself.
+Repo-wide rules live in [Architecture § Cross-cutting design principles](../extend/architecture.md#cross-cutting-design-principles). Package-specific reasons:
+
+- **Adopter evaluation, not library benchmarks.** This package exists so adopters can measure whether their agent pipeline actually works — not for benchmarking pyarnes itself.
 - **Scorer is pluggable.** Exact-match is the 80 % case; fuzzy scorers, LLM-judge scorers, and domain-specific scorers are all adopter responsibilities. The ABC keeps them swap-in.
-- **Immutable results.** `EvalResult` is a frozen record — once scored, it can't mutate. Summaries compose without aliasing surprises.
 - **Zero dep surface.** Only depends on `pyarnes-core`. No test framework, no HTTP, no reporters — stays a library, not a framework.
 
 ## Key flows

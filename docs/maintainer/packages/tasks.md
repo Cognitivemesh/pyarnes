@@ -10,20 +10,7 @@ Cross-platform task runner — replaces `make` with `uv run tasks <name>`. Shipp
 
 ## Module layout
 
-```mermaid
-graph TB
-    subgraph pyarnes_tasks
-        CLI[cli.py<br/>main entry point<br/>_build_tasks<br/>_run_task<br/>COMPOSITE_TASKS]
-    end
-
-    Pyproject[pyproject.toml<br/>.tool.pyarnes-tasks]
-    CLI -->|reads sources + tests| Pyproject
-
-    UV[uv run tasks &lt;name&gt;]
-    UV --> CLI
-```
-
-Single-file package. `cli.py` is the whole thing.
+Inter-package deps live in [Architecture § Package graph](../extend/architecture.md#package-graph). Single-file package — `cli.py` is the whole thing, invoked as `uv run tasks <name>` after reading `[tool.pyarnes-tasks]` from the nearest `pyproject.toml`.
 
 | Module | Role |
 |---|---|
@@ -31,11 +18,12 @@ Single-file package. `cli.py` is the whole thing.
 
 ## Why this package exists
 
-- **Make doesn't run on Windows.** `pyarnes-tasks` uses only Python stdlib + `subprocess`, so it works on Linux, macOS, and Windows identically.
-- **One invocation everywhere.** Whether you're inside the pyarnes monorepo or a freshly scaffolded adopter project, `uv run tasks check` does the right thing. The config lives in each repo's own `pyproject.toml`.
+This is the one exception to the repo-wide "no CLI" rule (see [Architecture § Cross-cutting design principles](../extend/architecture.md#cross-cutting-design-principles)) — `pyarnes-tasks` is dev-infrastructure, never shipped in a production container. Package-specific reasons:
+
+- **Make doesn't run on Windows.** `pyarnes-tasks` uses only Python stdlib + `subprocess`, so Linux, macOS, and Windows behave identically.
+- **One invocation everywhere.** Whether you're inside the pyarnes monorepo or a freshly scaffolded adopter project, `uv run tasks check` does the right thing. Config lives in each repo's own `pyproject.toml`.
 - **No task file.** Adopters don't write Makefiles or justfiles. They set `[tool.pyarnes-tasks] sources = [...]`, done.
 - **Missing-path tolerance.** `uv run tasks check` on a scaffolded project with no `tests/` directory yet still succeeds — missing paths are filtered out, and pytest exit code 5 (no tests collected) is treated as success.
-- **Not a runtime dep.** `pyarnes-tasks` is dev-infrastructure. Adopters install it as a dev dep; it never ships in a production container.
 
 ## Key flows
 

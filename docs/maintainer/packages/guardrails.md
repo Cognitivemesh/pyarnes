@@ -10,20 +10,7 @@ Composable safety checks that run before a tool executes. A guardrail is any obj
 
 ## Module layout
 
-```mermaid
-graph TB
-    subgraph pyarnes_guardrails
-        GuardrailMod[guardrails.py<br/>Guardrail ABC<br/>PathGuardrail<br/>CommandGuardrail<br/>ToolAllowlistGuardrail<br/>GuardrailChain]
-    end
-
-    Core[pyarnes-core<br/>UserFixableError]
-    GuardrailMod --> Core
-
-    Harness[pyarnes-harness<br/>AgentLoop]
-    Harness -.imports via re-export.-> GuardrailMod
-```
-
-Single-file package by design — guardrails are small, composable, and belong together.
+Inter-package deps live in [Architecture § Package graph](../extend/architecture.md#package-graph). Single-file package by design — guardrails are small, composable, and belong together.
 
 | Symbol | Role |
 |---|---|
@@ -35,8 +22,10 @@ Single-file package by design — guardrails are small, composable, and belong t
 
 ## Why this package exists
 
+Repo-wide rules live in [Architecture § Cross-cutting design principles](../extend/architecture.md#cross-cutting-design-principles). Package-specific reasons:
+
 - **Safety is a chain, not a switch.** Adopters compose what they need — path+command for a code-editing agent, tool-allowlist for a research agent, custom guardrails for domain policies.
-- **One error type, routed.** Every guardrail signals with `UserFixableError` from `pyarnes-core` — the loop already knows how to route it (re-raise to caller). No bespoke "blocked" shape.
+- **One error type, routed.** Every guardrail signals with `UserFixableError` from `pyarnes-core` — the loop already knows how to route it. No bespoke "blocked" shape.
 - **Stateless by default.** Each guardrail holds its config (allowed roots, regex list, allowlist set). No session state, no singletons. Testable in isolation.
 - **Tool-call shaped, not function-call shaped.** `check(tool_name, arguments)` matches what the loop already has in hand — no adapter layer between the LLM-produced tool call and the safety gate.
 

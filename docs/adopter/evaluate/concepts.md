@@ -41,34 +41,11 @@ The library is small on purpose. Six rules explain every decision.
 
 ## Four error types
 
-When a tool fails, pyarnes classifies the failure into one of four categories and handles it appropriately — no custom error handling on your side.
-
-| Error | When it fires | What pyarnes does |
-|---|---|---|
-| `TransientError` | Network timeout, rate limit, flaky API | Retries with exponential backoff (max 2 attempts) |
-| `LLMRecoverableError` | Bad JSON, wrong tool args, semantic mistake | Feeds the error back to the model so it self-corrects |
-| `UserFixableError` | Missing API key, permission denied | Interrupts the loop for human input |
-| `UnexpectedError` | Bug in your tool code | Bubbles up for debugging |
-
-Full routing diagram and field reference: [Error taxonomy](errors.md).
+Tool failures route through one of four categories — `TransientError` (retry), `LLMRecoverableError` (feed back to the model), `UserFixableError` (interrupt for human), or `UnexpectedError` (bubble up for debugging). Full table, routing diagram, and field reference: [Error taxonomy](errors.md).
 
 ## Session lifecycle
 
-Every agent session is a tiny state machine. You can always ask "what phase is this session in?" and get a definite answer.
-
-```mermaid
-stateDiagram-v2
-    [*] --> INIT
-    INIT --> RUNNING: start()
-    RUNNING --> PAUSED: pause()
-    PAUSED --> RUNNING: resume()
-    RUNNING --> COMPLETED: complete()
-    RUNNING --> FAILED: fail()
-    COMPLETED --> [*]
-    FAILED --> [*]
-```
-
-Full transition table and REST API: [Lifecycle](lifecycle.md).
+Every agent session is a tiny state machine — `INIT → RUNNING ↔ PAUSED → COMPLETED | FAILED`. You can always ask "what phase is this session in?" and get a definite answer. Full state diagram, transition table, and REST API: [Lifecycle](lifecycle.md).
 
 ## Next step
 

@@ -43,6 +43,17 @@ graph TB
 
 `pyarnes-core` is the foundation — every other package depends on it for error types and logging. `pyarnes-tasks` is dev-infrastructure; it's excluded from the runtime dep graph.
 
+## Cross-cutting design principles
+
+Rules that hold across every package. Each `maintainer/packages/<name>.md` only calls out package-specific reasons to exist; these repo-wide rules live here.
+
+- **Async-first.** Tool execution uses `asyncio` so I/O-bound work doesn't block the loop. `ToolHandler.execute()` is `async`; the loop awaits it.
+- **JSONL on stderr.** All structured events go to stderr as one JSON object per line. Stdout is reserved for tool output that the LLM reads. `loguru` is the sole runtime logging dep.
+- **No CLI in runtime packages.** A Typer/argparse entry point in the adopter's own `main.py` is strictly more expressive than a declarative CLI shipped here. The one exception is `pyarnes-tasks`, which is dev-infrastructure.
+- **Errors are orthogonal to the loop.** Classification lives in `pyarnes-core`; `pyarnes-harness` is the only consumer that enforces the routing (retry / feedback / interrupt / bubble).
+- **Stable API is frozen-dataclass shaped.** Public records are frozen dataclasses (`HarnessError`, `EvalResult`, `CapturedOutput`, `ToolMessage`). Callers can rely on value semantics; mutation is not part of the contract.
+- **No magic.** No decorators that auto-register, no metaclasses, no import-time side effects. Adopters explicitly build a `ToolRegistry`, compose a `GuardrailChain`, and pass them to `AgentLoop`.
+
 ## Repo layout
 
 ```text

@@ -10,16 +10,15 @@ The foundation package. Every other pyarnes package depends on it for types, err
 
 ## Module layout
 
+Inter-package deps live in [Architecture § Package graph](../extend/architecture.md#package-graph). Internal layout:
+
 ```mermaid
 graph TB
-    subgraph pyarnes_core
-        Types[types.py<br/>ToolHandler, ModelClient]
-        Errors[errors.py<br/>HarnessError + 4 subclasses]
-        Lifecycle[lifecycle.py<br/>Phase enum, FSM]
-        Observe[observe/logger.py<br/>configure_logging, get_logger]
-    end
+    Types[types.py<br/>ToolHandler, ModelClient]
+    Errors[errors.py<br/>HarnessError + 4 subclasses]
+    Lifecycle[lifecycle.py<br/>Phase enum, FSM]
+    Observe[observe/logger.py<br/>configure_logging, get_logger]
 
-    Loguru[loguru] --> Observe
     Errors -.emitted on.-> Observe
     Lifecycle -.emitted on.-> Observe
 ```
@@ -33,45 +32,20 @@ graph TB
 
 ## Why this package exists
 
+Repo-wide rules (async, JSONL-on-stderr, no-magic, …) live in [Architecture § Cross-cutting design principles](../extend/architecture.md#cross-cutting-design-principles). Package-specific reasons:
+
 - **Foundation only.** Every piece that ships with pyarnes eventually imports from here, so it must stay thin, typed, and free of heavy dependencies.
-- **`loguru` is the sole runtime dep.** JSONL goes to stderr by design; stdout is reserved for tool output that the LLM reads. No stdlib `logging` — loguru wins on call-site ergonomics and structured sinks.
-- **Error taxonomy lives here, not in harness.** Error classification is orthogonal to the loop. Placing it in core lets guardrails, bench, and adopter code raise the same symbols the loop knows how to route.
 - **`Lifecycle` is a state machine, not a mixin.** Keeping it as an explicit object means transitions can be asserted, logged, and exposed over HTTP without smearing session state across the codebase.
 
 ## Key flows
 
 ### Error routing
 
-```mermaid
-flowchart TD
-    Tool[Tool raises exception]
-    Tool --> Classify{isinstance?}
-    Classify -->|TransientError| Retry[AgentLoop retries<br/>exponential backoff<br/>up to max_retries]
-    Classify -->|LLMRecoverableError| Feedback[AgentLoop returns<br/>ToolMessage is_error=True]
-    Classify -->|UserFixableError| Human[AgentLoop re-raises<br/>human fixes and resumes]
-    Classify -->|other Exception| Wrap[AgentLoop wraps in<br/>UnexpectedError, re-raises]
-    Retry -->|exhausted| Feedback
-```
-
-The loop in `pyarnes-harness` is the only consumer that enforces this routing — `pyarnes-core` just defines the shapes.
+See the canonical routing diagram and field reference: [Error taxonomy](../../adopter/evaluate/errors.md). The loop in `pyarnes-harness` is the only consumer that enforces routing — `pyarnes-core` just defines the shapes.
 
 ### Lifecycle transition
 
-```mermaid
-stateDiagram-v2
-    [*] --> INIT
-    INIT --> RUNNING: start()
-    RUNNING --> PAUSED: pause()
-    PAUSED --> RUNNING: resume()
-    RUNNING --> COMPLETED: complete()
-    INIT --> FAILED: fail()
-    RUNNING --> FAILED: fail()
-    PAUSED --> FAILED: fail()
-    COMPLETED --> [*]
-    FAILED --> [*]
-```
-
-Each transition writes a structured event via `get_logger("pyarnes_core.lifecycle")` and appends to `Lifecycle.history`. Invalid transitions raise `ValueError` — the FSM refuses silently-wrong state.
+See the canonical state diagram, valid transitions, and REST API: [Lifecycle](../../adopter/evaluate/lifecycle.md). Each transition writes a structured event via `get_logger("pyarnes_core.lifecycle")` and appends to `Lifecycle.history`. Invalid transitions raise `ValueError` — the FSM refuses silently-wrong state.
 
 ## Public API
 
