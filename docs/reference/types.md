@@ -1,3 +1,9 @@
+---
+persona: both
+level: L2
+tags: [reference, core]
+---
+
 # Core Types
 
 ## ToolHandler
@@ -38,4 +44,3 @@ class MyModel(ModelClient):
 
 - `messages` — full conversation history so far
 - Returns a dict describing either a tool call or a final answer
-

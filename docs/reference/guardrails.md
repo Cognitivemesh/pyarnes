@@ -1,3 +1,9 @@
+---
+persona: both
+level: L2
+tags: [reference, guardrails]
+---
+
 # Guardrails
 
 **Module:** `pyarnes_guardrails.guardrails`
@@ -74,4 +80,3 @@ curl -X POST http://localhost:8000/api/v1/guardrails/check \
   -d '{"tool_name": "shell", "arguments": {"command": "sudo rm -rf /"}}'
 # {"allowed": false, "violation": "Command blocked by pattern: \\bsudo\\b"}
 ```
-

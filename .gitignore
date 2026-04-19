@@ -11,7 +11,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
+/build/
 develop-eggs/
 dist/
 downloads/
@@ -156,6 +156,10 @@ venv.bak/
 
 # mkdocs documentation
 /site
+
+# Graph tools (opt-in via `uv sync --group graph`)
+docs/assets/graph/
+.code-review-graph/
 
 # mypy
 .mypy_cache/

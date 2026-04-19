@@ -31,7 +31,7 @@ uv run tasks check        # lint + typecheck
 
 No PyPI publishing, no copied source — your project **depends on** the pyarnes packages via git URL. Later, `uv run tasks update` pulls template improvements into your project (wraps `copier update` under the hood).
 
-Full walkthrough: [docs/template.md](docs/template.md).
+Full walkthrough: [docs/adopter/bootstrap/scaffold.md](docs/adopter/bootstrap/scaffold.md).
 
 ### B. Work on pyarnes itself
 
@@ -45,7 +45,7 @@ uv run tasks check        # lint + typecheck + test
 uv run tasks watch        # TDD watch mode
 ```
 
-See [docs/development/evolving.md](docs/development/evolving.md) for the full contributor workflow, how to add a new package, how to edit the template, and how to smoke-test the result. Feature specs live in [`specs/`](specs/).
+See [docs/maintainer/onboard/setup.md](docs/maintainer/onboard/setup.md) for the full contributor workflow, [docs/maintainer/extend/workflow.md](docs/maintainer/extend/workflow.md) for adding packages and editing the template, and [docs/maintainer/extend/template.md](docs/maintainer/extend/template.md) for smoke-testing the result. Feature specs live in [`specs/`](specs/).
 
 ## Available tasks
 

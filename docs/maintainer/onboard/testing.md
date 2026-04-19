@@ -1,4 +1,21 @@
-# Testing
+---
+persona: maintainer
+level: L1
+tags: [maintainer, onboard, testing]
+---
+
+# Testing & TDD
+
+## Red → Green → Refactor
+
+```mermaid
+flowchart LR
+    Red[Red<br/>write failing test] --> Green[Green<br/>smallest code to pass]
+    Green --> Refactor[Refactor<br/>clean up without breaking]
+    Refactor --> Red
+```
+
+Every change follows this cycle. Never commit a refactor without a green test suite first.
 
 ## Run tests
 
@@ -67,4 +84,3 @@ Step definitions are in `tests/features/steps/`.
 | **pytest-sugar** | Pretty test output |
 | **hypothesis** | Property-based testing |
 | **httpx** | API test client (via FastAPI TestClient) |
-

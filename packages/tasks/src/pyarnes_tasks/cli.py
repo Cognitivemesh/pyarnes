@@ -100,6 +100,9 @@ def _build_tasks() -> tuple[dict[str, list[str]], Path]:
         "docs": [py, "-m", "doq", "-w", "-r", *code_targets],
         "docs:serve": [py, "-m", "mkdocs", "serve"],
         "docs:build": [py, "-m", "mkdocs", "build"],
+        # Graph tools (opt-in group: `uv sync --group graph` first).
+        "graph:render": ["graphify", "."],
+        "graph:blast": ["code-review-graph", "blast"],
     }
 
     if tests:
@@ -131,7 +134,8 @@ def _print_help(tasks: dict[str, list[str]]) -> None:
         print(f"  {comp:<16} -> {' + '.join(parts)}")  # noqa: T201
 
 
-def _run_task(name: str, tasks: dict[str, list[str]], root: Path) -> int:
+def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: tuple[str, ...] = ()) -> int:
+    # Composite tasks ignore `extra` — they dispatch to sub-tasks that each take their own args.
     if name in COMPOSITE_TASKS:
         for sub in COMPOSITE_TASKS[name]:
             code = _run_task(sub, tasks, root)
@@ -148,22 +152,33 @@ def _run_task(name: str, tasks: dict[str, list[str]], root: Path) -> int:
     print(f"\n{'─' * 60}")  # noqa: T201
     print(f"  ▶ {name}")  # noqa: T201
     print(f"{'─' * 60}\n")  # noqa: T201
-    code = subprocess.run(cmd, check=False, cwd=root).returncode  # noqa: S603  # nosec B603
+    code = subprocess.run([*cmd, *extra], check=False, cwd=root).returncode  # noqa: S603  # nosec B603
     if name in _PYTEST_COLLECTION_TASKS and code == _PYTEST_NO_TESTS_EXIT_CODE:
         return 0
     return code
 
 
 def main() -> NoReturn:
-    """Entry-point: ``uv run tasks <task> [task ...]``."""
+    """Entry-point: ``uv run tasks <task> [task ...] [-- extra-args]``.
+
+    ``--`` forwards everything after it to the last task.
+    """
     tasks, root = _build_tasks()
     args = sys.argv[1:]
     if not args or args[0] in {"--help", "-h", "help"}:
         _print_help(tasks)
         raise SystemExit(0)
 
-    for task_name in args:
-        code = _run_task(task_name, tasks, root)
+    try:
+        sep = args.index("--")
+    except ValueError:
+        task_names, extra = args, ()
+    else:
+        task_names, extra = args[:sep], tuple(args[sep + 1 :])
+
+    last = len(task_names) - 1
+    for i, task_name in enumerate(task_names):
+        code = _run_task(task_name, tasks, root, extra if i == last else ())
         if code != 0:
             raise SystemExit(code)
     raise SystemExit(0)

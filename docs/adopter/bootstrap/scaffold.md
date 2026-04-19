@@ -1,6 +1,29 @@
-# Use pyarnes as a template
+---
+persona: adopter
+level: L1
+tags: [adopter, bootstrap, scaffold]
+---
+
+# Scaffold a project
 
 `pyarnes` is both a working monorepo **and** a Copier template. Any developer can bootstrap a new agentic-harness project that depends on the pyarnes packages — no copy-paste, no PyPI account required.
+
+## The scaffold flow
+
+```mermaid
+flowchart TD
+    Start([uvx copier copy gh:Cognitivemesh/pyarnes my-agent])
+    Start --> Q1[project_name]
+    Q1 --> Q2[project_description]
+    Q2 --> Q3[python_version]
+    Q3 --> Q4[pyarnes_ref]
+    Q4 --> Q5[adopter_shape]
+    Q5 --> Q6[enable_dev_hooks]
+    Q6 --> Q7[enable_code_graph]
+    Q7 --> Gen[Copier generates project]
+    Gen --> Sync[uv sync<br/>resolves 5 pyarnes-* deps]
+    Sync --> Check[uv run tasks check]
+```
 
 ## Bootstrap — one command
 
@@ -16,6 +39,9 @@ uvx copier copy gh:Cognitivemesh/pyarnes my-awesome-agent
 | `project_description` | `"A pyarnes-based project"` | one-line description in pyproject + README |
 | `python_version` | `3.13` | `requires-python`, `.python-version` |
 | `pyarnes_ref` | `main` | git ref that the five pyarnes deps pin to |
+| `adopter_shape` | `blank` | reference shape (blank / pii-redaction / s3-sweep / rtm-toggl-agile) |
+| `enable_dev_hooks` | auto | wire pyarnes into Claude Code dev-time hooks |
+| `enable_code_graph` | `false` | wire `code-review-graph` MCP server into `.claude/mcp.json` for blast-radius context |
 
 **No author name or email is asked.** The generated `pyproject.toml` omits the `authors` field — PEP 621 allows that, and developers can add it later.
 
@@ -89,10 +115,12 @@ For reproducibility, answer the `pyarnes_ref` prompt with a git tag (e.g., `v0.2
 
 ## What's under the hood
 
-The template lives in [`template/`](https://github.com/Cognitivemesh/pyarnes/tree/main/template) inside the pyarnes repo. The [`copier.yml`](https://github.com/Cognitivemesh/pyarnes/blob/main/copier.yml) at the repo root declares the four prompts + computed `project_module` / `current_year` values.
+The template lives in [`template/`](https://github.com/Cognitivemesh/pyarnes/tree/main/template) inside the pyarnes repo. The [`copier.yml`](https://github.com/Cognitivemesh/pyarnes/blob/main/copier.yml) at the repo root declares the prompts + computed `project_module` / `current_year` values.
 
 - Path-level Jinja (e.g. `template/src/{{project_module}}/`) gives each generated project its own Python module directory named after the chosen project.
 - File contents with a `.jinja` suffix are rendered; others are copied verbatim (dotfiles, config files).
 - No post-generation shell hooks — the template is pure Jinja, so `uvx copier copy …` never requires `--trust`.
 
-See the [architecture overview](architecture/overview.md) for where the template lives inside the pyarnes monorepo.
+## Next step
+
+Install and verify your scaffolded project → [Install & verify](install.md).

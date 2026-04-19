@@ -1,4 +1,12 @@
+---
+persona: both
+level: L2
+tags: [reference, lifecycle]
+---
+
 # Lifecycle
+
+**Module:** `pyarnes_core.lifecycle`
 
 ## What it does
 
@@ -6,26 +14,18 @@ The `Lifecycle` class tracks what phase your agent session is in. It's a finite-
 
 ## State diagram
 
-```text
-     ┌──────┐
-     │ INIT │
-     └──┬───┘
-        │ start()
-     ┌──▼──────┐
- ┌──►│ RUNNING  │◄──┐
- │   └──┬───┬───┘   │
- │      │   │       │ resume()
- │      │   │   ┌───┴────┐
- │      │   └──►│ PAUSED │
- │      │       └────────┘
- │      │
- │  complete()  fail()
- │      │         │
- │ ┌────▼─────┐ ┌─▼─────┐
- │ │COMPLETED │ │FAILED  │
- │ └──────────┘ └────────┘
- │  (terminal)   (terminal)
- └─── fail() can be called from INIT, RUNNING, or PAUSED
+```mermaid
+stateDiagram-v2
+    [*] --> INIT
+    INIT --> RUNNING: start()
+    RUNNING --> PAUSED: pause()
+    PAUSED --> RUNNING: resume()
+    RUNNING --> COMPLETED: complete()
+    INIT --> FAILED: fail()
+    RUNNING --> FAILED: fail()
+    PAUSED --> FAILED: fail()
+    COMPLETED --> [*]
+    FAILED --> [*]
 ```
 
 ## Valid transitions
@@ -41,7 +41,7 @@ The `Lifecycle` class tracks what phase your agent session is in. It's a finite-
 ## Usage
 
 ```python
-from pyarnes_core.lifecycle import Lifecycle
+from pyarnes_core.lifecycle import Lifecycle, Phase
 
 lc = Lifecycle(metadata={"session_id": "abc123"})
 lc.start()     # INIT → RUNNING
@@ -88,3 +88,19 @@ curl -X POST http://localhost:8000/api/v1/lifecycle/transition \
 curl -X POST http://localhost:8000/api/v1/lifecycle/reset
 ```
 
+## API reference
+
+### Phase enum
+
+`INIT`, `RUNNING`, `PAUSED`, `COMPLETED`, `FAILED`
+
+### Lifecycle methods
+
+| Method | Effect |
+|---|---|
+| `start()` | → RUNNING |
+| `pause()` | → PAUSED |
+| `resume()` | → RUNNING (from PAUSED) |
+| `complete()` | → COMPLETED |
+| `fail()` | → FAILED |
+| `transition(target)` | Direct transition (validates) |

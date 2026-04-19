@@ -1,3 +1,9 @@
+---
+persona: both
+level: L2
+tags: [reference, registry]
+---
+
 # Tool Registry
 
 **Module:** `pyarnes_harness.tools.registry`
@@ -34,4 +40,3 @@ loop = AgentLoop(tools=registry.as_dict(), model=model)
 | `as_dict()` | Shallow copy of the internal `{name: handler}` mapping |
 | `len(registry)` | Number of registered tools |
 | `"name" in registry` | Check if a tool is registered |
-

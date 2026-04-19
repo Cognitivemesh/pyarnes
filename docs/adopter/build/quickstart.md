@@ -1,10 +1,38 @@
-# Quick Start
+---
+persona: adopter
+level: L2
+tags: [adopter, build, quickstart]
+---
+
+# Quick start
 
 This guide walks you through creating a tool, running the agent loop, and adding guardrails.
 
+## What you are about to build
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Loop as AgentLoop
+    participant Guard as GuardrailChain
+    participant Tool as ReadFileTool
+    participant Model as MyModel
+
+    User->>Loop: run([{role: user, content: Read main.py}])
+    Loop->>Model: next_action(messages)
+    Model-->>Loop: tool_call(read_file, {path: ...})
+    Loop->>Guard: check(read_file, {path: ...})
+    Guard-->>Loop: ok
+    Loop->>Tool: execute({path: ...})
+    Tool-->>Loop: file contents
+    Loop->>Model: next_action(messages + tool_result)
+    Model-->>Loop: final_answer
+    Loop-->>User: messages
+```
+
 ## 1. Create a tool handler
 
-Every tool implements the `ToolHandler` ABC from `pyarnes_core.types`:
+Every tool implements the `ToolHandler` ABC from `pyarnes_core.types`. *(`ABC` = "Abstract Base Class" — a Python pattern for "you must implement this method". You don't need to know how it works; just subclass it.)*
 
 ```python
 from dataclasses import dataclass
@@ -21,6 +49,8 @@ class ReadFileTool(ToolHandler):
         path = arguments["path"]
         return open(path).read()
 ```
+
+The `async` keyword means the function can pause while waiting for slow things (like network or file I/O). You do not need to understand asyncio internals.
 
 ## 2. Create a model client
 
@@ -122,3 +152,7 @@ curl -X POST http://localhost:8000/api/v1/eval \
   -d '{"scenarios": [{"scenario": "test1", "expected": "hello", "actual": "hello"}]}'
 ```
 
+## See also
+
+- [Packages overview](packages.md) — what each `pyarnes-*` package provides.
+- [Agent Loop reference](../../reference/loop.md), [Guardrails reference](../../reference/guardrails.md), [Capture reference](../../reference/capture.md).

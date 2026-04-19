@@ -1,3 +1,9 @@
+---
+persona: both
+level: L2
+tags: [reference, loop]
+---
+
 # Agent Loop
 
 **Module:** `pyarnes_harness.loop`
@@ -45,4 +51,3 @@ Fed back to the model after a tool call:
 | `tool_call_id` | `str` | Links to the original tool call |
 | `content` | `str` | Tool output or error description |
 | `is_error` | `bool` | `True` when the content describes a failure |
-

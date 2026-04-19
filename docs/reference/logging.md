@@ -1,3 +1,9 @@
+---
+persona: both
+level: L2
+tags: [reference, logging]
+---
+
 # Logging
 
 **Module:** `pyarnes_core.observe.logger`
@@ -82,4 +88,3 @@ from pyarnes_core.observe.logger import LogFormat
 configure_logging(fmt=LogFormat.JSON)     # JSONL
 configure_logging(fmt=LogFormat.CONSOLE)  # human-readable
 ```
-

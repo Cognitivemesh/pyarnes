@@ -3,6 +3,7 @@ site_description: A minimal agentic harness engineering template for Python
 site_url: https://cognitivemesh.github.io/pyarnes/
 repo_url: https://github.com/Cognitivemesh/pyarnes
 repo_name: Cognitivemesh/pyarnes
+edit_uri: edit/main/docs/
 
 theme:
   name: material
@@ -24,60 +25,146 @@ theme:
   features:
     - content.code.copy
     - content.code.annotate
+    - content.code.select
+    - content.tabs.link
+    - content.tooltips
+    - content.footnote.tooltips
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
+    - navigation.indexes
+    - navigation.path
+    - navigation.footer
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.tracking
     - navigation.top
     - search.suggest
     - search.highlight
+    - search.share
     - toc.follow
 
 plugins:
   - search
+  - tags
+  - section-index
+  - glightbox
+  - redirects:
+      redirect_maps:
+        template.md: adopter/bootstrap/scaffold.md
+        getting-started/installation.md: adopter/bootstrap/install.md
+        getting-started/quickstart.md: adopter/build/quickstart.md
+        getting-started/distribution.md: adopter/evaluate/distribution.md
+        architecture/overview.md: maintainer/extend/architecture.md
+        architecture/errors.md: reference/errors.md
+        architecture/lifecycle.md: reference/lifecycle.md
+        architecture/meta-use.md: maintainer/extend/architecture.md
+        packages/core.md: adopter/build/packages.md
+        packages/harness.md: adopter/build/packages.md
+        packages/guardrails.md: adopter/build/packages.md
+        packages/bench.md: adopter/build/packages.md
+        packages/tasks.md: adopter/build/tasks.md
+        api/types.md: reference/types.md
+        api/errors.md: reference/errors.md
+        api/lifecycle.md: reference/lifecycle.md
+        api/loop.md: reference/loop.md
+        api/guardrails.md: reference/guardrails.md
+        api/registry.md: reference/registry.md
+        api/capture.md: reference/capture.md
+        api/logging.md: reference/logging.md
+        development/tasks.md: adopter/build/tasks.md
+        development/testing.md: maintainer/onboard/testing.md
+        development/extending.md: maintainer/extend/rules.md
+        development/evolving.md: maintainer/onboard/setup.md
+        development/template.md: maintainer/extend/template.md
+        development/release.md: maintainer/release.md
+
+extra:
+  analytics:
+    feedback:
+      title: Was this page helpful?
+      ratings:
+        - icon: material/thumb-up-outline
+          name: Yes, this page was helpful
+          data: good
+          note: Thanks for your feedback.
+        - icon: material/thumb-down-outline
+          name: This page could be improved
+          data: bad
+          note: >-
+            Thanks — please
+            <a href="https://github.com/Cognitivemesh/pyarnes/issues/new" target="_blank">open an issue</a>
+            so we can improve this page.
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Cognitivemesh/pyarnes
+
+extra_css:
+  - stylesheets/extra.css
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
+  - abbr
+  - def_list
+  - footnotes
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.keys
+  - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - toc:
       permalink: true
 
 nav:
   - Home: index.md
-  - Getting Started:
-      - Installation: getting-started/installation.md
-      - Quick Start: getting-started/quickstart.md
-      - Distribution model: getting-started/distribution.md
-      - Use as template: template.md
-  - Architecture:
-      - Overview: architecture/overview.md
-      - Error Taxonomy: architecture/errors.md
-      - Lifecycle: architecture/lifecycle.md
-      - Meta-use (agent-on-agent): architecture/meta-use.md
-  - Packages:
-      - pyarnes-core: packages/core.md
-      - pyarnes-harness: packages/harness.md
-      - pyarnes-guardrails: packages/guardrails.md
-      - pyarnes-bench: packages/bench.md
-      - pyarnes-tasks: packages/tasks.md
-  - Code Reference:
-      - Core Types: api/types.md
-      - Errors: api/errors.md
-      - Lifecycle: api/lifecycle.md
-      - Agent Loop: api/loop.md
-      - Guardrails: api/guardrails.md
-      - Tool Registry: api/registry.md
-      - Capture: api/capture.md
-      - Logging: api/logging.md
-  - Development:
-      - Tasks: development/tasks.md
-      - Testing: development/testing.md
-      - Extending pyarnes: development/extending.md
-      - Evolving pyarnes: development/evolving.md
-      - Evolving the template: development/template.md
-      - Release workflow: development/release.md
+  - Adopter:
+      - adopter/index.md
+      - Evaluate:
+          - Core concepts: adopter/evaluate/concepts.md
+          - Distribution model: adopter/evaluate/distribution.md
+      - Bootstrap:
+          - Scaffold a project: adopter/bootstrap/scaffold.md
+          - Install & verify: adopter/bootstrap/install.md
+      - Build:
+          - Quick start: adopter/build/quickstart.md
+          - Packages overview: adopter/build/packages.md
+          - Task runner: adopter/build/tasks.md
+  - Maintainer:
+      - maintainer/index.md
+      - Onboard:
+          - Dev setup: maintainer/onboard/setup.md
+          - Testing & TDD: maintainer/onboard/testing.md
+      - Extend:
+          - Architecture & meta-use: maintainer/extend/architecture.md
+          - Extension rules: maintainer/extend/rules.md
+          - Evolving workflow: maintainer/extend/workflow.md
+          - Editing the template: maintainer/extend/template.md
+      - Release:
+          - Release workflow: maintainer/release.md
+  - Reference:
+      - Core types: reference/types.md
+      - Errors: reference/errors.md
+      - Lifecycle: reference/lifecycle.md
+      - Agent loop: reference/loop.md
+      - Guardrails: reference/guardrails.md
+      - Tool registry: reference/registry.md
+      - Capture: reference/capture.md
+      - Logging: reference/logging.md
+      - MCP tools (optional): reference/mcp-tools.md

@@ -1,3 +1,9 @@
+---
+persona: both
+level: L2
+tags: [reference, capture]
+---
+
 # Capture
 
 **Modules:** `pyarnes_harness.capture.output`, `pyarnes_harness.capture.tool_log`
@@ -84,4 +90,3 @@ loop = AgentLoop(
     tool_call_logger=ToolCallLogger(path=Path(".harness/calls.jsonl")),
 )
 ```
-
