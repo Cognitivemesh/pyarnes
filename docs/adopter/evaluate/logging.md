@@ -1,7 +1,7 @@
 ---
-persona: both
+persona: adopter
 level: L2
-tags: [reference, logging]
+tags: [adopter, evaluate, logging]
 ---
 
 # Logging

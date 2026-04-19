@@ -53,27 +53,54 @@ plugins:
   - glightbox
   - redirects:
       redirect_maps:
+        # Root template shortcut
         template.md: adopter/bootstrap/scaffold.md
+
+        # Old getting-started/ paths
         getting-started/installation.md: adopter/bootstrap/install.md
         getting-started/quickstart.md: adopter/build/quickstart.md
         getting-started/distribution.md: adopter/evaluate/distribution.md
+
+        # Old architecture/ paths
         architecture/overview.md: maintainer/extend/architecture.md
-        architecture/errors.md: reference/errors.md
-        architecture/lifecycle.md: reference/lifecycle.md
         architecture/meta-use.md: maintainer/extend/architecture.md
+        architecture/errors.md: adopter/evaluate/errors.md
+        architecture/lifecycle.md: adopter/evaluate/lifecycle.md
+        architecture/pyarnes-core.md: maintainer/packages/core.md
+        architecture/pyarnes-harness.md: maintainer/packages/harness.md
+        architecture/pyarnes-guardrails.md: maintainer/packages/guardrails.md
+        architecture/pyarnes-bench.md: maintainer/packages/bench.md
+        architecture/pyarnes-tasks.md: maintainer/packages/tasks.md
+
+        # Old packages/ paths (adopter overview kept; deep pages moved to maintainer/packages/)
         packages/core.md: adopter/build/packages.md
         packages/harness.md: adopter/build/packages.md
         packages/guardrails.md: adopter/build/packages.md
         packages/bench.md: adopter/build/packages.md
         packages/tasks.md: adopter/build/tasks.md
-        api/types.md: reference/types.md
-        api/errors.md: reference/errors.md
-        api/lifecycle.md: reference/lifecycle.md
-        api/loop.md: reference/loop.md
-        api/guardrails.md: reference/guardrails.md
-        api/registry.md: reference/registry.md
-        api/capture.md: reference/capture.md
-        api/logging.md: reference/logging.md
+
+        # Old api/ paths — split between adopter concepts and maintainer package pages
+        api/errors.md: adopter/evaluate/errors.md
+        api/lifecycle.md: adopter/evaluate/lifecycle.md
+        api/logging.md: adopter/evaluate/logging.md
+        api/types.md: maintainer/packages/core.md
+        api/loop.md: maintainer/packages/harness.md
+        api/registry.md: maintainer/packages/harness.md
+        api/capture.md: maintainer/packages/harness.md
+        api/guardrails.md: maintainer/packages/guardrails.md
+
+        # Old top-level reference/ paths — removed in this reorg
+        reference/errors.md: adopter/evaluate/errors.md
+        reference/lifecycle.md: adopter/evaluate/lifecycle.md
+        reference/logging.md: adopter/evaluate/logging.md
+        reference/types.md: maintainer/packages/core.md
+        reference/loop.md: maintainer/packages/harness.md
+        reference/registry.md: maintainer/packages/harness.md
+        reference/capture.md: maintainer/packages/harness.md
+        reference/guardrails.md: maintainer/packages/guardrails.md
+        reference/mcp-tools.md: maintainer/extend/mcp-tools.md
+
+        # Old development/ paths
         development/tasks.md: adopter/build/tasks.md
         development/testing.md: maintainer/onboard/testing.md
         development/extending.md: maintainer/extend/rules.md
@@ -139,6 +166,9 @@ nav:
       - Evaluate:
           - Core concepts: adopter/evaluate/concepts.md
           - Distribution model: adopter/evaluate/distribution.md
+          - Error taxonomy: adopter/evaluate/errors.md
+          - Lifecycle: adopter/evaluate/lifecycle.md
+          - Logging: adopter/evaluate/logging.md
       - Bootstrap:
           - Scaffold a project: adopter/bootstrap/scaffold.md
           - Install & verify: adopter/bootstrap/install.md
@@ -146,25 +176,23 @@ nav:
           - Quick start: adopter/build/quickstart.md
           - Packages overview: adopter/build/packages.md
           - Task runner: adopter/build/tasks.md
+          - Skills: adopter/build/skills.md
   - Maintainer:
       - maintainer/index.md
       - Onboard:
           - Dev setup: maintainer/onboard/setup.md
           - Testing & TDD: maintainer/onboard/testing.md
+      - Packages:
+          - pyarnes-core: maintainer/packages/core.md
+          - pyarnes-harness: maintainer/packages/harness.md
+          - pyarnes-guardrails: maintainer/packages/guardrails.md
+          - pyarnes-bench: maintainer/packages/bench.md
+          - pyarnes-tasks: maintainer/packages/tasks.md
       - Extend:
           - Architecture & meta-use: maintainer/extend/architecture.md
           - Extension rules: maintainer/extend/rules.md
           - Evolving workflow: maintainer/extend/workflow.md
           - Editing the template: maintainer/extend/template.md
-      - Release:
-          - Release workflow: maintainer/release.md
-  - Reference:
-      - Core types: reference/types.md
-      - Errors: reference/errors.md
-      - Lifecycle: reference/lifecycle.md
-      - Agent loop: reference/loop.md
-      - Guardrails: reference/guardrails.md
-      - Tool registry: reference/registry.md
-      - Capture: reference/capture.md
-      - Logging: reference/logging.md
-      - MCP tools (optional): reference/mcp-tools.md
+          - Skills: maintainer/extend/skills.md
+          - MCP tools (optional): maintainer/extend/mcp-tools.md
+      - Release: maintainer/release.md

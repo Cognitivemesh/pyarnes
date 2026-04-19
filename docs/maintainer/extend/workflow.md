@@ -22,7 +22,7 @@ Step-by-step procedures for larger changes: adding workspace packages, editing t
    "pyarnes-<name> @ git+https://github.com/Cognitivemesh/pyarnes.git@{{ pyarnes_ref }}#subdirectory=packages/<name>",
    ```
 6. Add the package to the `[tool.ruff] src`, `[tool.coverage.run] source`, and `[tool.ruff.lint.isort] known-first-party` lists in the root `pyproject.toml`.
-7. Document the package in `docs/adopter/build/packages.md` and add a reference page under `docs/reference/` if it exposes public symbols. Update `mkdocs.yml`.
+7. Document the package: update the overview in `docs/adopter/build/packages.md` and add a new deep-dive page at `docs/maintainer/packages/<name>.md` (Module layout, Why, Key flows with Mermaid, Public API, Extension points, Hazards). Update `mkdocs.yml`.
 
 ## Editing the template
 

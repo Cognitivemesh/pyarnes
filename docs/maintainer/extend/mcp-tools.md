@@ -1,7 +1,7 @@
 ---
 persona: maintainer
 level: L2
-tags: [reference, mcp, graph]
+tags: [maintainer, extend, mcp, graph]
 ---
 
 # MCP tools (optional)
@@ -40,5 +40,5 @@ The CLI side works standalone too — `uv run tasks graph:blast <path>` and `uv 
 
 ## See also
 
-- [Extension workflow — Optional graph tools](../maintainer/extend/workflow.md#optional-graph-tools) — how maintainers use these from the task runner.
-- [Scaffold a project](../adopter/bootstrap/scaffold.md) — how adopters opt in at scaffold time.
+- [Extension workflow — Optional graph tools](workflow.md#optional-graph-tools) — how maintainers use these from the task runner.
+- [Scaffold a project](../../adopter/bootstrap/scaffold.md) — how adopters opt in at scaffold time.

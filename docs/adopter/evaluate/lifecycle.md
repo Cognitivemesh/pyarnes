@@ -1,7 +1,7 @@
 ---
-persona: both
+persona: adopter
 level: L2
-tags: [reference, lifecycle]
+tags: [adopter, evaluate, lifecycle]
 ---
 
 # Lifecycle
@@ -69,23 +69,6 @@ lc = Lifecycle()
 lc.start()
 lc.complete()
 lc.start()  # ValueError: Invalid transition: completed → running
-```
-
-## Via the API
-
-The lifecycle is also exposed as REST endpoints:
-
-```bash
-# Get current state
-curl http://localhost:8000/api/v1/lifecycle
-
-# Transition
-curl -X POST http://localhost:8000/api/v1/lifecycle/transition \
-  -H "Content-Type: application/json" \
-  -d '{"action": "start"}'
-
-# Reset back to INIT
-curl -X POST http://localhost:8000/api/v1/lifecycle/reset
 ```
 
 ## API reference

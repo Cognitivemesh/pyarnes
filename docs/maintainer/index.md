@@ -55,4 +55,4 @@ journey
 ## Cross-links
 
 - Adopter-side docs explain what your changes look like from the outside — start at [the adopter journey](../adopter/index.md).
-- All public symbols live under [Reference](../reference/types.md) — the stable surface.
+- Per-package deep-dives with absorbed Public API live under [Packages](packages/core.md) — start with `pyarnes-core` and follow the dep graph.

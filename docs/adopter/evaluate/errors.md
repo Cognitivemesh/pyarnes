@@ -1,7 +1,7 @@
 ---
-persona: both
+persona: adopter
 level: L2
-tags: [reference, errors]
+tags: [adopter, evaluate, errors]
 ---
 
 # Errors
