@@ -45,7 +45,10 @@ class ToolRegistry:
             msg = f"Tool '{name}' is already registered"
             raise ValueError(msg)
         if not isinstance(handler, ToolHandler):
-            msg = f"Handler for '{name}' does not satisfy ToolHandler (must subclass ToolHandler ABC)"
+            msg = (
+                f"Handler for '{name}' does not satisfy ToolHandler "
+                "(must define `async def execute(self, arguments)`)"
+            )
             raise TypeError(msg)
         self._tools[name] = handler
         logger.info("registry.registered tool={tool}", tool=name)
