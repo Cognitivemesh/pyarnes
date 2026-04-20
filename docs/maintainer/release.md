@@ -8,6 +8,9 @@ tags: [maintainer, release, stable-surface]
 
 pyarnes does not publish to PyPI. Adopters pin by git ref via `pyarnes_ref` in their Copier answers. A release is a signed git tag that downstream projects bump to.
 
+!!! warning "0.x stability disclaimer"
+    pyarnes is currently **v0.x**. Until we cut v1.0.0, **MINOR** releases **may** introduce breaking changes to the public surface — the semver policy below becomes binding only from v1.0.0 onward. Call this out in release notes when you bump MINOR during 0.x.
+
 ## Release flow
 
 ```mermaid

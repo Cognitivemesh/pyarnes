@@ -35,7 +35,9 @@ sequenceDiagram
 Every tool implements the `ToolHandler` ABC from `pyarnes_core.types`. *(`ABC` = "Abstract Base Class" — a Python pattern for "you must implement this method". You don't need to know how it works; just subclass it.)*
 
 ```python
+import asyncio
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from pyarnes_core.types import ToolHandler
@@ -47,16 +49,19 @@ class ReadFileTool(ToolHandler):
 
     async def execute(self, arguments: dict[str, Any]) -> Any:
         path = arguments["path"]
-        return open(path).read()
+        return await asyncio.to_thread(Path(path).read_text)
 ```
 
-The `async` keyword means the function can pause while waiting for slow things (like network or file I/O). You do not need to understand asyncio internals.
+The `async` keyword means the function can pause while waiting for slow things (like network or file I/O). File I/O is blocking — we wrap `read_text` in `asyncio.to_thread` so it runs on a worker thread and does not stall the loop, per the async-first principle in [concepts.md](../evaluate/concepts.md). You do not need to understand asyncio internals.
 
 ## 2. Create a model client
 
 The model client connects to your LLM. It returns either a tool call or a final answer:
 
 ```python
+from pyarnes_core.types import ModelClient
+
+
 @dataclass
 class MyModel(ModelClient):
     async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
@@ -104,7 +109,35 @@ chain.check("read_file", {"path": "/workspace/src/main.py"})
 chain.check("read_file", {"path": "/etc/passwd"})
 ```
 
-## 5. Enable JSONL tool-call logging
+## 5. Integrate guardrails into the loop
+
+pyarnes **does not** auto-apply guardrails — that is a deliberate design choice (see [distribution.md](../evaluate/distribution.md#what-you-still-own)). You compose them into your tools by wrapping each handler so that `chain.check(...)` runs before `handler.execute(...)`:
+
+```python
+from dataclasses import dataclass
+
+from pyarnes_core.types import ToolHandler
+
+
+@dataclass
+class GuardedTool(ToolHandler):
+    """Run a guardrail chain before delegating to the inner handler."""
+
+    inner: ToolHandler
+    chain: GuardrailChain
+    tool_name: str
+
+    async def execute(self, arguments: dict[str, Any]) -> Any:
+        self.chain.check(self.tool_name, arguments)  # raises UserFixableError on violation
+        return await self.inner.execute(arguments)
+
+
+registry.register("read_file", GuardedTool(ReadFileTool(), chain, "read_file"))
+```
+
+A `UserFixableError` from `chain.check` escapes the loop so a human can approve or reject the call — see the [error taxonomy](../evaluate/errors.md).
+
+## 6. Enable JSONL tool-call logging
 
 Log every tool invocation to disk:
 
