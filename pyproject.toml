@@ -91,7 +91,7 @@ dev = [
 
 # Kept separate from `dev` — pulls heavy native deps (tree-sitter, Whisper).
 graph = [
-    "code-review-graph>=0.1",
+    "code-review-graph>=2.3.2",
     "graphifyy>=0.1",  # PyPI name has two y's; CLI is `graphify`
 ]
 
