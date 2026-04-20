@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from operator import attrgetter
 from typing import Any
+
+from more_itertools import quantify
 
 from pyarnes_core.observe.logger import get_logger
 
@@ -13,6 +16,8 @@ __all__ = [
 ]
 
 logger = get_logger(__name__)
+
+_is_passed = attrgetter("passed")
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,7 +83,7 @@ class EvalSuite:
         """Return the fraction of evaluations that passed (0.0 - 1.0)."""
         if not self.results:
             return 0.0
-        return sum(1 for r in self.results if r.passed) / len(self.results)
+        return quantify(self.results, pred=_is_passed) / len(self.results)
 
     @property
     def average_score(self) -> float:
@@ -89,11 +94,13 @@ class EvalSuite:
 
     def summary(self) -> dict[str, Any]:
         """Return an aggregate summary dict."""
+        total = len(self.results)
+        passed = quantify(self.results, pred=_is_passed)
         return {
             "suite": self.name,
-            "total": len(self.results),
-            "passed": sum(1 for r in self.results if r.passed),
-            "failed": sum(1 for r in self.results if not r.passed),
+            "total": total,
+            "passed": passed,
+            "failed": total - passed,
             "pass_rate": self.pass_rate,
             "average_score": self.average_score,
         }

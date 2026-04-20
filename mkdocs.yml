@@ -169,6 +169,8 @@ nav:
           - Error taxonomy: adopter/evaluate/errors.md
           - Lifecycle: adopter/evaluate/lifecycle.md
           - Logging: adopter/evaluate/logging.md
+          - Security & threat model: adopter/evaluate/security.md
+          - FAQ & troubleshooting: adopter/evaluate/faq.md
       - Bootstrap:
           - Scaffold a project: adopter/bootstrap/scaffold.md
           - Install & verify: adopter/bootstrap/install.md

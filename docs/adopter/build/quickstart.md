@@ -71,6 +71,62 @@ class MyModel(ModelClient):
         ...
 ```
 
+### Worked example — Anthropic SDK
+
+The provider speaks its own tool-use shape; `next_action` is where you translate. Below is a minimal `ModelClient` that wraps the `anthropic` SDK and emits pyarnes's contract:
+
+```python
+from dataclasses import field
+
+from anthropic import AsyncAnthropic
+from pyarnes_core.types import ModelClient
+
+TOOL_SCHEMAS = [
+    {
+        "name": "read_file",
+        "description": "Read a file from the workspace.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"path": {"type": "string"}},
+            "required": ["path"],
+        },
+    },
+]
+
+
+@dataclass
+class AnthropicModel(ModelClient):
+    """Thin adapter — Anthropic tool-use responses → pyarnes action dicts."""
+
+    client: AsyncAnthropic = field(default_factory=AsyncAnthropic)
+    model: str = "claude-sonnet-4-6"
+
+    async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
+        response = await self.client.messages.create(
+            model=self.model,
+            max_tokens=1024,
+            tools=TOOL_SCHEMAS,
+            messages=messages,
+        )
+        for block in response.content:
+            if block.type == "tool_use":
+                return {
+                    "type": "tool_call",
+                    "tool": block.name,
+                    "id": block.id,
+                    "arguments": block.input,
+                }
+        text = "".join(b.text for b in response.content if b.type == "text")
+        return {"type": "final_answer", "content": text}
+```
+
+Two shape rules:
+
+- Anthropic's `tool_use` block → `{"type": "tool_call", "tool": ..., "id": block.id, "arguments": block.input}`. The `id` threads back to `ToolMessage.tool_call_id` so the model can correlate the result.
+- Any `text` content in the final turn → `{"type": "final_answer", "content": text}`. The loop returns as soon as it sees this type.
+
+OpenAI's `tool_calls` shape is symmetric — map `choice.message.tool_calls[0].function.{name, arguments}` and the call `id` the same way; `arguments` arrives as a JSON string there, so `json.loads` it before returning.
+
 ## 3. Run the agent loop
 
 ```python

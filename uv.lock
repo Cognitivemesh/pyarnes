@@ -1678,22 +1678,30 @@ name = "pyarnes-bench"
 version = "0.1.0"
 source = { editable = "packages/bench" }
 dependencies = [
+    { name = "more-itertools" },
     { name = "pyarnes-core" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pyarnes-core", editable = "packages/core" }]
+requires-dist = [
+    { name = "more-itertools", specifier = ">=10.5" },
+    { name = "pyarnes-core", editable = "packages/core" },
+]
 
 [[package]]
 name = "pyarnes-core"
 version = "0.1.0"
 source = { editable = "packages/core" }
 dependencies = [
+    { name = "funcy" },
     { name = "loguru" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "loguru", specifier = ">=0.7" }]
+requires-dist = [
+    { name = "funcy", specifier = ">=2.0" },
+    { name = "loguru", specifier = ">=0.7" },
+]
 
 [[package]]
 name = "pyarnes-guardrails"
