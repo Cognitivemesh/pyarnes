@@ -1,11 +1,11 @@
-"""Recursive argument-walking atoms.
+"""Atom: recursive argument walking.
 
-Addresses bug A4: guardrails that only inspect top-level scalar values
-miss list arguments (``{"paths": [...]}``), nested dicts
+Guardrails that only inspect top-level scalar values miss list
+arguments (``{"paths": [...]}``), nested dicts
 (``{"opts": {"path": ...}}``), and multi-field shapes
 (``{"source": ..., "dest": ...}``). These helpers walk any nested
-``dict``/``list``/``tuple`` structure bounded by *max_depth* to prevent
-pathological inputs from exhausting the stack.
+``dict``/``list``/``tuple`` structure bounded by *max_depth* to
+prevent pathological inputs from exhausting the stack.
 """
 
 from __future__ import annotations

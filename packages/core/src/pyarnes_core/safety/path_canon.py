@@ -1,12 +1,12 @@
-"""Path canonicalization atoms — collapse ``..`` and resolve symlinks.
+"""Atom: path canonicalization — collapse ``..`` and resolve symlinks.
 
-Addresses bug A1: ``PurePosixPath`` is a lexical type and does not
-collapse ``..``. Any downstream check that relies on string-prefix
-matching will accept ``/workspace/../etc/passwd`` as in-root.
+``PurePosixPath`` is a lexical type and does not collapse ``..``;
+downstream checks that rely on string-prefix matching would otherwise
+accept ``/workspace/../etc/passwd`` as in-root.
 
 Usage::
 
-    from pyarnes_core.safety.atoms import canonicalize, has_traversal
+    from pyarnes_core.safety import canonicalize, has_traversal
 
     if has_traversal(user_input):
         raise UserFixableError(...)

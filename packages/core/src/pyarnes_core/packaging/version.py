@@ -1,7 +1,7 @@
-"""version_of — read a package's ``__version__`` from installed metadata.
+"""Atom: version_of — read a package's version from installed metadata.
 
-Addresses E19: hard-coded ``__version__ = "0.1.0"`` drifts the moment
-any ``pyproject.toml`` is bumped. This atom reads the version from
+A hard-coded ``__version__ = "0.1.0"`` literal drifts the moment any
+``pyproject.toml`` is bumped. This helper reads the version from
 ``importlib.metadata`` so every ``__init__.py`` becomes a single line.
 """
 

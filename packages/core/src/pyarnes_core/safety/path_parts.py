@@ -1,8 +1,8 @@
-"""Path-parts containment atom — parts-prefix comparison, not string prefix.
+"""Atom: path-parts containment — parts-prefix comparison, not string prefix.
 
-Addresses bug A2: ``str.startswith`` treats siblings with a shared name
-prefix as contained (``/workspace_evil``.startswith(``/workspace``) is
-``True``). Comparing ``Path.parts`` tuples eliminates the confusion.
+``str.startswith`` treats siblings with a shared name prefix as
+contained (``/workspace_evil``.startswith(``/workspace``) is ``True``).
+Comparing ``Path.parts`` tuples eliminates the confusion.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from functools import lru_cache
 from pathlib import Path
 
-from pyarnes_core.safety.atoms.path_canon import canonicalize
+from pyarnes_core.safety.path_canon import canonicalize
 
 __all__ = [
     "is_within_roots",

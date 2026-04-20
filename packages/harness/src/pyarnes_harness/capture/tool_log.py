@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TextIO
 
-from pyarnes_core.observability.atoms import dumps, iso_now
+from pyarnes_core.observability import dumps, iso_now
 
 __all__ = [
     "ToolCallEntry",

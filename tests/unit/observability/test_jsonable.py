@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from pyarnes_core.observability.atoms import dumps, to_jsonable
+from pyarnes_core.observability import dumps, to_jsonable
 
 
 class TestToJsonable:

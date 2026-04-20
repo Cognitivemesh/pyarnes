@@ -1,9 +1,9 @@
-"""Retry-policy atom — merge loop config with per-error overrides.
+"""Atom: retry policy — merge loop config with per-error overrides.
 
-Addresses B5 (``TransientError.max_retries`` ignored) and B6
-(``TransientError.retry_delay_seconds`` ignored). The loop currently
-hardcodes config; this atom produces the effective policy by taking
-the maximum of config and per-exception hints.
+``TransientError.max_retries`` and ``TransientError.retry_delay_seconds``
+must be honored alongside ``LoopConfig`` values. This atom produces
+the effective policy by taking the maximum of config and per-exception
+hints.
 """
 
 from __future__ import annotations

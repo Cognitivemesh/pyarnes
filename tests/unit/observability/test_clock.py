@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from pyarnes_core.observability.atoms import iso_now, monotonic_duration, start_timer
+from pyarnes_core.observability import iso_now, monotonic_duration, start_timer
 
 
 class TestIsoNow:

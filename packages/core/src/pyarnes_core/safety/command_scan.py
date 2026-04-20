@@ -1,8 +1,8 @@
-"""Command-scan molecule — regex match across all configured argument keys.
+"""Molecule: command scan — regex match across all configured argument keys.
 
 Composes :func:`walk_values_for_keys` and :func:`walk_strings` with
 regex matching so ``CommandGuardrail`` no longer hardcodes the key
-``"command"``. Addresses A3 and A4.
+``"command"``.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from collections.abc import Iterable
 from functools import lru_cache
 
 from pyarnes_core.errors import UserFixableError
-from pyarnes_core.safety.atoms import walk_strings, walk_values_for_keys
+from pyarnes_core.safety.arg_walker import walk_strings, walk_values_for_keys
 
 __all__ = [
     "scan_for_patterns",

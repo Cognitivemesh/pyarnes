@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from pyarnes_core.errors import UserFixableError
-from pyarnes_core.safety.molecules import scan_for_patterns
+from pyarnes_core.safety import scan_for_patterns
 from pyarnes_core.safety.ports import GuardrailPort
 
 RM_RF = r"\brm\s+-rf\s+/"

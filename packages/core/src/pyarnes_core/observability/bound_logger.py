@@ -1,10 +1,9 @@
-"""log_event — the ``bind(**kv).info(event)`` pattern behind one call.
+"""Molecule: bound_logger — ``bind(**kv).info(event)`` behind one call.
 
-Addresses D15: the widespread
-``logger.info("foo bar={x}", x=...)`` pattern produces a rendered
-string in ``record["message"]`` and leaves ``record["extra"]`` empty,
-so ``jq '.bar == "baz"'`` never matches anything. This molecule forces
-the correct ``bind + event-name`` shape so the fields land in
+The widespread ``logger.info("foo bar={x}", x=...)`` pattern renders
+the kwargs into the message string and leaves ``record["extra"]``
+empty, so ``jq '.bar == "baz"'`` never matches anything. This molecule
+forces the correct ``bind + event-name`` shape so the fields land in
 ``extra`` and the JSON serializer includes them.
 """
 

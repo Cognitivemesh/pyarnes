@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pyarnes_core.safety.atoms import walk_strings, walk_values_for_keys
+from pyarnes_core.safety import walk_strings, walk_values_for_keys
 
 
 class TestWalkStrings:

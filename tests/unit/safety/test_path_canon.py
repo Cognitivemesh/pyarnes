@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from pyarnes_core.safety.atoms import canonicalize, has_traversal
+from pyarnes_core.safety import canonicalize, has_traversal
 
 
 class TestHasTraversal:

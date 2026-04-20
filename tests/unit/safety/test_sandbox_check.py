@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from pyarnes_core.errors import UserFixableError
-from pyarnes_core.safety.molecules import assert_within_roots
+from pyarnes_core.safety import assert_within_roots
 
 
 class TestAssertWithinRoots:

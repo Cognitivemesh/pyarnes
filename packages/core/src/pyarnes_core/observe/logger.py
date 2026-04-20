@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any, TextIO
 
 from loguru import logger
 
-from pyarnes_core.observability.atoms import dumps
+from pyarnes_core.observability import dumps
 
 if TYPE_CHECKING:
     from loguru import Logger

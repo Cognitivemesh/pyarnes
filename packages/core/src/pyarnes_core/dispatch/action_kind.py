@@ -1,10 +1,10 @@
-"""Action-kind classifier.
+"""Atom: action-kind classifier.
 
-Addresses B8: the loop only branches on ``type == "final_answer"`` and
-treats every other shape as a tool call, producing empty-tool-name
-dispatches that surface as ``"Unknown tool: "``. This atom gives the
-loop a three-way decision: final-answer, tool-call, or recoverable
-garbage (fed back to the model as an error message).
+A loop that only branches on ``type == "final_answer"`` would treat
+every other shape as a tool call, producing empty-tool-name dispatches
+that surface as ``"Unknown tool: "``. This atom gives the loop a
+three-way decision: final-answer, tool-call, or recoverable garbage
+(fed back to the model as an error message).
 """
 
 from __future__ import annotations

@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from pyarnes_core.observability.molecules import log_event
+from pyarnes_core.observability import log_event
 from pyarnes_core.observe.logger import get_logger
 
 __all__ = [

@@ -7,7 +7,7 @@ registry. Concurrent dispatch is not part of the current design.
 
 from __future__ import annotations
 
-from pyarnes_core.observability.molecules import log_event
+from pyarnes_core.observability import log_event
 from pyarnes_core.observe.logger import get_logger
 from pyarnes_core.types import ToolHandler
 

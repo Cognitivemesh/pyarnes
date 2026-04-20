@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pyarnes_core.dispatch.atoms import ActionKind, classify
+from pyarnes_core.dispatch import ActionKind, classify
 
 
 class TestClassify:

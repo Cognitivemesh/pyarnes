@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pyarnes_core.observability.molecules import log_error, log_event, log_warning
+from pyarnes_core.observability import log_error, log_event, log_warning
 from pyarnes_core.observability.ports import LoggerPort
 
 

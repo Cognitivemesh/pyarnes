@@ -1,9 +1,9 @@
-"""JSON-serialization atoms.
+"""Atom: JSON serialization helpers.
 
 Centralizes the ``default=str, ensure_ascii=False`` pattern so every
-site that writes a JSON line uses identical behavior. Addresses D17
-(``CapturedOutput.as_dict`` lossy-stringifies values) and D18
-(``ToolCallEntry.result: str`` forces structure loss).
+site that writes a JSON line uses identical behavior. Keeps native
+dicts and lists intact at the capture boundary so downstream JSONL
+consumers can read structured payloads instead of stringified reprs.
 """
 
 from __future__ import annotations

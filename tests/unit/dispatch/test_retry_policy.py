@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pyarnes_core.dispatch.atoms import merge_retry_caps, next_delay
+from pyarnes_core.dispatch import merge_retry_caps, next_delay
 
 
 class TestMergeRetryCaps:

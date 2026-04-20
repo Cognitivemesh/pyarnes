@@ -47,12 +47,20 @@ Do **not** activate for:
 
 Each move has a fixed shape and checklist. Pick exactly one per commit.
 
+### Layout convention
+
+Files live **flat under the domain folder** (no `atoms/` or
+`molecules/` subdirectories). The composability layer is stated in
+each module's opening docstring line (e.g. `"""Atom: X — …"""` or
+`"""Molecule: Y — …"""`) and in the domain's `__init__.py` overview.
+
 ### Extract atom
 
 Pull a pure function out of a class method or long function.
 
 - Precondition: the extracted logic has no I/O and no hidden state.
-- Target path: `packages/<pkg>/src/<module>/<domain>/atoms/<name>.py`.
+- Target path: `packages/<pkg>/src/<module>/<domain>/<name>.py`.
+- Open the module with a docstring starting `"""Atom: <concept> — …"""`.
 - Write `tests/unit/<domain>/test_<name>.py` **before** the extraction.
   The test asserts the contract the new function will satisfy.
 - Replace the original code with a call to the new atom. Run tests.
@@ -64,7 +72,9 @@ Pull a pure function out of a class method or long function.
 
 Compose two or more atoms (or one atom + a port) into a named helper.
 
-- Target path: `packages/<pkg>/src/<module>/<domain>/molecules/<name>.py`.
+- Target path: `packages/<pkg>/src/<module>/<domain>/<name>.py`
+  (same folder as the atoms it composes).
+- Open the module with a docstring starting `"""Molecule: <concept> — …"""`.
 - Allowed imports: own domain's atoms, own domain's `ports.py`, other
   domains' atoms. **Not** other domains' molecules (prevents cycles).
 - Mirror test at `tests/unit/<domain>/test_<name>.py`.
@@ -147,12 +157,15 @@ No behavior change — verified by tests/unit/<domain>/test_<name>.py
 
 Run these greps on the touched domain and refuse to close if any hit:
 
-- `grep -rn 'import loguru' packages/<pkg>/src/<module>/<domain>/atoms/`
-  → atoms must not import loguru.
-- `grep -rn 'from \.adapters' packages/<pkg>/src/<module>/<domain>/molecules/`
-  → molecules must not import adapters.
-- `grep -rn 'open(' packages/<pkg>/src/<module>/<domain>/atoms/`
-  → atoms must not open files.
+- `grep -rn 'import loguru' packages/<pkg>/src/<module>/<domain>/` for
+  files whose docstring starts with `"""Atom:` → atoms must not import
+  loguru. (Grep the domain folder flat; there are no `atoms/` /
+  `molecules/` subfolders.)
+- `grep -rn 'from \.adapters' packages/<pkg>/src/<module>/<domain>/`
+  for files whose docstring starts with `"""Molecule:` → molecules
+  must not import adapters.
+- `grep -rn 'open(' packages/<pkg>/src/<module>/<domain>/` for files
+  whose docstring starts with `"""Atom:` → atoms must not open files.
 
 Run `uv run tasks radon:cc` — cyclomatic complexity of each new atom
 should be ≤ 5. If higher, the "atom" is actually a molecule and lives

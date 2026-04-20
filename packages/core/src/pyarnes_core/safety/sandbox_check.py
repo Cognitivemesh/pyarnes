@@ -1,8 +1,8 @@
-"""Sandbox containment molecule.
+"""Molecule: sandbox containment.
 
 Composes :func:`has_traversal`, :func:`canonicalize`, and
 :func:`is_within_roots` into a single assertion used by
-``PathGuardrail``. Addresses A1 and A2.
+``PathGuardrail``.
 """
 
 from __future__ import annotations
@@ -11,7 +11,8 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from pyarnes_core.errors import UserFixableError
-from pyarnes_core.safety.atoms import canonicalize, has_traversal, is_within_roots
+from pyarnes_core.safety.path_canon import canonicalize, has_traversal
+from pyarnes_core.safety.path_parts import is_within_roots
 
 __all__ = [
     "assert_within_roots",

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pyarnes_core.safety.atoms import is_within_roots
+from pyarnes_core.safety import is_within_roots
 
 
 class TestIsWithinRoots:

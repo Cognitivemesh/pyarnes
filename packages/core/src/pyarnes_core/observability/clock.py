@@ -1,10 +1,9 @@
-"""Clock atoms — ISO timestamps and monotonic durations.
+"""Atom: clock — ISO timestamps and monotonic durations.
 
 Separated from ``ToolCallLogger`` so any call site (audit log, loop
-retry-timer, capture layer) uses the same primitive. Addresses B7:
-the retry timer currently resets per attempt because ``start_timer``
-is called inside the retry loop; consumers should call ``start_timer``
-once before the loop.
+retry-timer, capture layer) uses the same primitive. Consumers should
+call ``start_timer`` once *outside* any retry loop so
+``monotonic_duration`` reflects the full wall-clock span.
 """
 
 from __future__ import annotations
