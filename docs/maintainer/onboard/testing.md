@@ -31,14 +31,17 @@ uv run tasks watch         # TDD watch mode
 tests/
 ├── conftest.py                      # shared fixtures (logging config)
 ├── unit/                            # unit tests
-│   ├── test_api.py                  # OpenAPI endpoint tests
 │   ├── test_capture.py              # OutputCapture / CapturedOutput
 │   ├── test_errors.py               # four-error taxonomy
 │   ├── test_guardrails.py           # path, command, tool-allowlist guardrails
+│   ├── test_integration.py          # cross-package integration tests
 │   ├── test_lifecycle.py            # lifecycle FSM transitions
 │   ├── test_logger.py               # JSONL and console logging
 │   ├── test_loop.py                 # AgentLoop error routing
 │   ├── test_registry.py             # ToolRegistry CRUD
+│   ├── test_stable_surface.py       # public-API import checks
+│   ├── test_tasks.py                # tasks runner
+│   ├── test_tasks_cli.py            # tasks CLI entry point
 │   └── test_tool_log.py             # JSONL tool-call logger
 └── features/                        # BDD / Gherkin acceptance tests
     ├── harness.feature              # error-handling scenarios

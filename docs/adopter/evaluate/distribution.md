@@ -52,7 +52,12 @@ A fourth `blank` shape stamps out a minimal scaffold without shape-specific stub
 | An append-only audit trail of every tool call | `ToolCallLogger` |
 | Scoring for evaluating pipeline quality | `EvalSuite`, `EvalResult`, `Scorer` |
 
-Every symbol above is part of the **stable public surface** (see [`CHANGELOG.md`](https://github.com/Cognitivemesh/pyarnes/blob/main/CHANGELOG.md)). Adopters pinning `pyarnes_ref` to a tag can rely on these names to stay stable until the next MAJOR release.
+Every symbol above is part of the **stable public surface** (see [`CHANGELOG.md`](https://github.com/Cognitivemesh/pyarnes/blob/main/CHANGELOG.md)).
+
+!!! warning "0.x stability disclaimer"
+    pyarnes is currently **v0.x**. Until v1.0.0 ships, **MINOR** releases **may** introduce breaking changes to the public surface. Pin `pyarnes_ref` to an exact PATCH tag (e.g. `v0.1.0`) if you need full stability. The "stable until the next MAJOR release" promise below applies from v1.0.0 onward.
+
+Adopters pinning `pyarnes_ref` to a tag can rely on these names to stay stable until the next MAJOR release once pyarnes reaches v1.0.0.
 
 ## What you still own
 

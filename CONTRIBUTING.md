@@ -26,8 +26,6 @@ The TDD discipline is **Red → Green → Refactor**.
 - `packages/core|harness|guardrails|bench|tasks/` — the five runtime
   packages. Contracts are stable; see
   [`CHANGELOG.md`](CHANGELOG.md) for the public-surface tables.
-- `packages/example-*` — in-tree reference adopters. Exercise the
-  library-first posture and double as CI regression tests.
 - `template/` + `copier.yml` — the Copier template adopters use to
   scaffold their projects. See
   [`docs/maintainer/extend/template.md`](docs/maintainer/extend/template.md).
