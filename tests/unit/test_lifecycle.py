@@ -85,10 +85,7 @@ class TestLifecycleStructuredEvents:
             configure_logging(level="INFO", fmt=LogFormat.JSON)
 
         lines = [ln for ln in sink.getvalue().splitlines() if ln.strip()]
-        transition_records = [
-            json.loads(ln) for ln in lines
-            if json.loads(ln).get("event") == "lifecycle.transition"
-        ]
+        transition_records = [json.loads(ln) for ln in lines if json.loads(ln).get("event") == "lifecycle.transition"]
         assert transition_records, "lifecycle.transition event not emitted"
         record = transition_records[0]
         assert record["from_phase"] == "init"

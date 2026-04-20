@@ -66,8 +66,8 @@ def test_runnable_tutorials_no_undefined_names(md_path: Path, tmp_path: Path) ->
     combined = "\n\n".join(_python_blocks(md_path))
     target = tmp_path / "combined.py"
     target.write_text(combined, encoding="utf-8")
-    result = subprocess.run(  # noqa: S603, S607
-        [
+    result = subprocess.run(  # noqa: S603
+        [  # noqa: S607
             "ruff",
             "check",
             "--select",
@@ -82,10 +82,7 @@ def test_runnable_tutorials_no_undefined_names(md_path: Path, tmp_path: Path) ->
         check=False,
     )
     if result.returncode != 0:
-        pytest.fail(
-            f"{_rel(md_path)} has undefined names in its Python examples:\n"
-            f"{result.stdout}{result.stderr}"
-        )
+        pytest.fail(f"{_rel(md_path)} has undefined names in its Python examples:\n{result.stdout}{result.stderr}")
 
 
 def test_docs_examples_coverage() -> None:

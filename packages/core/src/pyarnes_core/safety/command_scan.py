@@ -55,10 +55,7 @@ def scan_for_patterns(
             for pattern in compiled:
                 if pattern.search(candidate):
                     raise UserFixableError(
-                        message=(
-                            f"Command for tool '{tool_name}' blocked by "
-                            f"pattern: {pattern.pattern}"
-                        ),
+                        message=(f"Command for tool '{tool_name}' blocked by pattern: {pattern.pattern}"),
                         prompt_hint="Review and approve this command manually.",
                     )
 

@@ -100,6 +100,7 @@ def _build_tasks() -> tuple[dict[str, list[str]], Path]:
         "docs": [py, "-m", "doq", "-w", "-r", *code_targets],
         "docs:serve": [py, "-m", "mkdocs", "serve"],
         "docs:build": [py, "-m", "mkdocs", "build"],
+        "check:redirects": [py, str(root / "scripts" / "check_redirects.py")],
         # Graph tools (opt-in group: `uv sync --group graph` first).
         "graph:render": ["graphify", "."],
         "graph:blast": ["code-review-graph", "blast"],

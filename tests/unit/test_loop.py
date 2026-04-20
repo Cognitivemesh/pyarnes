@@ -193,7 +193,8 @@ class TestAgentLoop:
 
     @pytest.mark.asyncio()
     async def test_transient_error_override_raises_delay(
-        self, monkeypatch: pytest.MonkeyPatch,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """A TransientError's retry_delay_seconds must outrank LoopConfig."""
         sleeps: list[float] = []

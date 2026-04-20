@@ -53,9 +53,7 @@ def merge_retry_caps(
         The effective :class:`RetryPolicy` for the current attempt.
     """
     effective_max = config_max if error_max is None else max(config_max, error_max)
-    effective_delay = (
-        config_delay if error_delay is None else max(config_delay, error_delay)
-    )
+    effective_delay = config_delay if error_delay is None else max(config_delay, error_delay)
     return RetryPolicy(
         max_retries=effective_max,
         base_delay_seconds=effective_delay,

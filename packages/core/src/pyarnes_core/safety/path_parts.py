@@ -11,6 +11,8 @@ from collections.abc import Iterable
 from functools import lru_cache
 from pathlib import Path
 
+from funcy import some
+
 from pyarnes_core.safety.path_canon import canonicalize
 
 __all__ = [
@@ -42,8 +44,9 @@ def is_within_roots(path: str | Path, roots: Iterable[str | Path]) -> bool:
         Returns ``False`` when *roots* is empty (no roots → nothing allowed).
     """
     resolved_parts = canonicalize(path).parts
-    for root in roots:
-        root_parts = _canonical_parts(str(root))
-        if resolved_parts[: len(root_parts)] == root_parts:
-            return True
-    return False
+    return bool(
+        some(
+            lambda rp: resolved_parts[: len(rp)] == rp,
+            (_canonical_parts(str(root)) for root in roots),
+        )
+    )
