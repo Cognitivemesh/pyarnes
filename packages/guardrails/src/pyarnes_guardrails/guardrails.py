@@ -1,19 +1,27 @@
 """Safety guardrails for the agentic harness.
 
-Guardrails wrap tool execution and enforce limits on what the system can
-touch.  They are composable — stack multiple guardrails via ``GuardrailChain``.
+Guardrails wrap tool execution and enforce limits on what the system
+can touch. They are composable — stack multiple guardrails via
+``GuardrailChain``. The concrete checks delegate to molecules under
+``pyarnes_core.safety.molecules`` so that the path-containment and
+command-scan logic lives in one tested location.
 """
 
 from __future__ import annotations
 
-import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from pathlib import PurePosixPath
 from typing import Any
 
 from pyarnes_core.errors import UserFixableError
+from pyarnes_core.observability import log_warning
 from pyarnes_core.observe.logger import get_logger
+from pyarnes_core.safety import (
+    assert_within_roots,
+    scan_for_patterns,
+    walk_strings,
+    walk_values_for_keys,
+)
 
 __all__ = [
     "CommandGuardrail",
@@ -51,6 +59,12 @@ class Guardrail(ABC):
 class PathGuardrail(Guardrail):
     """Block tool calls that reference paths outside an allowed set.
 
+    Path values are canonicalized (``..`` collapsed, symlinks followed)
+    and compared by ``Path.parts`` tuples against each allowed root —
+    so neither ``/workspace/../etc/passwd`` nor ``/workspace_evil/x``
+    can escape the sandbox. Nested and list-valued path arguments are
+    walked recursively.
+
     Attributes:
         allowed_roots: Directory prefixes that tools may access.
         path_keys: Argument keys that are expected to contain file paths.
@@ -60,26 +74,33 @@ class PathGuardrail(Guardrail):
     path_keys: tuple[str, ...] = ("path", "file", "directory", "target")
 
     def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
-        """Validate that all path arguments fall under allowed roots."""
-        for key in self.path_keys:
-            value = arguments.get(key)
-            if value is None:
-                continue
-            resolved = str(PurePosixPath(value))
-            if not any(resolved.startswith(root) for root in self.allowed_roots):
-                logger.warning("guardrail.path_blocked tool={tool} path={path}", tool=tool_name, path=resolved)
-                raise UserFixableError(
-                    message=f"Path '{resolved}' is outside allowed roots {self.allowed_roots}",
-                    prompt_hint=f"Allow access to '{resolved}'?",
-                )
+        """Validate that every path argument falls under allowed roots."""
+        for raw in walk_values_for_keys(arguments, keys=self.path_keys):
+            for candidate in walk_strings(raw):
+                try:
+                    assert_within_roots(candidate, self.allowed_roots)
+                except UserFixableError:
+                    log_warning(
+                        logger,
+                        "guardrail.path_blocked",
+                        tool=tool_name,
+                        path=candidate,
+                    )
+                    raise
 
 
 @dataclass(frozen=True, slots=True)
 class CommandGuardrail(Guardrail):
     """Block shell commands matching dangerous patterns.
 
+    Scans every argument key named in :attr:`command_keys`, including
+    list-of-argv shapes (joined with single spaces) and nested dicts,
+    so tools with alternate schemas (``cmd``, ``argv``, ``script``, …)
+    are covered.
+
     Attributes:
         blocked_patterns: Regex patterns that should never appear in a command string.
+        command_keys: Argument keys expected to carry command text.
     """
 
     blocked_patterns: tuple[str, ...] = (
@@ -88,23 +109,27 @@ class CommandGuardrail(Guardrail):
         r"\bchmod\s+777\b",
         r"\bcurl\b.*\|\s*(ba)?sh",
     )
+    command_keys: tuple[str, ...] = (
+        "command",
+        "cmd",
+        "argv",
+        "script",
+        "shell_command",
+        "run",
+    )
 
     def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
         """Reject commands matching any blocked pattern."""
-        cmd = arguments.get("command", "")
-        if not isinstance(cmd, str):
-            return
-        for pattern in self.blocked_patterns:
-            if re.search(pattern, cmd):
-                logger.warning(
-                    "guardrail.command_blocked tool={tool} pattern={pattern}",
-                    tool=tool_name,
-                    pattern=pattern,
-                )
-                raise UserFixableError(
-                    message=f"Command blocked by pattern: {pattern}",
-                    prompt_hint="Review and approve this command manually.",
-                )
+        try:
+            scan_for_patterns(
+                arguments,
+                keys=self.command_keys,
+                patterns=self.blocked_patterns,
+                tool_name=tool_name,
+            )
+        except UserFixableError:
+            log_warning(logger, "guardrail.command_blocked", tool=tool_name)
+            raise
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,7 +145,7 @@ class ToolAllowlistGuardrail(Guardrail):
     def check(self, tool_name: str, arguments: dict[str, Any]) -> None:  # noqa: ARG002
         """Reject calls to tools not on the allowlist."""
         if self.allowed_tools and tool_name not in self.allowed_tools:
-            logger.warning("guardrail.tool_not_allowed tool={tool}", tool=tool_name)
+            log_warning(logger, "guardrail.tool_not_allowed", tool=tool_name)
             raise UserFixableError(
                 message=f"Tool '{tool_name}' is not in the allowlist",
                 prompt_hint=f"Add '{tool_name}' to the allowed tools?",

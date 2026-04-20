@@ -62,3 +62,24 @@ class TestToolRegistry:
         reg.register("x", StubTool())
         d = reg.as_dict()
         assert "x" in d
+
+
+class TestStructuralToolHandler:
+    """ToolHandler is a Protocol; plain classes satisfy it structurally."""
+
+    def test_plain_class_registers(self) -> None:
+        class PlainTool:
+            async def execute(self, arguments: dict[str, Any]) -> Any:
+                return arguments
+
+        reg = ToolRegistry()
+        reg.register("plain", PlainTool())
+        assert reg.get("plain") is not None
+
+    def test_missing_execute_rejected(self) -> None:
+        class NotATool:
+            pass
+
+        reg = ToolRegistry()
+        with pytest.raises(TypeError, match="does not satisfy ToolHandler"):
+            reg.register("broken", NotATool())  # type: ignore[arg-type]

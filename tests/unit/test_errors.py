@@ -85,3 +85,24 @@ class TestHarnessErrorHierarchy:
     def test_context_dict(self) -> None:
         err = HarnessError(message="test", context={"key": "val"})
         assert err.context == {"key": "val"}
+
+
+class TestExceptionArgs:
+    """Dataclass-generated __init__ must still populate Exception.args."""
+
+    def test_harness_error_args(self) -> None:
+        err = HarnessError(message="x")
+        assert err.args == ("x",)
+
+    def test_transient_error_args(self) -> None:
+        err = TransientError(message="y", max_retries=3)
+        assert err.args == ("y",)
+
+    def test_str_unchanged(self) -> None:
+        err = HarnessError(message="still readable")
+        assert str(err) == "still readable"
+
+    def test_caught_as_exception_exposes_args(self) -> None:
+        err = UserFixableError(message="auth", prompt_hint="login")
+        caught: Exception = err
+        assert caught.args == ("auth",)

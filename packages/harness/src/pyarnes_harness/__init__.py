@@ -38,4 +38,6 @@ __all__ = [
     "ToolRegistry",
 ]
 
-__version__ = "0.1.0"
+from pyarnes_core.packaging import version_of
+
+__version__ = version_of("pyarnes-harness")

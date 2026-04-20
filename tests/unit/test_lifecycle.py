@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import io
+import json
+
 import pytest
 
 from pyarnes_core.lifecycle import Lifecycle, Phase
+from pyarnes_core.observe.logger import LogFormat, configure_logging
 
 
 class TestLifecycle:
@@ -66,3 +70,26 @@ class TestLifecycle:
     def test_metadata(self) -> None:
         lc = Lifecycle(metadata={"session_id": "abc123"})
         assert lc.metadata["session_id"] == "abc123"
+
+
+class TestLifecycleStructuredEvents:
+    """Transition events must land in record.extra as JSON fields."""
+
+    def test_transition_emits_structured_fields(self) -> None:
+        sink = io.StringIO()
+        configure_logging(level="INFO", fmt=LogFormat.JSON, stream=sink)
+        try:
+            lc = Lifecycle()
+            lc.start()
+        finally:
+            configure_logging(level="INFO", fmt=LogFormat.JSON)
+
+        lines = [ln for ln in sink.getvalue().splitlines() if ln.strip()]
+        transition_records = [
+            json.loads(ln) for ln in lines
+            if json.loads(ln).get("event") == "lifecycle.transition"
+        ]
+        assert transition_records, "lifecycle.transition event not emitted"
+        record = transition_records[0]
+        assert record["from_phase"] == "init"
+        assert record["to_phase"] == "running"

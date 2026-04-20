@@ -162,6 +162,79 @@ class TestAgentLoop:
             await loop.run([])
 
     @pytest.mark.asyncio()
+    async def test_transient_error_override_raises_retry_cap(self) -> None:
+        """A TransientError's max_retries must override the LoopConfig floor."""
+        calls = {"n": 0}
+
+        class FlakyThenOk(ToolHandler):
+            async def execute(self, arguments: dict[str, Any]) -> Any:
+                del arguments
+                calls["n"] += 1
+                if calls["n"] <= 3:
+                    raise TransientError(message="blip", max_retries=4)
+                return "eventually"
+
+        model = FakeModel(
+            actions=[
+                {"type": "tool_call", "tool": "flaky", "id": "b5", "arguments": {}},
+                {"type": "final_answer", "content": "done"},
+            ]
+        )
+        loop = AgentLoop(
+            tools={"flaky": FlakyThenOk()},
+            model=model,
+            config=LoopConfig(max_retries=2, retry_base_delay=0.001),
+        )
+        result = await loop.run([])
+        tool_msg = [m for m in result if m.get("role") == "tool"]
+        assert tool_msg[0]["is_error"] is False
+        assert "eventually" in tool_msg[0]["content"]
+        assert calls["n"] == 4
+
+    @pytest.mark.asyncio()
+    async def test_transient_error_override_raises_delay(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A TransientError's retry_delay_seconds must outrank LoopConfig."""
+        sleeps: list[float] = []
+
+        async def fake_sleep(delay: float) -> None:
+            sleeps.append(delay)
+
+        monkeypatch.setattr("asyncio.sleep", fake_sleep)
+
+        tool = FailingTool(exc=TransientError(message="slow", retry_delay_seconds=2.0))
+        model = FakeModel(
+            actions=[
+                {"type": "tool_call", "tool": "t", "id": "b6", "arguments": {}},
+                {"type": "final_answer", "content": "done"},
+            ]
+        )
+        loop = AgentLoop(
+            tools={"t": tool},
+            model=model,
+            config=LoopConfig(max_retries=1, retry_base_delay=0.5),
+        )
+        await loop.run([])
+        assert sleeps and sleeps[0] == 2.0
+
+    @pytest.mark.asyncio()
+    async def test_unknown_action_type_is_recoverable(self) -> None:
+        """Malformed actions must not dispatch to tool_name=''."""
+        model = FakeModel(
+            actions=[
+                {"type": "thinking"},
+                {"type": "final_answer", "content": "ok"},
+            ]
+        )
+        loop = AgentLoop(tools={}, model=model)
+        result = await loop.run([])
+        tool_results = [m for m in result if m.get("role") == "tool"]
+        assert tool_results
+        assert tool_results[0]["is_error"] is True
+        assert "Unrecognized action type" in tool_results[0]["content"]
+
+    @pytest.mark.asyncio()
     async def test_max_iterations_limit(self) -> None:
         # Model never returns final_answer → loop should stop after max_iterations.
         max_iter = 3

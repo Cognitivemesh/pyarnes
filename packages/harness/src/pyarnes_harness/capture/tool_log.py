@@ -5,7 +5,7 @@ line to a ``.jsonl`` file inside the workspace.  Each entry records:
 
 * **tool** — name of the tool that was called
 * **arguments** — the full argument dict passed to the tool
-* **result** — stringified return value *or* error description
+* **result** — return value (native JSON types kept verbatim) or error description
 * **is_error** — ``True`` when the call failed
 * **started_at** — ISO-8601 timestamp when execution began
 * **finished_at** — ISO-8601 timestamp when execution ended
@@ -17,22 +17,16 @@ partial runs are never lost.
 
 from __future__ import annotations
 
-import json
-import time
 from dataclasses import dataclass
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TextIO
+
+from pyarnes_core.observability import dumps, iso_now
 
 __all__ = [
     "ToolCallEntry",
     "ToolCallLogger",
 ]
-
-
-def _iso_now() -> str:
-    """Return the current UTC time as an ISO-8601 string."""
-    return datetime.now(tz=UTC).isoformat()
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,7 +36,9 @@ class ToolCallEntry:
     Attributes:
         tool: Name of the tool that was called.
         arguments: Key-value arguments passed to the tool.
-        result: Stringified return value or error description.
+        result: Return value (native JSON types kept verbatim) or an
+            error-description string. Non-native types fall through to
+            ``str()`` at the JSON write site.
         is_error: ``True`` when the call ended in failure.
         started_at: ISO-8601 timestamp when execution began.
         finished_at: ISO-8601 timestamp when execution ended.
@@ -51,7 +47,7 @@ class ToolCallEntry:
 
     tool: str
     arguments: dict[str, Any]
-    result: str
+    result: Any
     is_error: bool
     started_at: str
     finished_at: str
@@ -103,7 +99,7 @@ class ToolCallLogger:
         tool: str,
         arguments: dict[str, Any],
         *,
-        result: str,
+        result: Any,
         is_error: bool = False,
         started_at: str | None = None,
         finished_at: str | None = None,
@@ -114,7 +110,8 @@ class ToolCallLogger:
         Args:
             tool: Name of the tool that was called.
             arguments: Arguments passed to the tool.
-            result: Stringified return value or error description.
+            result: Return value (native JSON types kept verbatim) or
+                error description.
             is_error: Whether the call ended in failure.
             started_at: ISO-8601 start timestamp (auto-filled when ``None``).
             finished_at: ISO-8601 end timestamp (auto-filled when ``None``).
@@ -123,7 +120,7 @@ class ToolCallLogger:
         Returns:
             The immutable ``ToolCallEntry`` that was written.
         """
-        now = _iso_now()
+        now = iso_now()
         entry = ToolCallEntry(
             tool=tool,
             arguments=arguments,
@@ -135,28 +132,6 @@ class ToolCallLogger:
         )
         self._write(entry)
         return entry
-
-    @staticmethod
-    def start_timer() -> tuple[str, float]:
-        """Capture the start timestamp and monotonic clock.
-
-        Returns:
-            A tuple of ``(iso_timestamp, monotonic_ns)`` to pass into
-            :meth:`log_call` later.
-        """
-        return _iso_now(), time.monotonic()
-
-    @staticmethod
-    def stop_timer(start_mono: float) -> tuple[str, float]:
-        """Capture the end timestamp and compute duration.
-
-        Args:
-            start_mono: The monotonic time returned by :meth:`start_timer`.
-
-        Returns:
-            A tuple of ``(iso_timestamp, duration_seconds)``.
-        """
-        return _iso_now(), time.monotonic() - start_mono
 
     # ── lifecycle ──────────────────────────────────────────────────────
 
@@ -185,6 +160,6 @@ class ToolCallLogger:
 
     def _write(self, entry: ToolCallEntry) -> None:
         """Serialise and append one JSON line, then flush."""
-        line = json.dumps(entry.as_dict(), default=str, ensure_ascii=False)
+        line = dumps(entry.as_dict())
         self._file.write(line + "\n")
         self._file.flush()

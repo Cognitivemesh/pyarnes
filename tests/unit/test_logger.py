@@ -31,3 +31,16 @@ class TestConfigureLogging:
 
         output = buf.getvalue()
         assert "visible" in output
+
+    def test_extra_sinks_receive_events(self) -> None:
+        """Side-channel sinks survive reconfigures when registered here."""
+        captured: list[str] = []
+
+        def side_sink(message: object) -> None:
+            captured.append(str(message).strip())
+
+        buf = io.StringIO()
+        configure_logging(level="DEBUG", json=True, stream=buf, extra_sinks=[side_sink])
+        log = get_logger("test.extra")
+        log.info("side-channel")
+        assert any("side-channel" in line for line in captured)
