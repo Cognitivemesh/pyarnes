@@ -23,10 +23,13 @@ class ToolHandler(ABC):
 
     Example::
 
+        import asyncio
+        from pathlib import Path
+
         class ReadFileTool(ToolHandler):
             async def execute(self, arguments: dict[str, Any]) -> Any:
                 path = arguments["path"]
-                return Path(path).read_text()
+                return await asyncio.to_thread(Path(path).read_text)
     """
 
     @abstractmethod
