@@ -43,6 +43,10 @@ class ToolCallEntry:
         started_at: ISO-8601 timestamp when execution began.
         finished_at: ISO-8601 timestamp when execution ended.
         duration_seconds: Wall-clock execution time.
+        token_in: Input tokens consumed, when the caller tracks usage.
+        token_out: Output tokens produced, when the caller tracks usage.
+        cost_usd: Estimated USD cost, when the caller computes it.
+        model: Model identifier that produced this call, when known.
     """
 
     tool: str
@@ -52,6 +56,10 @@ class ToolCallEntry:
     started_at: str
     finished_at: str
     duration_seconds: float
+    token_in: int | None = None
+    token_out: int | None = None
+    cost_usd: float | None = None
+    model: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         """Serialise to a plain dict (one JSON line)."""
@@ -63,6 +71,10 @@ class ToolCallEntry:
             "started_at": self.started_at,
             "finished_at": self.finished_at,
             "duration_seconds": self.duration_seconds,
+            "token_in": self.token_in,
+            "token_out": self.token_out,
+            "cost_usd": self.cost_usd,
+            "model": self.model,
         }
 
 
@@ -104,6 +116,10 @@ class ToolCallLogger:
         started_at: str | None = None,
         finished_at: str | None = None,
         duration_seconds: float | None = None,
+        token_in: int | None = None,
+        token_out: int | None = None,
+        cost_usd: float | None = None,
+        model: str | None = None,
     ) -> ToolCallEntry:
         """Record a tool invocation and flush to disk.
 
@@ -116,6 +132,10 @@ class ToolCallLogger:
             started_at: ISO-8601 start timestamp (auto-filled when ``None``).
             finished_at: ISO-8601 end timestamp (auto-filled when ``None``).
             duration_seconds: Execution duration (auto-filled when ``None``).
+            token_in: Input tokens consumed (optional).
+            token_out: Output tokens produced (optional).
+            cost_usd: Estimated USD cost (optional).
+            model: Model identifier that produced the call (optional).
 
         Returns:
             The immutable ``ToolCallEntry`` that was written.
@@ -129,6 +149,10 @@ class ToolCallLogger:
             started_at=started_at or now,
             finished_at=finished_at or now,
             duration_seconds=duration_seconds or 0.0,
+            token_in=token_in,
+            token_out=token_out,
+            cost_usd=cost_usd,
+            model=model,
         )
         self._write(entry)
         return entry

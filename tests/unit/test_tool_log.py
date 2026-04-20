@@ -37,6 +37,30 @@ class TestToolCallEntry:
         assert d["started_at"] == "2026-01-01T00:00:00+00:00"
         assert d["finished_at"] == "2026-01-01T00:00:01+00:00"
         assert d["duration_seconds"] == 1.0
+        assert d["token_in"] is None
+        assert d["token_out"] is None
+        assert d["cost_usd"] is None
+        assert d["model"] is None
+
+    def test_as_dict_with_usage_fields(self) -> None:
+        entry = ToolCallEntry(
+            tool="gen",
+            arguments={},
+            result="ok",
+            is_error=False,
+            started_at="",
+            finished_at="",
+            duration_seconds=0.0,
+            token_in=12,
+            token_out=34,
+            cost_usd=0.0015,
+            model="claude-opus-4-7",
+        )
+        d = entry.as_dict()
+        assert d["token_in"] == 12
+        assert d["token_out"] == 34
+        assert d["cost_usd"] == 0.0015
+        assert d["model"] == "claude-opus-4-7"
 
     def test_frozen(self) -> None:
         entry = ToolCallEntry(
@@ -124,6 +148,24 @@ class TestToolCallLogger:
         assert data["started_at"] == "2026-01-01T00:00:00+00:00"
         assert data["finished_at"] == "2026-01-01T00:00:05+00:00"
         assert data["duration_seconds"] == 5.0
+
+    def test_usage_fields_persisted(self, tmp_path: Path) -> None:
+        log_file = tmp_path / "calls.jsonl"
+        with ToolCallLogger(path=log_file) as log:
+            log.log_call(
+                "gen",
+                {},
+                result="ok",
+                token_in=100,
+                token_out=50,
+                cost_usd=0.002,
+                model="claude-opus-4-7",
+            )
+        data = json.loads(log_file.read_text().strip())
+        assert data["token_in"] == 100
+        assert data["token_out"] == 50
+        assert data["cost_usd"] == 0.002
+        assert data["model"] == "claude-opus-4-7"
 
     def test_start_stop_timer(self) -> None:
         iso, mono = start_timer()

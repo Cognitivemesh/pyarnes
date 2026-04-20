@@ -57,6 +57,8 @@ def _json_serializer(message: Any) -> str:
         "event": record["message"],
         **record["extra"],
     }
+    if _active_scrub is not None:
+        payload = _active_scrub(payload)
     return dumps(payload)
 
 
@@ -70,14 +72,18 @@ def _json_sink(message: Any) -> None:
 # Module-level stream reference (defaults to stderr).
 _active_stream: TextIO = sys.stderr
 
+# Optional payload-scrubbing callable installed by configure_logging.
+_active_scrub: Callable[[dict[str, Any]], dict[str, Any]] | None = None
 
-def configure_logging(
+
+def configure_logging(  # noqa: PLR0913
     *,
     level: str | int = "INFO",
     json: bool = True,
     stream: TextIO = sys.stderr,
     fmt: LogFormat | None = None,
     extra_sinks: list[Callable[[Any], None]] | None = None,
+    scrub: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
 ) -> None:
     """Set up loguru with JSONL (default) or console rendering.
 
@@ -96,9 +102,13 @@ def configure_logging(
         fmt: Explicit format selection.  When provided, overrides *json*.
         extra_sinks: Optional extra sinks (callables accepting a loguru
             message) to install alongside the default sink.
+        scrub: Optional JSON payload transformer applied before writing.
+            Used to redact secrets (e.g. drop ``authorization`` keys).
+            Only takes effect for JSON output.
     """
-    global _active_stream  # noqa: PLW0603
+    global _active_stream, _active_scrub  # noqa: PLW0603
     _active_stream = stream
+    _active_scrub = scrub
 
     use_json = fmt == LogFormat.JSON if fmt is not None else json
 
