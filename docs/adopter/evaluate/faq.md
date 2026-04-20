@@ -108,6 +108,38 @@ See [security.md § Known limits](security.md#default-command_keys-is-not-exhaus
 
 **Fix.** Use the `log_event` / `log_warning` / `log_error` helpers from `pyarnes_core.observability`, which call `logger.bind(**fields).info(event)` so the fields land in the right place. See `packages/core/src/pyarnes_core/observability/bound_logger.py`.
 
+## Migration and fit
+
+### Is pyarnes a replacement for LangChain or LlamaIndex?
+
+No. pyarnes is a harness *substrate* — it handles loop mechanics, safety
+enforcement, and lifecycle management. You can wire it underneath LangChain
+tools or alongside any other framework. If you already have a working
+LangChain agent, pyarnes adds guardrails and structured error handling on top
+without requiring you to rewrite tool definitions.
+
+### Can I use pyarnes without the full monorepo?
+
+Yes. Your project depends on the five `pyarnes-*` packages via git URLs
+(see [distribution.md](distribution.md)). You never copy source into your
+repo. Add only the packages you need:
+
+```toml
+dependencies = [
+    "pyarnes-core @ git+https://github.com/Cognitivemesh/pyarnes.git#subdirectory=packages/core",
+    "pyarnes-harness @ git+https://github.com/Cognitivemesh/pyarnes.git#subdirectory=packages/harness",
+]
+```
+
+`pyarnes-guardrails`, `pyarnes-bench`, and `pyarnes-tasks` are optional.
+
+### Does pyarnes work with OpenAI models?
+
+Yes. `ModelClient` is a protocol — implement `next_action` to return pyarnes's
+action dict format and the loop is provider-agnostic. See the
+[Anthropic SDK worked example](../build/quickstart.md#worked-example-anthropic-sdk)
+and adapt the `tool_calls` shape for OpenAI's response format.
+
 ## See also
 
 - [Installation](../bootstrap/install.md)

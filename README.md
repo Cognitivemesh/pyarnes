@@ -10,7 +10,8 @@
 - **Four error types** — transient (retry with backoff), LLM-recoverable (return as ToolMessage), user-fixable (interrupt for human input), and unexpected (bubble up for debugging)
 - **Async-first** — built on `asyncio` to maximise performance and avoid GIL contention
 - **JSONL observability** — single logging layer via `loguru` that agents can parse
-- **Safety guardrails** — composable path, command, and tool-allowlist checks
+- **Safety guardrails** — composable path, command, tool-allowlist, and AST-based semantic checks
+- **Benchmarking** — `pyarnes-bench` evaluation framework with pluggable `Scorer`, `EvalSuite`, and JSONL result logging
 - **Lifecycle FSM** — INIT → RUNNING → PAUSED → COMPLETED / FAILED with full history
 - **Monorepo** — `pyarnes-core` + `pyarnes-harness` + `pyarnes-guardrails` + `pyarnes-bench` + `pyarnes-tasks` as independent uv workspace packages
 - **Cross-platform task runner** — replaces Make with `uv run tasks <name>`

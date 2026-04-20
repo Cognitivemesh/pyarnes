@@ -174,11 +174,14 @@ nav:
       - Bootstrap:
           - Scaffold a project: adopter/bootstrap/scaffold.md
           - Install & verify: adopter/bootstrap/install.md
+          - First steps: adopter/bootstrap/first-steps.md
       - Build:
           - Quick start: adopter/build/quickstart.md
           - Packages overview: adopter/build/packages.md
           - Task runner: adopter/build/tasks.md
           - Skills: adopter/build/skills.md
+          - Benchmarking: adopter/build/benchmarking.md
+          - Production guide: adopter/build/production.md
   - Maintainer:
       - maintainer/index.md
       - Onboard:
