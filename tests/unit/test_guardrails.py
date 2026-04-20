@@ -29,6 +29,16 @@ class TestPathGuardrail:
         g = PathGuardrail()
         g.check("some_tool", {"text": "hello"})
 
+    def test_dot_dot_traversal_blocked(self) -> None:
+        g = PathGuardrail(allowed_roots=("/workspace",))
+        with pytest.raises(UserFixableError, match="outside allowed roots"):
+            g.check("read_file", {"path": "/workspace/../etc/passwd"})
+
+    def test_sibling_prefix_blocked(self) -> None:
+        g = PathGuardrail(allowed_roots=("/workspace",))
+        with pytest.raises(UserFixableError, match="outside allowed roots"):
+            g.check("read_file", {"path": "/workspace2/secret.txt"})
+
 
 class TestCommandGuardrail:
     """CommandGuardrail blocks dangerous shell patterns."""

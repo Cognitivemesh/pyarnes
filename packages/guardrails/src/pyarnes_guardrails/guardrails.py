@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from pathlib import PurePosixPath
+from pathlib import Path
 from typing import Any
 
 from pyarnes_core.errors import UserFixableError
@@ -65,12 +65,12 @@ class PathGuardrail(Guardrail):
             value = arguments.get(key)
             if value is None:
                 continue
-            resolved = str(PurePosixPath(value))
-            if not any(resolved.startswith(root) for root in self.allowed_roots):
-                logger.warning("guardrail.path_blocked tool={tool} path={path}", tool=tool_name, path=resolved)
+            resolved = Path(value).resolve()
+            if not any(resolved.is_relative_to(root) for root in self.allowed_roots):
+                logger.warning("guardrail.path_blocked tool={tool} path={path}", tool=tool_name, path=str(resolved))
                 raise UserFixableError(
                     message=f"Path '{resolved}' is outside allowed roots {self.allowed_roots}",
-                    prompt_hint=f"Allow access to '{resolved}'?",
+                    prompt_hint=f"Allow access to '{resolved!s}'?",
                 )
 
 
