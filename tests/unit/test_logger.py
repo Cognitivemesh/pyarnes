@@ -44,3 +44,28 @@ class TestConfigureLogging:
         log = get_logger("test.extra")
         log.info("side-channel")
         assert any("side-channel" in line for line in captured)
+
+    def test_scrub_redacts_payload_before_write(self) -> None:
+        """``scrub`` rewrites the JSON payload before it reaches the sink."""
+        buf = io.StringIO()
+
+        def drop_authorization(payload: dict) -> dict:
+            return {k: v for k, v in payload.items() if k != "authorization"}
+
+        configure_logging(level="DEBUG", json=True, stream=buf, scrub=drop_authorization)
+        log = get_logger("test.scrub")
+        log.bind(authorization="Bearer secret", user_id=42).info("auth.check")
+
+        data = json.loads(buf.getvalue().strip())
+        assert "authorization" not in data
+        assert data["user_id"] == 42
+        assert data["event"] == "auth.check"
+
+    def test_scrub_none_is_noop(self) -> None:
+        """Omitting ``scrub`` (default) leaves the payload untouched."""
+        buf = io.StringIO()
+        configure_logging(level="DEBUG", json=True, stream=buf)
+        log = get_logger("test.scrub.none")
+        log.bind(marker="abc").info("keep")
+        data = json.loads(buf.getvalue().strip())
+        assert data["marker"] == "abc"
