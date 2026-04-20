@@ -1,6 +1,5 @@
 ---
 persona: adopter
-level: L1
 tags: [adopter, bootstrap, install]
 ---
 

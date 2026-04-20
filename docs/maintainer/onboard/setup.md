@@ -1,6 +1,5 @@
 ---
 persona: maintainer
-level: L1
 tags: [maintainer, onboard, setup]
 ---
 

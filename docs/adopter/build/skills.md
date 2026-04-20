@@ -1,6 +1,5 @@
 ---
 persona: adopter
-level: L2
 tags: [adopter, build, skills]
 ---
 

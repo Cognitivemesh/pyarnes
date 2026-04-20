@@ -1,6 +1,5 @@
 ---
 persona: both
-level: L1
 tags: [adopter, maintainer, build, tasks]
 ---
 
