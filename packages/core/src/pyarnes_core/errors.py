@@ -55,6 +55,12 @@ class HarnessError(Exception):
     context: dict[str, Any] = field(default_factory=dict)
     severity: Severity = Severity.MEDIUM
 
+    def __post_init__(self) -> None:
+        """Restore ``Exception.args`` that the dataclass ``__init__`` skips."""
+        # Without this, ``e.args == ()`` and Sentry / structlog /
+        # ``logger.error(*e.args)`` all lose the payload.
+        object.__setattr__(self, "args", (self.message,))
+
     def __str__(self) -> str:  # noqa: D105
         return self.message
 
