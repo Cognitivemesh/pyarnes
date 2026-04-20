@@ -1,5 +1,5 @@
-# Claude Code local memory
-.claude/
+# Claude Code local memory (root only — template/.claude/ is versioned)
+/.claude/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

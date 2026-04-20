@@ -174,6 +174,42 @@ When the developer is writing harness-adjacent tests, follow the patterns used i
 - Error-taxonomy tests: `with pytest.raises(TransientError): …`, verifying retry behaviour from pyarnes-core.
 - Lifecycle tests: drive a `Lifecycle` through `Phase` transitions and assert the full transition history.
 
+## Security patterns for path-validation tests
+
+When the target under test performs **path containment checks** (guardrail, file-access
+tool, sandbox validator), always include these two regression tests. Both were confirmed
+HIGH-severity vulnerabilities caused by the `PurePosixPath + startswith` anti-pattern:
+
+| Attack | Payload | Why it bypasses `startswith("/workspace")` |
+|--------|---------|-------------------------------------------|
+| `..` traversal | `/workspace/../etc/passwd` | `PurePosixPath` is lexical — does NOT resolve `..` |
+| Sibling prefix | `/workspace2/secret` | String prefix matches without a path boundary |
+
+Correct implementation uses `Path.resolve()` + `is_relative_to()`:
+
+```python
+resolved = Path(value).resolve()  # OS canonicalization — collapses '..' and symlinks
+if not any(resolved.is_relative_to(root) for root in allowed_roots):
+    raise UserFixableError(...)
+```
+
+Mandatory test pair — add to every path-guard test class:
+
+```python
+def test_dot_dot_traversal_blocked(self) -> None:
+    g = <GuardClass>(allowed_roots=("/workspace",))
+    with pytest.raises(UserFixableError, match="outside allowed roots"):
+        g.check("read_file", {"path": "/workspace/../etc/passwd"})
+
+def test_sibling_prefix_blocked(self) -> None:
+    g = <GuardClass>(allowed_roots=("/workspace",))
+    with pytest.raises(UserFixableError, match="outside allowed roots"):
+        g.check("read_file", {"path": "/workspace2/secret.txt"})
+```
+
+A test suite that only checks "allowed path passes" and "unrelated path fails" will miss
+both attacks. These tests must be RED before the fix and GREEN after.
+
 ## What the skill does NOT do
 
 - It does not rewrite existing tests. If `tests/unit/test_<target>.py` exists, add a new test there or propose a new file.
