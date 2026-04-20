@@ -103,6 +103,9 @@ def _build_tasks() -> tuple[dict[str, list[str]], Path]:
         # Graph tools (opt-in group: `uv sync --group graph` first).
         "graph:render": ["graphify", "."],
         "graph:blast": ["code-review-graph", "blast"],
+        # Bench: drive a pyarnes-bench EvalSuite and read back the JSONL log.
+        "bench:run": [py, "-m", "pyarnes_tasks.bench_run"],
+        "bench:report": [py, "-m", "pyarnes_tasks.bench_report"],
     }
 
     if tests:
