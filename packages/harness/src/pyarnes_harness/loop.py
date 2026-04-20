@@ -203,9 +203,7 @@ class AgentLoop:
                 content=f"Unknown tool: {name}",
                 is_error=True,
             )
-            self._log_tool_call(
-                name, arguments, msg, started_at=started_at, start_mono=start_mono
-            )
+            self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
             return msg
 
         attempt = 0
@@ -234,8 +232,11 @@ class AgentLoop:
                         is_error=True,
                     )
                     self._log_tool_call(
-                        name, arguments, msg,
-                        started_at=started_at, start_mono=start_mono,
+                        name,
+                        arguments,
+                        msg,
+                        started_at=started_at,
+                        start_mono=start_mono,
                     )
                     return msg
                 delay = next_delay(policy, attempt)
@@ -258,8 +259,11 @@ class AgentLoop:
                     is_error=True,
                 )
                 self._log_tool_call(
-                    name, arguments, msg,
-                    started_at=started_at, start_mono=start_mono,
+                    name,
+                    arguments,
+                    msg,
+                    started_at=started_at,
+                    start_mono=start_mono,
                 )
                 return msg
 
@@ -286,8 +290,11 @@ class AgentLoop:
                     raw_result=result,
                 )
                 self._log_tool_call(
-                    name, arguments, msg,
-                    started_at=started_at, start_mono=start_mono,
+                    name,
+                    arguments,
+                    msg,
+                    started_at=started_at,
+                    start_mono=start_mono,
                 )
                 return msg
 

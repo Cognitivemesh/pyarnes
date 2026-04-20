@@ -31,6 +31,7 @@ class ToolHandler(Protocol):
         import asyncio
         from pathlib import Path
 
+
         class ReadFileTool:
             async def execute(self, arguments: dict[str, Any]) -> Any:
                 path = arguments["path"]

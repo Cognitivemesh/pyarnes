@@ -52,8 +52,7 @@ class ToolRegistry:
             raise ValueError(msg)
         if not isinstance(handler, ToolHandler):
             msg = (
-                f"Handler for '{name}' does not satisfy ToolHandler "
-                "(must define `async def execute(self, arguments)`)"
+                f"Handler for '{name}' does not satisfy ToolHandler (must define `async def execute(self, arguments)`)"
             )
             raise TypeError(msg)
         self._tools[name] = handler
