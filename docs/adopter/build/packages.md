@@ -95,6 +95,7 @@ Every guardrail has a single method:
 
 ```python
 def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
+    ...
 ```
 
 - If the call is safe → returns `None`

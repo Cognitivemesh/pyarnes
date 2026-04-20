@@ -58,12 +58,35 @@ documented in `docs/packages/tasks.md`, not a Python API.
 - Stability test suite: `tests/unit/test_stable_surface.py` enforces that every
   symbol in the tables above resolves and that no public `__all__` entry is
   silently dropped.
+- `tests/unit/test_docs_examples.py` — parses every Python fenced block in
+  `docs/**/*.md` to catch syntax errors and undefined names in examples.
 
 ### Changed
 
 - Documentation now includes a "Stable API surface" section under
   `docs/development/evolving.md` mirroring this policy for contributor
   discoverability.
+
+### Fixed
+
+- `docs/adopter/build/quickstart.md`: the `ReadFileTool` example now wraps
+  `Path.read_text` in `asyncio.to_thread` instead of calling it directly inside
+  an `async def`, matching the async-first invariant in `concepts.md`.
+- `docs/adopter/build/quickstart.md`: added the missing
+  `from pyarnes_core.types import ModelClient` import so Step 2 is copy-paste
+  runnable.
+- `docs/adopter/build/quickstart.md`: new Step 5 wires `GuardrailChain` into the
+  loop via a `register_guarded` helper. Previously `chain.check(...)` was shown
+  only in isolation, contradicting the sequence diagram at the top of the page.
+- `packages/core/src/pyarnes_core/types.py`: the `ToolHandler` docstring example
+  now uses `asyncio.to_thread` too; hover-docs no longer teach the blocking-I/O
+  anti-pattern.
+- `docs/maintainer/onboard/testing.md`: removed phantom `test_api.py`; added
+  four real unit-test files that were missing from the tree.
+- `docs/adopter/evaluate/distribution.md`, `docs/maintainer/release.md`: added
+  an explicit 0.x stability disclaimer — MINOR releases may break until v1.0.0.
+- `CONTRIBUTING.md`: dropped a stale bullet referencing `packages/example-*`
+  directories that do not exist.
 
 ## [0.0.0] - 2026-04-18
 

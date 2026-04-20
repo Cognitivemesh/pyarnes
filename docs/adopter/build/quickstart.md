@@ -111,7 +111,7 @@ chain.check("read_file", {"path": "/etc/passwd"})
 
 ## 5. Integrate guardrails into the loop
 
-pyarnes **does not** auto-apply guardrails — that is a deliberate design choice (see [distribution.md](../evaluate/distribution.md#what-you-still-own)). You compose them into your tools by wrapping each handler so that `chain.check(...)` runs before `handler.execute(...)`:
+pyarnes **does not** auto-apply guardrails — that is a deliberate design choice (see [distribution.md § "What you still own"](../evaluate/distribution.md#what-you-still-own)). You compose them into your tools by wrapping each handler so that `chain.check(...)` runs before `handler.execute(...)`:
 
 ```python
 from dataclasses import dataclass
@@ -132,10 +132,20 @@ class GuardedTool(ToolHandler):
         return await self.inner.execute(arguments)
 
 
-registry.register("read_file", GuardedTool(ReadFileTool(), chain, "read_file"))
+def register_guarded(
+    registry: ToolRegistry,
+    name: str,
+    tool: ToolHandler,
+    chain: GuardrailChain,
+) -> None:
+    """Register ``tool`` under ``name`` with the guardrail chain attached."""
+    registry.register(name, GuardedTool(tool, chain, name))
+
+
+register_guarded(registry, "read_file", ReadFileTool(), chain)
 ```
 
-A `UserFixableError` from `chain.check` escapes the loop so a human can approve or reject the call — see the [error taxonomy](../evaluate/errors.md).
+The helper keeps the tool name in one place — the registry key doubles as the guardrail-check identifier, so the two can never drift apart. A `UserFixableError` from `chain.check` escapes the loop so a human can approve or reject the call — see the [error taxonomy](../evaluate/errors.md).
 
 ## 6. Enable JSONL tool-call logging
 
