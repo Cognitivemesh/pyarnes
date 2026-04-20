@@ -13,8 +13,8 @@ _REPO_ROOT = Path(__file__).parent.parent.parent
 @pytest.mark.slow
 def test_help_task_lists_known_tasks() -> None:
     """uv run tasks help exits 0 and lists core task names."""
-    result = subprocess.run(  # noqa: S603, S607
-        ["uv", "run", "tasks", "help"],
+    result = subprocess.run(
+        ["uv", "run", "tasks", "help"],  # noqa: S607
         capture_output=True,
         text=True,
         cwd=_REPO_ROOT,
@@ -29,8 +29,8 @@ def test_help_task_lists_known_tasks() -> None:
 @pytest.mark.slow
 def test_unknown_task_exits_nonzero() -> None:
     """uv run tasks <unknown> exits with a non-zero code."""
-    result = subprocess.run(  # noqa: S603, S607
-        ["uv", "run", "tasks", "this_task_does_not_exist_xyz"],
+    result = subprocess.run(
+        ["uv", "run", "tasks", "this_task_does_not_exist_xyz"],  # noqa: S607
         capture_output=True,
         text=True,
         cwd=_REPO_ROOT,

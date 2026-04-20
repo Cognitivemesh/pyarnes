@@ -16,7 +16,6 @@ from pyarnes_guardrails import PathGuardrail
 from pyarnes_harness.capture.tool_log import ToolCallLogger
 from pyarnes_harness.loop import AgentLoop, LoopConfig
 
-
 # ── Scenarios ──────────────────────────────────────────────────────────────
 
 
@@ -91,7 +90,7 @@ def _given_retry_loop(retry_ctx: dict[str, Any]) -> None:
 def _when_run_integration(retry_ctx: dict[str, Any]) -> None:
     try:
         retry_ctx["result"] = asyncio.run(retry_ctx["loop"].run([]))
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         retry_ctx["exc"] = exc
 
 
@@ -159,9 +158,7 @@ def _then_jsonl_schema(logger_ctx: dict[str, Any]) -> None:
 
 @dataclass
 class _GuardedTool(ToolHandler):
-    guardrail: PathGuardrail = field(
-        default_factory=lambda: PathGuardrail(allowed_roots=("/workspace",))
-    )
+    guardrail: PathGuardrail = field(default_factory=lambda: PathGuardrail(allowed_roots=("/workspace",)))
 
     async def execute(self, arguments: dict[str, Any]) -> Any:
         self.guardrail.check("guarded", arguments)
@@ -183,7 +180,7 @@ def _when_run_guarded(guard_loop_ctx: dict[str, Any]) -> None:
     loop = AgentLoop(tools={"guarded": guard_loop_ctx["tool"]}, model=model)
     try:
         guard_loop_ctx["result"] = asyncio.run(loop.run([]))
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         guard_loop_ctx["exc"] = exc
 
 

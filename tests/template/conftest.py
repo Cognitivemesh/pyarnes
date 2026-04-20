@@ -28,7 +28,10 @@ def source_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
         src,
         dirs_exist_ok=True,
         ignore=shutil.ignore_patterns(
-            ".git", ".venv", "node_modules", "__pycache__",
+            ".git",
+            ".venv",
+            "node_modules",
+            "__pycache__",
         ),
     )
     return src
