@@ -29,7 +29,9 @@ CHAIN = GuardrailChain(guardrails=[
     ),
     CommandGuardrail(),
     ToolAllowlistGuardrail(allowed_tools=frozenset({
-        "Read", "Write", "Edit", "Glob", "Grep", "Bash", "TodoWrite",
+{%- for tool in allowed_claude_tools %}
+        "{{ tool }}",
+{%- endfor %}
     })),
 ])
 

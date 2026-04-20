@@ -73,6 +73,18 @@ enable_code_graph:
   help: "Wire code-review-graph MCP server into .claude/mcp.json? (adds blast-radius context for your agent)"
   default: false
 
+allowed_claude_tools:
+  type: yaml
+  help: "Claude Code tools the pre-tool hook allows"
+  default:
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
+    - Bash
+    - TodoWrite
+
 # ---------------------------------------------------------------------------
 # Computed values — not asked, just derived
 # ---------------------------------------------------------------------------
