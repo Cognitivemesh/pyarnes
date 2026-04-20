@@ -46,7 +46,7 @@ class TestMainDoubleDashSeparator:
         tasks = {"graph:blast": ["code-review-graph", "blast"]}
         with (
             patch("sys.argv", ["tasks", "graph:blast", "--", "path/to/file.py"]),
-            patch("pyarnes_tasks.cli._build_tasks", return_value=(tasks, "/tmp")),
+            patch("pyarnes_tasks.cli._build_tasks", return_value=(tasks, "/tmp")),  # noqa: S108
             patch("subprocess.run", return_value=Mock(returncode=0)) as mock_run,
             pytest.raises(SystemExit) as exc,
         ):
@@ -59,7 +59,7 @@ class TestMainDoubleDashSeparator:
         calls: list[list[str]] = []
         with (
             patch("sys.argv", ["tasks", "first", "second", "--", "extra"]),
-            patch("pyarnes_tasks.cli._build_tasks", return_value=(tasks, "/tmp")),
+            patch("pyarnes_tasks.cli._build_tasks", return_value=(tasks, "/tmp")),  # noqa: S108
             patch(
                 "subprocess.run",
                 side_effect=lambda cmd, **_kw: calls.append(cmd) or Mock(returncode=0),

@@ -14,7 +14,6 @@ from pyarnes_core.lifecycle import Lifecycle, Phase
 from pyarnes_core.types import ModelClient, ToolHandler
 from pyarnes_harness.loop import AgentLoop
 
-
 # ── Shared helpers ─────────────────────────────────────────────────────────
 
 
@@ -79,12 +78,16 @@ def test_lifecycle_transitions_alongside_loop() -> None:
 
 
 def test_all_workspace_packages_importable() -> None:
-    """All pyarnes workspace packages resolve and expose their __name__."""
-    import pyarnes_bench
-    import pyarnes_core
-    import pyarnes_guardrails
-    import pyarnes_harness
-    import pyarnes_tasks
+    """All pyarnes workspace packages resolve and expose their __name__.
+
+    Imports are intentionally local so a missing workspace package
+    surfaces as a test failure, not a collection-time error.
+    """
+    import pyarnes_bench  # noqa: PLC0415
+    import pyarnes_core  # noqa: PLC0415
+    import pyarnes_guardrails  # noqa: PLC0415
+    import pyarnes_harness  # noqa: PLC0415
+    import pyarnes_tasks  # noqa: PLC0415
 
     assert pyarnes_core.__name__ == "pyarnes_core"
     assert pyarnes_harness.__name__ == "pyarnes_harness"

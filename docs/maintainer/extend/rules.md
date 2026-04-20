@@ -10,7 +10,7 @@ Rules of thumb for contributors adding new surfaces without breaking adopters.
 
 ## Rule 0 — no CLI in `pyarnes-harness`
 
-`pyarnes-harness` is a library. Do not add `click`, `typer`, argparse, or any other CLI framework to its dependency graph. If a worked example needs a CLI, add a Typer command in one of the `packages/example-*` reference adopters.
+`pyarnes-harness` is a library. Do not add `click`, `typer`, argparse, or any other CLI framework to its dependency graph. Worked-example CLIs belong in the adopter project's own code (scaffolded via the Copier template), not in the pyarnes monorepo.
 
 ## Adding a new `Guardrail` subclass
 
@@ -33,10 +33,13 @@ Same pattern as guardrails. `pyarnes-bench` is small on purpose — think twice 
 
 ## Adding a new reference adopter
 
-1. Create `packages/example-<shape>/` with its own `pyproject.toml` and `src/<module>/{cli,pipeline,tools,guardrails}.py`.
-2. Add a shape choice to `copier.yml` and branch the relevant template files (`pyproject.toml.jinja`, `cli.py.jinja`, `tools/__init__.py.jinja`, `guardrails.py.jinja`, `CLAUDE.md.jinja`).
-3. Extend `tests/template/test_scaffold.py` with a new parameterisation asserting the shape generates the expected files + deps.
-4. Document the adopter in `docs/adopter/evaluate/distribution.md`.
+pyarnes does not ship `packages/example-*` in-tree — reference adopters live as specs under [`specs/`](https://github.com/Cognitivemesh/pyarnes/tree/main/specs) and are selected via the Copier `adopter_shape` question. To add a new one:
+
+1. Write the spec as `specs/NN-adopter-<shape>.md` (numbering follows the existing `specs/03-examples-adopter-a-and-b.md` and `specs/04-template-adopter-c-meta-use.md`). Cover: pipeline shape, which pyarnes surfaces it uses, guardrails/scorers it requires, and conditional template files.
+2. Add the shape to the `adopter_shape` choices in `copier.yml`.
+3. If the shape needs shape-specific template files, add them under `template/` with Jinja conditions keyed on `adopter_shape`. Use `_exclude` in `copier.yml` for files that should only ship to that shape (mirrors how `enable_dev_hooks` and `enable_code_graph` are handled).
+4. Extend `tests/template/test_scaffold.py` with a new parameterisation asserting the shape generates the expected files + deps.
+5. Document the adopter in `docs/adopter/evaluate/distribution.md` alongside the existing three.
 
 ## Adding a new public symbol
 

@@ -14,49 +14,57 @@ from types import ModuleType
 import pytest
 
 STABLE_SURFACE: dict[str, frozenset[str]] = {
-    "pyarnes_core": frozenset({
-        "HarnessError",
-        "LLMRecoverableError",
-        "Lifecycle",
-        "LogFormat",
-        "ModelClient",
-        "Phase",
-        "Severity",
-        "ToolHandler",
-        "TransientError",
-        "UnexpectedError",
-        "UserFixableError",
-        "configure_logging",
-        "get_logger",
-    }),
-    "pyarnes_harness": frozenset({
-        "AgentLoop",
-        "CapturedOutput",
-        "CommandGuardrail",
-        "Guardrail",
-        "GuardrailChain",
-        "LoopConfig",
-        "OutputCapture",
-        "PathGuardrail",
-        "ToolAllowlistGuardrail",
-        "ToolCallEntry",
-        "ToolCallLogger",
-        "ToolMessage",
-        "ToolRegistry",
-    }),
-    "pyarnes_guardrails": frozenset({
-        "CommandGuardrail",
-        "Guardrail",
-        "GuardrailChain",
-        "PathGuardrail",
-        "ToolAllowlistGuardrail",
-    }),
-    "pyarnes_bench": frozenset({
-        "EvalResult",
-        "EvalSuite",
-        "ExactMatchScorer",
-        "Scorer",
-    }),
+    "pyarnes_core": frozenset(
+        {
+            "HarnessError",
+            "LLMRecoverableError",
+            "Lifecycle",
+            "LogFormat",
+            "ModelClient",
+            "Phase",
+            "Severity",
+            "ToolHandler",
+            "TransientError",
+            "UnexpectedError",
+            "UserFixableError",
+            "configure_logging",
+            "get_logger",
+        }
+    ),
+    "pyarnes_harness": frozenset(
+        {
+            "AgentLoop",
+            "CapturedOutput",
+            "CommandGuardrail",
+            "Guardrail",
+            "GuardrailChain",
+            "LoopConfig",
+            "OutputCapture",
+            "PathGuardrail",
+            "ToolAllowlistGuardrail",
+            "ToolCallEntry",
+            "ToolCallLogger",
+            "ToolMessage",
+            "ToolRegistry",
+        }
+    ),
+    "pyarnes_guardrails": frozenset(
+        {
+            "CommandGuardrail",
+            "Guardrail",
+            "GuardrailChain",
+            "PathGuardrail",
+            "ToolAllowlistGuardrail",
+        }
+    ),
+    "pyarnes_bench": frozenset(
+        {
+            "EvalResult",
+            "EvalSuite",
+            "ExactMatchScorer",
+            "Scorer",
+        }
+    ),
 }
 
 
@@ -86,8 +94,7 @@ def test_stable_symbols_resolve(module: ModuleType) -> None:
     """Every stable symbol actually resolves from the package."""
     for name in STABLE_SURFACE[module.__name__]:
         assert hasattr(module, name), (
-            f"{module.__name__}.{name} is in the stable surface but does not "
-            "resolve. Breaking change?"
+            f"{module.__name__}.{name} is in the stable surface but does not resolve. Breaking change?"
         )
 
 
@@ -104,6 +111,5 @@ def test_star_import_matches_all(module: ModuleType) -> None:
     imported = {k for k in namespace if not k.startswith("_")}
     declared = set(module.__all__)
     assert imported == declared, (
-        f"Star-import of {module.__name__} yields {sorted(imported)} but "
-        f"__all__ is {sorted(declared)}"
+        f"Star-import of {module.__name__} yields {sorted(imported)} but __all__ is {sorted(declared)}"
     )
