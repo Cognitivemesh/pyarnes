@@ -116,6 +116,16 @@ uv run tasks docs:serve  # local docs site
 - Use `uv run tasks tdd` workflow: Red → Green → Refactor.
 - Types are enforced via `ruff` + `ty`.
 
+## Streaming / tool-output hygiene
+
+Keep tokens flowing; long silent tool calls trigger "Stream idle timeout".
+
+- Build long files incrementally: skeleton `Write`, then section `Edit`s.
+- Prefer `Edit` over full-file `Write` whenever the file exists.
+- Bound reads: pass `limit`/`offset` to `Read`, `head_limit` to `Grep`.
+- Use `run_in_background: true` for Bash that may sit idle > 20 s.
+- One short narration line between heavy tool calls keeps the stream warm.
+
 ## Functional utilities (included, use them)
 
 | Library | When to use |
