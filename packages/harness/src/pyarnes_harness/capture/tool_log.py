@@ -42,7 +42,9 @@ class ToolCallEntry:
     Attributes:
         tool: Name of the tool that was called.
         arguments: Key-value arguments passed to the tool.
-        result: Stringified return value or error description.
+        result: Return value (native JSON types kept verbatim) or an
+            error-description string. Non-native types fall through to
+            ``str()`` at the JSON write site.
         is_error: ``True`` when the call ended in failure.
         started_at: ISO-8601 timestamp when execution began.
         finished_at: ISO-8601 timestamp when execution ended.
@@ -51,7 +53,7 @@ class ToolCallEntry:
 
     tool: str
     arguments: dict[str, Any]
-    result: str
+    result: Any
     is_error: bool
     started_at: str
     finished_at: str
@@ -103,7 +105,7 @@ class ToolCallLogger:
         tool: str,
         arguments: dict[str, Any],
         *,
-        result: str,
+        result: Any,
         is_error: bool = False,
         started_at: str | None = None,
         finished_at: str | None = None,
@@ -114,7 +116,8 @@ class ToolCallLogger:
         Args:
             tool: Name of the tool that was called.
             arguments: Arguments passed to the tool.
-            result: Stringified return value or error description.
+            result: Return value (native JSON types kept verbatim) or
+                error description.
             is_error: Whether the call ended in failure.
             started_at: ISO-8601 start timestamp (auto-filled when ``None``).
             finished_at: ISO-8601 end timestamp (auto-filled when ``None``).

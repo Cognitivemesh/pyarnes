@@ -12,6 +12,8 @@ import traceback
 from dataclasses import dataclass, field
 from typing import Any
 
+from pyarnes_core.observability.atoms import to_jsonable
+from pyarnes_core.observability.molecules import log_error, log_event
 from pyarnes_core.observe.logger import get_logger
 
 __all__ = [
@@ -54,13 +56,18 @@ class CapturedOutput:
         return self.error is None
 
     def as_dict(self) -> dict[str, Any]:
-        """Serialise to a plain dict (suitable for JSONL logging)."""
+        """Serialise to a plain dict (suitable for JSONL logging).
+
+        ``return_value`` keeps its native shape for dict/list/scalar
+        payloads (D17). Non-native types fall through to ``str()``
+        at the JSON write site via ``to_jsonable``.
+        """
         return {
             "tool_name": self.tool_name,
             "arguments": self.arguments,
             "stdout": self.stdout,
             "stderr": self.stderr,
-            "return_value": str(self.return_value) if self.return_value is not None else None,
+            "return_value": to_jsonable(self.return_value),
             "error": self.error,
             "traceback": self.traceback_str,
             "duration_seconds": self.duration_seconds,
@@ -119,7 +126,7 @@ class OutputCapture:
             duration_seconds=duration,
         )
         self._history.append(captured)
-        logger.info("capture.success tool={tool}", tool=tool_name)
+        log_event(logger, "capture.success", tool=tool_name)
         return captured
 
     def record_failure(  # noqa: PLR0913
@@ -155,7 +162,7 @@ class OutputCapture:
             duration_seconds=duration,
         )
         self._history.append(captured)
-        logger.error("capture.failure tool={tool} error={error}", tool=tool_name, error=str(exc))
+        log_error(logger, "capture.failure", tool=tool_name, error=str(exc))
         return captured
 
     @property

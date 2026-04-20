@@ -144,6 +144,21 @@ class TestToolCallLogger:
         with ToolCallLogger(path=log_file) as log:
             assert log.path == log_file
 
+    def test_d18_structured_result_preserved(self, tmp_path: Path) -> None:
+        # D18: dict/list results should round-trip through JSON unchanged.
+        log_file = tmp_path / "calls.jsonl"
+        with ToolCallLogger(path=log_file) as log:
+            log.log_call("query", {}, result={"rows": [1, 2, 3]})
+        data = json.loads(log_file.read_text().strip())
+        assert data["result"] == {"rows": [1, 2, 3]}
+
+    def test_d18_string_result_still_works(self, tmp_path: Path) -> None:
+        log_file = tmp_path / "calls.jsonl"
+        with ToolCallLogger(path=log_file) as log:
+            log.log_call("echo", {}, result="hello")
+        data = json.loads(log_file.read_text().strip())
+        assert data["result"] == "hello"
+
 
 # ── Helpers for loop integration tests ────────────────────────────────────
 

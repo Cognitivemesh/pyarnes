@@ -1,7 +1,13 @@
-"""Tool registry — discover, register, and validate tool handlers."""
+"""Tool registry — discover, register, and validate tool handlers.
+
+Not safe for concurrent mutation. ``register`` and ``unregister`` do
+classic check-then-mutate sequences; expect a single owner task per
+registry. Concurrent dispatch is not part of the current design.
+"""
 
 from __future__ import annotations
 
+from pyarnes_core.observability.molecules import log_event
 from pyarnes_core.observe.logger import get_logger
 from pyarnes_core.types import ToolHandler
 
@@ -51,7 +57,7 @@ class ToolRegistry:
             )
             raise TypeError(msg)
         self._tools[name] = handler
-        logger.info("registry.registered tool={tool}", tool=name)
+        log_event(logger, "registry.registered", tool=name)
 
     def get(self, name: str) -> ToolHandler | None:
         """Look up a handler by name, returning ``None`` if missing."""
@@ -70,7 +76,7 @@ class ToolRegistry:
             msg = f"Tool '{name}' is not registered"
             raise KeyError(msg)
         del self._tools[name]
-        logger.info("registry.unregistered tool={tool}", tool=name)
+        log_event(logger, "registry.unregistered", tool=name)
 
     @property
     def names(self) -> list[str]:

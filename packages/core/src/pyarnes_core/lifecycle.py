@@ -2,6 +2,11 @@
 
 Tracks phases (INIT → RUNNING → PAUSED → COMPLETED / FAILED) and emits
 structured events so every state transition is visible and debuggable.
+
+Not safe for concurrent mutation: ``transition`` does a classic
+check-then-mutate sequence. Callers are expected to own a single
+``Lifecycle`` instance per session; concurrent dispatch is not part
+of the current design (see the serial loop in ``pyarnes_harness.loop``).
 """
 
 from __future__ import annotations
@@ -11,6 +16,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from pyarnes_core.observability.molecules import log_event
 from pyarnes_core.observe.logger import get_logger
 
 __all__ = [
@@ -87,8 +93,9 @@ class Lifecycle:
             "timestamp": time.time(),
         }
         self._history.append(event)
-        logger.info(
-            "lifecycle.transition from={from_phase} to={to_phase}",
+        log_event(
+            logger,
+            "lifecycle.transition",
             from_phase=event["from"],
             to_phase=event["to"],
         )
