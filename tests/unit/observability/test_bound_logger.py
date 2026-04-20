@@ -1,4 +1,4 @@
-"""Tests for observability.molecules.bound_logger — D15 fix."""
+"""Tests for observability.molecules.bound_logger."""
 
 from __future__ import annotations
 
@@ -40,9 +40,8 @@ class TestLogEvent:
         assert event == "lifecycle.transition"
         assert extra == {"from_phase": "init", "to_phase": "running"}
 
-    def test_no_format_placeholders_in_event(self) -> None:
-        # D15 regression: users should NOT be able to sneak {x}-style
-        # placeholders into the event name; the event is passed as-is to info().
+    def test_event_name_passed_through_verbatim(self) -> None:
+        """The event name is handed to info() untouched — no format interpolation."""
         fake = RecordingLogger()
         log_event(fake, "plain.event", kind="a")
         _, event, _ = fake.events[0]

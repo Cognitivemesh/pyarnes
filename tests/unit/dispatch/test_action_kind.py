@@ -1,4 +1,4 @@
-"""Tests for dispatch.atoms.action_kind — B8 prep."""
+"""Tests for dispatch.atoms.action_kind."""
 
 from __future__ import annotations
 
@@ -16,14 +16,13 @@ class TestClassify:
         assert classify(action) == ActionKind.TOOL_CALL
 
     def test_tool_call_without_tool_name_is_unknown(self) -> None:
-        # Empty tool name is a model error; the loop must feed it back as recoverable.
+        """Empty tool name is a model error; the loop feeds it back."""
         assert classify({"type": "tool_call", "tool": ""}) == ActionKind.UNKNOWN
 
     def test_missing_type_is_unknown(self) -> None:
         assert classify({"content": "stray"}) == ActionKind.UNKNOWN
 
     def test_thinking_type_is_unknown(self) -> None:
-        # B8 regression: "thinking" currently becomes a tool dispatch.
         assert classify({"type": "thinking"}) == ActionKind.UNKNOWN
 
     def test_chat_response_is_unknown(self) -> None:

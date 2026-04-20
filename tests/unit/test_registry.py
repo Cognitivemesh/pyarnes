@@ -65,7 +65,7 @@ class TestToolRegistry:
 
 
 class TestStructuralToolHandler:
-    """C12: ToolHandler is a Protocol; plain classes satisfy it structurally."""
+    """ToolHandler is a Protocol; plain classes satisfy it structurally."""
 
     def test_plain_class_registers(self) -> None:
         class PlainTool:

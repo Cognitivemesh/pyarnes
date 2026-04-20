@@ -162,8 +162,8 @@ class TestAgentLoop:
             await loop.run([])
 
     @pytest.mark.asyncio()
-    async def test_b5_error_raises_max_retries(self) -> None:
-        # Handler raises TransientError(max_retries=4) three times, then succeeds.
+    async def test_transient_error_override_raises_retry_cap(self) -> None:
+        """A TransientError's max_retries must override the LoopConfig floor."""
         calls = {"n": 0}
 
         class FlakyThenOk(ToolHandler):
@@ -183,18 +183,19 @@ class TestAgentLoop:
         loop = AgentLoop(
             tools={"flaky": FlakyThenOk()},
             model=model,
-            # LoopConfig default cap is 2 — the error's max_retries=4 must override.
             config=LoopConfig(max_retries=2, retry_base_delay=0.001),
         )
         result = await loop.run([])
         tool_msg = [m for m in result if m.get("role") == "tool"]
-        # Succeeds on attempt 4; content is the stringified return value.
         assert tool_msg[0]["is_error"] is False
         assert "eventually" in tool_msg[0]["content"]
         assert calls["n"] == 4
 
     @pytest.mark.asyncio()
-    async def test_b6_error_raises_delay(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def test_transient_error_override_raises_delay(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A TransientError's retry_delay_seconds must outrank LoopConfig."""
         sleeps: list[float] = []
 
         async def fake_sleep(delay: float) -> None:
@@ -215,13 +216,11 @@ class TestAgentLoop:
             config=LoopConfig(max_retries=1, retry_base_delay=0.5),
         )
         await loop.run([])
-        # Error-side 2.0 outranks config-side 0.5; first retry uses merged base.
         assert sleeps and sleeps[0] == 2.0
 
     @pytest.mark.asyncio()
-    async def test_b8_unknown_action_type_is_recoverable(self) -> None:
-        # {"type": "thinking"} should produce a recoverable tool message,
-        # not a dispatch to tool_name="".
+    async def test_unknown_action_type_is_recoverable(self) -> None:
+        """Malformed actions must not dispatch to tool_name=''."""
         model = FakeModel(
             actions=[
                 {"type": "thinking"},

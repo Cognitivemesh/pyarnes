@@ -1,4 +1,4 @@
-"""Tests for observability.atoms.clock — B7 prep."""
+"""Tests for observability.atoms.clock."""
 
 from __future__ import annotations
 
@@ -12,7 +12,6 @@ class TestIsoNow:
 
     def test_has_timezone_marker(self) -> None:
         now = iso_now()
-        # UTC isoformat ends with +00:00 or Z-like marker.
         assert "+00:00" in now or now.endswith("Z")
 
     def test_is_sortable(self) -> None:
@@ -42,8 +41,7 @@ class TestMonotonicDuration:
         assert duration >= 0.01
 
     def test_hoisted_outside_loop(self) -> None:
-        # B7 shape: call start_timer ONCE, then call monotonic_duration
-        # after multiple sub-operations. Duration reflects the full span.
+        """Call start_timer once; monotonic_duration spans multiple sub-ops."""
         _, start_mono = start_timer()
         for _ in range(3):
             time.sleep(0.005)

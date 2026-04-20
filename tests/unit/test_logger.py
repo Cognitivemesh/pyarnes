@@ -33,8 +33,7 @@ class TestConfigureLogging:
         assert "visible" in output
 
     def test_extra_sinks_receive_events(self) -> None:
-        # D16: callers that need a side-channel sink can register it
-        # on configure_logging so it survives reconfigures.
+        """Side-channel sinks survive reconfigures when registered here."""
         captured: list[str] = []
 
         def side_sink(message: object) -> None:

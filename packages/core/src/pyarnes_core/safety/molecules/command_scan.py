@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
+from functools import lru_cache
 
 from pyarnes_core.errors import UserFixableError
 from pyarnes_core.safety.atoms import walk_strings, walk_values_for_keys
@@ -16,6 +17,11 @@ from pyarnes_core.safety.atoms import walk_strings, walk_values_for_keys
 __all__ = [
     "scan_for_patterns",
 ]
+
+
+@lru_cache(maxsize=128)
+def _compile_patterns(patterns: tuple[str, ...]) -> tuple[re.Pattern[str], ...]:
+    return tuple(re.compile(p) for p in patterns)
 
 
 def scan_for_patterns(
@@ -34,14 +40,16 @@ def scan_for_patterns(
     Args:
         arguments: The tool's argument dict.
         keys: Argument keys that should be treated as command text.
-        patterns: Regex patterns to reject.
+        patterns: Regex patterns to reject. Compiled once per unique
+            tuple and cached so the hot path pays the compile cost only
+            the first time a given guardrail is used.
         tool_name: Tool name for the error message (kept for parity with
             other guardrails — callers use it in their error payloads).
 
     Raises:
         UserFixableError: On the first pattern/command match.
     """
-    compiled = [re.compile(p) for p in patterns]
+    compiled = _compile_patterns(tuple(patterns))
     for raw in walk_values_for_keys(arguments, keys=keys):
         for candidate in _coerce_to_strings(raw):
             for pattern in compiled:

@@ -1,4 +1,4 @@
-"""Tests for safety.atoms.path_canon — A1 prep."""
+"""Tests for safety.atoms.path_canon."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ class TestHasTraversal:
         assert has_traversal(Path("/workspace/../etc")) is True
 
     def test_relative_dot_not_flagged(self) -> None:
-        # A single '.' is current-dir and normal; only '..' is rejected.
+        """A single '.' is current-dir and normal; only '..' is rejected."""
         assert has_traversal("./foo") is False
 
 
@@ -48,6 +48,6 @@ class TestCanonicalize:
             canonicalize("/workspace/\x00/x")
 
     def test_non_existent_path_resolves(self, tmp_path: Path) -> None:
-        # strict=False means missing paths still get normalized.
+        """strict=False lets missing paths still get normalized."""
         result = canonicalize(tmp_path / "does-not-exist")
         assert result.is_absolute()

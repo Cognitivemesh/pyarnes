@@ -1,4 +1,4 @@
-"""Tests for bench.scorer — C13 widened signature."""
+"""Tests for bench.scorer — widened signature accepts scenario context."""
 
 from __future__ import annotations
 
@@ -20,7 +20,6 @@ class TestExactMatchScorer:
         assert scorer.score("ABC", "abc") == 1.0
 
     def test_scenario_kwarg_accepted(self) -> None:
-        # C13: scenario= is now part of the contract; ExactMatch ignores it.
         scorer = ExactMatchScorer()
         assert scorer.score("x", "x", scenario="qa") == 1.0
 
@@ -30,7 +29,7 @@ class TestExactMatchScorer:
 
 
 class ScenarioAwareScorer(Scorer):
-    """Test fixture: one scorer dispatches on scenario name."""
+    """Fixture: one scorer dispatches on scenario name."""
 
     def score(
         self,
@@ -44,13 +43,12 @@ class ScenarioAwareScorer(Scorer):
         if scenario == "qa":
             return 1.0 if expected == actual else 0.0
         if scenario == "code":
-            # Lenient: contains-check for code output.
             return 1.0 if str(expected) in str(actual) else 0.0
         return 0.0
 
 
 class TestScenarioAwareScorer:
-    """C13: a single Scorer can branch on scenario without forking."""
+    """A single Scorer can branch on scenario without forking."""
 
     def test_qa_scenario_exact(self) -> None:
         scorer = ScenarioAwareScorer()

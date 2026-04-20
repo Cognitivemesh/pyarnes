@@ -17,13 +17,14 @@ find them (D15).
 
 from __future__ import annotations
 
-import json
 import sys
 from collections.abc import Callable
 from enum import Enum
 from typing import TYPE_CHECKING, Any, TextIO
 
 from loguru import logger
+
+from pyarnes_core.observability.atoms import dumps
 
 if TYPE_CHECKING:
     from loguru import Logger
@@ -56,7 +57,7 @@ def _json_serializer(message: Any) -> str:
         "event": record["message"],
         **record["extra"],
     }
-    return json.dumps(payload, default=str, ensure_ascii=False)
+    return dumps(payload)
 
 
 def _json_sink(message: Any) -> None:

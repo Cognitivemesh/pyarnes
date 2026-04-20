@@ -154,8 +154,6 @@ class AgentLoop:
                 return messages
 
             if kind is ActionKind.UNKNOWN:
-                # B8: feed the malformed action back to the model instead of
-                # silently dispatching to tool_name="".
                 result = ToolMessage(
                     tool_call_id=action.get("id", ""),
                     content=f"Unrecognized action type: {action.get('type')!r}",
@@ -218,7 +216,7 @@ class AgentLoop:
                     error_max=exc.max_retries,
                     error_delay=exc.retry_delay_seconds,
                 )
-                # Re-expand the attempt budget to reflect any raised cap (B5).
+                # Re-expand in case TransientError raised the cap mid-loop.
                 max_attempts = policy.max_retries + 1
                 if attempt >= policy.max_retries:
                     logger.exception(
@@ -236,7 +234,7 @@ class AgentLoop:
                         started_at=started_at, start_mono=start_mono,
                     )
                     return msg
-                delay = next_delay(policy, attempt)  # B6: honor error delay.
+                delay = next_delay(policy, attempt)
                 log_warning(
                     logger,
                     "tool.transient_retry",
@@ -317,7 +315,8 @@ class AgentLoop:
         if self.tool_call_logger is None:
             return
         finished_at, duration = monotonic_duration(start_mono)
-        # D18: pass the structured raw_result so the JSONL preserves shape.
+        # Errors carry a human-readable string; successes carry the raw
+        # structured return value so ToolCallEntry.result keeps shape.
         payload: Any = result.raw_result if not result.is_error else result.content
         self.tool_call_logger.log_call(
             tool,

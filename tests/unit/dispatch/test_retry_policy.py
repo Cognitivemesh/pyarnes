@@ -1,4 +1,4 @@
-"""Tests for dispatch.atoms.retry_policy — B5, B6 prep."""
+"""Tests for dispatch.atoms.retry_policy."""
 
 from __future__ import annotations
 
@@ -14,17 +14,17 @@ class TestMergeRetryCaps:
         assert policy.base_delay_seconds == 1.0
 
     def test_error_raises_max(self) -> None:
-        # B5: a TransientError asking for 5 retries should override default 2.
+        """TransientError asking for 5 retries overrides config default of 2."""
         policy = merge_retry_caps(config_max=2, config_delay=1.0, error_max=5)
         assert policy.max_retries == 5
 
     def test_error_does_not_lower_max(self) -> None:
-        # If loop is configured stricter than the error hint, keep the loop value.
+        """A stricter loop config keeps the loop's value."""
         policy = merge_retry_caps(config_max=10, config_delay=1.0, error_max=2)
         assert policy.max_retries == 10
 
     def test_error_raises_delay(self) -> None:
-        # B6: a TransientError asking for a longer delay should take effect.
+        """TransientError delay overrides a shorter config base."""
         policy = merge_retry_caps(config_max=2, config_delay=0.5, error_delay=2.0)
         assert policy.base_delay_seconds == 2.0
 
@@ -45,6 +45,6 @@ class TestNextDelay:
         assert next_delay(policy, attempt=1) == 2.0
 
     def test_backoff_uses_merged_base(self) -> None:
+        """Merged base 2.0 means second retry is 4.0."""
         policy = merge_retry_caps(config_max=2, config_delay=0.5, error_delay=2.0)
-        # Base becomes 2.0; second retry is 4.0.
         assert next_delay(policy, attempt=1) == 4.0

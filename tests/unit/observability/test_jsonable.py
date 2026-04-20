@@ -1,4 +1,4 @@
-"""Tests for observability.atoms.jsonable — D17, D18 prep."""
+"""Tests for observability.atoms.jsonable."""
 
 from __future__ import annotations
 
@@ -48,6 +48,6 @@ class TestDumps:
         assert decoded["path"] == str(tmp_path)
 
     def test_unicode_preserved(self) -> None:
-        # ensure_ascii=False means é stays as é, not \u00e9.
+        """ensure_ascii=False keeps non-ASCII characters literal in the output."""
         encoded = dumps({"name": "café"})
         assert "café" in encoded

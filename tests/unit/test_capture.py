@@ -27,7 +27,7 @@ class TestCapturedOutput:
         assert record.succeeded is False
 
     def test_as_dict_preserves_scalar_shape(self) -> None:
-        # D17: return_value keeps its native JSON shape; no premature str().
+        """return_value keeps its native JSON shape; no premature str()."""
         record = CapturedOutput(tool_name="test", return_value=42)
         d = record.as_dict()
         assert d["tool_name"] == "test"
@@ -35,7 +35,7 @@ class TestCapturedOutput:
         assert d["succeeded"] is True
 
     def test_as_dict_preserves_structured_return(self) -> None:
-        # D17 regression: dicts must NOT become "{'foo': 1}".
+        """Dicts must NOT collapse to ``{'foo': 1}`` string form."""
         record = CapturedOutput(tool_name="t", return_value={"foo": 1, "bar": [2, 3]})
         d = record.as_dict()
         assert d["return_value"] == {"foo": 1, "bar": [2, 3]}

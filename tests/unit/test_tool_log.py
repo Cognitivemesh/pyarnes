@@ -10,6 +10,7 @@ from typing import Any
 
 import pytest
 
+from pyarnes_core.observability.atoms import monotonic_duration, start_timer
 from pyarnes_core.types import ModelClient, ToolHandler
 from pyarnes_harness.capture.tool_log import ToolCallEntry, ToolCallLogger
 from pyarnes_harness.loop import AgentLoop, LoopConfig
@@ -125,10 +126,10 @@ class TestToolCallLogger:
         assert data["duration_seconds"] == 5.0
 
     def test_start_stop_timer(self) -> None:
-        iso, mono = ToolCallLogger.start_timer()
+        iso, mono = start_timer()
         assert isinstance(iso, str)
         assert isinstance(mono, float)
-        finished_iso, duration = ToolCallLogger.stop_timer(mono)
+        finished_iso, duration = monotonic_duration(mono)
         assert isinstance(finished_iso, str)
         assert duration >= 0.0
 
@@ -144,15 +145,15 @@ class TestToolCallLogger:
         with ToolCallLogger(path=log_file) as log:
             assert log.path == log_file
 
-    def test_d18_structured_result_preserved(self, tmp_path: Path) -> None:
-        # D18: dict/list results should round-trip through JSON unchanged.
+    def test_structured_result_preserved(self, tmp_path: Path) -> None:
+        """Dict/list results round-trip through JSON unchanged."""
         log_file = tmp_path / "calls.jsonl"
         with ToolCallLogger(path=log_file) as log:
             log.log_call("query", {}, result={"rows": [1, 2, 3]})
         data = json.loads(log_file.read_text().strip())
         assert data["result"] == {"rows": [1, 2, 3]}
 
-    def test_d18_string_result_still_works(self, tmp_path: Path) -> None:
+    def test_string_result_still_works(self, tmp_path: Path) -> None:
         log_file = tmp_path / "calls.jsonl"
         with ToolCallLogger(path=log_file) as log:
             log.log_call("echo", {}, result="hello")

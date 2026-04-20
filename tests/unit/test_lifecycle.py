@@ -73,7 +73,7 @@ class TestLifecycle:
 
 
 class TestLifecycleStructuredEvents:
-    """D15: transition events must land in record.extra as JSON fields."""
+    """Transition events must land in record.extra as JSON fields."""
 
     def test_transition_emits_structured_fields(self) -> None:
         sink = io.StringIO()
@@ -82,7 +82,6 @@ class TestLifecycleStructuredEvents:
             lc = Lifecycle()
             lc.start()
         finally:
-            # Restore default so other tests aren't impacted.
             configure_logging(level="INFO", fmt=LogFormat.JSON)
 
         lines = [ln for ln in sink.getvalue().splitlines() if ln.strip()]

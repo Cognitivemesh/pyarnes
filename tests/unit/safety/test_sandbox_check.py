@@ -1,4 +1,4 @@
-"""Tests for safety.molecules.sandbox_check — A1 + A2 fix."""
+"""Tests for safety.molecules.sandbox_check."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ class TestAssertWithinRoots:
             assert_within_roots(outside, [root])
 
     def test_sibling_with_shared_prefix_rejected(self, tmp_path: Path) -> None:
-        # A2 regression: /workspace_evil must not match /workspace.
+        """/workspace_evil must not match /workspace."""
         root = tmp_path / "workspace"
         root.mkdir()
         evil = tmp_path / "workspace_evil"

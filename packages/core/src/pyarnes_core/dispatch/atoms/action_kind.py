@@ -26,6 +26,12 @@ class ActionKind(Enum):
     UNKNOWN = "unknown"
 
 
+_KIND_BY_TYPE: dict[str, ActionKind] = {
+    ActionKind.FINAL_ANSWER.value: ActionKind.FINAL_ANSWER,
+    ActionKind.TOOL_CALL.value: ActionKind.TOOL_CALL,
+}
+
+
 def classify(action: dict[str, Any]) -> ActionKind:
     """Return the :class:`ActionKind` of a model-produced action dict.
 
@@ -43,9 +49,7 @@ def classify(action: dict[str, Any]) -> ActionKind:
     Returns:
         The classification.
     """
-    kind = action.get("type")
-    if kind == ActionKind.FINAL_ANSWER.value:
-        return ActionKind.FINAL_ANSWER
-    if kind == ActionKind.TOOL_CALL.value and action.get("tool"):
-        return ActionKind.TOOL_CALL
-    return ActionKind.UNKNOWN
+    kind = _KIND_BY_TYPE.get(action.get("type", ""), ActionKind.UNKNOWN)
+    if kind is ActionKind.TOOL_CALL and not action.get("tool"):
+        return ActionKind.UNKNOWN
+    return kind

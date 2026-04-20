@@ -1,4 +1,4 @@
-"""Tests for safety.atoms.path_parts — A2 prep."""
+"""Tests for safety.atoms.path_parts."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ class TestIsWithinRoots:
         assert is_within_roots(child, [tmp_path]) is True
 
     def test_sibling_with_shared_prefix_rejected(self, tmp_path: Path) -> None:
-        # This is the A2 regression: /workspace_evil should NOT match /workspace.
+        """/workspace_evil must NOT match /workspace."""
         root = tmp_path / "workspace"
         root.mkdir()
         evil = tmp_path / "workspace_evil"
@@ -26,7 +26,7 @@ class TestIsWithinRoots:
         assert is_within_roots(evil / "x", [root]) is False
 
     def test_traversal_collapses_out_of_root(self, tmp_path: Path) -> None:
-        # This is the A1 regression: /workspace/../etc must resolve out.
+        """``/workspace/../etc`` resolves outside the root."""
         root = tmp_path / "workspace"
         root.mkdir()
         outside = tmp_path / "etc"

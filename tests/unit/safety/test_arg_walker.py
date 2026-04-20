@@ -1,4 +1,4 @@
-"""Tests for safety.atoms.arg_walker — A4 prep."""
+"""Tests for safety.atoms.arg_walker."""
 
 from __future__ import annotations
 
@@ -26,10 +26,9 @@ class TestWalkStrings:
         assert list(walk_strings(("x", "y"))) == ["x", "y"]
 
     def test_max_depth_bounded(self) -> None:
+        """Depth 0 on a container yields nothing; depth 1 reaches one level."""
         deep = {"a": {"b": {"c": "leaf"}}}
-        # depth 0 on a dict container yields nothing.
         assert list(walk_strings(deep, max_depth=0)) == []
-        # depth 1 reaches one level of children.
         assert list(walk_strings(deep, max_depth=1)) == []
 
     def test_non_container_non_string_ignored(self) -> None:
