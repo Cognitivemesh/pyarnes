@@ -57,5 +57,23 @@ The TDD discipline is **Red → Green → Refactor**.
 ## Reporting issues
 
 Open a GitHub issue with a minimal reproducer and the output of
-`uv run tasks check`. For security concerns, email the maintainers listed
-in `pyproject.toml` rather than opening a public issue.
+`uv run tasks check`. For security concerns, see below.
+
+## Security vulnerabilities
+
+**Do not open a public GitHub issue for security vulnerabilities.**
+
+Email the maintainers at **cognitivemesh@gmail.com** with:
+
+1. A description of the vulnerability and affected component.
+2. Steps to reproduce (or a minimal proof-of-concept).
+3. The potential impact and any mitigations you are aware of.
+
+You will receive an acknowledgement within 72 hours. Fixes are tracked in
+`SECURITY.md`. We follow a responsible-disclosure model: we ask for 90 days
+to ship a fix before public disclosure.
+
+## Code of conduct
+
+This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). By
+participating, you agree to uphold its standards.
