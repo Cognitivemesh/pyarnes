@@ -5,12 +5,12 @@ from __future__ import annotations
 from pyarnes_bench.eval import EvalResult, EvalSuite
 
 
-def _result(scenario: str, *, passed: bool, score: float | None = None) -> EvalResult:
+def _result(scenario: str, *, passed: bool) -> EvalResult:
     return EvalResult(
         scenario=scenario,
         expected="x",
         actual="x" if passed else "y",
-        score=(1.0 if passed else 0.0) if score is None else score,
+        score=1.0 if passed else 0.0,
         passed=passed,
     )
 

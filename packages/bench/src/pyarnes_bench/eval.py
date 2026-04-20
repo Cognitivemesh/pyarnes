@@ -101,7 +101,7 @@ class EvalSuite:
             "total": total,
             "passed": passed,
             "failed": total - passed,
-            "pass_rate": self.pass_rate,
+            "pass_rate": passed / total if total else 0.0,
             "average_score": self.average_score,
         }
 

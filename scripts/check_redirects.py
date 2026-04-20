@@ -17,15 +17,18 @@ from pathlib import Path
 import yaml
 
 
-class _IgnoreTagLoader(yaml.SafeLoader):
-    """Ignore ``!!python/name:...`` tags used by mkdocs plugin hooks."""
+def _err(msg: str) -> None:
+    print(msg, file=sys.stderr)  # noqa: T201
 
 
-def _ignore_unknown(loader: yaml.SafeLoader, node: yaml.Node) -> None:  # noqa: ARG001
-    return None
+def _build_loader() -> type[yaml.SafeLoader]:
+    """Return a SafeLoader that ignores mkdocs' ``!!python/name:...`` tags."""
 
+    class IgnoreTagLoader(yaml.SafeLoader):
+        pass
 
-_IgnoreTagLoader.add_constructor(None, _ignore_unknown)  # type: ignore[arg-type]
+    IgnoreTagLoader.add_constructor(None, lambda _loader, _node: None)  # type: ignore[arg-type]
+    return IgnoreTagLoader
 
 
 def _find_redirect_maps(node: object) -> Iterable[dict[str, str]]:
@@ -44,7 +47,7 @@ def _find_redirect_maps(node: object) -> Iterable[dict[str, str]]:
 def check_redirects(mkdocs_path: Path, docs_dir: Path) -> list[tuple[str, str]]:
     """Return a list of ``(source, target)`` pairs whose target is missing."""
     with mkdocs_path.open("r", encoding="utf-8") as fh:
-        config = yaml.load(fh, Loader=_IgnoreTagLoader)  # noqa: S506
+        config = yaml.load(fh, Loader=_build_loader())  # noqa: S506
 
     missing: list[tuple[str, str]] = []
     for mapping in _find_redirect_maps(config):
@@ -61,17 +64,17 @@ def main() -> int:
     docs_dir = repo_root / "docs"
 
     if not mkdocs_path.is_file():
-        print(f"error: {mkdocs_path} not found", file=sys.stderr)  # noqa: T201
+        _err(f"error: {mkdocs_path} not found")
         return 1
     if not docs_dir.is_dir():
-        print(f"error: {docs_dir} not a directory", file=sys.stderr)  # noqa: T201
+        _err(f"error: {docs_dir} not a directory")
         return 1
 
     missing = check_redirects(mkdocs_path, docs_dir)
     if missing:
-        print(f"error: {len(missing)} redirect target(s) missing:", file=sys.stderr)  # noqa: T201
+        _err(f"error: {len(missing)} redirect target(s) missing:")
         for source, target in missing:
-            print(f"  {source} -> {target}", file=sys.stderr)  # noqa: T201
+            _err(f"  {source} -> {target}")
         return 1
 
     print("ok: all redirect targets exist")  # noqa: T201
