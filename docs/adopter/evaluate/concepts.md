@@ -12,8 +12,8 @@ pyarnes is a small library that sits *between* your AI coding agent and the tool
 
 ```mermaid
 flowchart LR
-    Model[LLM Model] -->|tool call| Loop[AgentLoop]
-    Loop -->|check| Guard[GuardrailChain]
+    Model[(LLM Model)] -->|tool call| Loop[AgentLoop]
+    Loop -->|check| Guard[(GuardrailChain)]
     Guard -->|ok| Tool[Your Tool]
     Guard -.->|blocked| Human[Human]
     Tool -->|result| Loop
