@@ -18,7 +18,8 @@ def fake_suite_module(tmp_path: Path) -> str:
     pkg_dir = tmp_path / "_fake_bench_pkg"
     pkg_dir.mkdir()
     (pkg_dir / "__init__.py").write_text("")
-    (pkg_dir / "suite.py").write_text(textwrap.dedent("""
+    (pkg_dir / "suite.py").write_text(
+        textwrap.dedent("""
         from pyarnes_bench import EvalResult, EvalSuite
 
         def build_suite() -> EvalSuite:
@@ -27,7 +28,8 @@ def fake_suite_module(tmp_path: Path) -> str:
                 scenario="hello", expected="hi", actual="hi", score=1.0, passed=True,
             ))
             return suite
-    """))
+    """)
+    )
     sys.path.insert(0, str(tmp_path))
     yield "_fake_bench_pkg.suite"
     sys.path.remove(str(tmp_path))

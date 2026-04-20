@@ -19,10 +19,13 @@ class TestBenchReport:
 
     def test_renders_table_header_and_rows(self, capsys, tmp_path: Path) -> None:
         jsonl = tmp_path / "eval.jsonl"
-        _write_jsonl(jsonl, [
-            {"scenario": "greeting", "score": 1.0, "metadata": {"reason": "match"}},
-            {"scenario": "farewell", "score": 0.0, "reason": "mismatch"},
-        ])
+        _write_jsonl(
+            jsonl,
+            [
+                {"scenario": "greeting", "score": 1.0, "metadata": {"reason": "match"}},
+                {"scenario": "farewell", "score": 0.0, "reason": "mismatch"},
+            ],
+        )
         with patch.object(sys, "argv", ["bench_report", str(jsonl)]):
             code = bench_report.main()
         assert code == 0
