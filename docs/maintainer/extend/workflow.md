@@ -1,6 +1,5 @@
 ---
 persona: maintainer
-level: L2
 tags: [maintainer, extend, workflow]
 ---
 

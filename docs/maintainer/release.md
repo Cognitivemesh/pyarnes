@@ -1,6 +1,5 @@
 ---
 persona: maintainer
-level: L3
 tags: [maintainer, release, stable-surface]
 ---
 

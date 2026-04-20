@@ -29,27 +29,6 @@
   color: var(--md-primary-bg-color);
 }
 
-/* --- Complexity-level chips ----------------------------------------------
-   Usage:  L1{ .level-l1 }  —  novice friendly
-           L2{ .level-l2 }  —  hands-on
-           L3{ .level-l3 }  —  power user / core
-   -------------------------------------------------------------------------- */
-
-.level-l1,
-.level-l2,
-.level-l3 {
-  display: inline-block;
-  padding: 0.05em 0.55em;
-  border-radius: 0.5em;
-  font-size: 0.7em;
-  font-weight: 700;
-  font-family: var(--md-code-font-family, monospace);
-}
-
-.level-l1 { background-color: #4caf50; color: #fff; }
-.level-l2 { background-color: #ff9800; color: #fff; }
-.level-l3 { background-color: #e53935; color: #fff; }
-
 /* --- Home page hero -------------------------------------------------------
    Applies to the landing index when hide:navigation is set.
    -------------------------------------------------------------------------- */
