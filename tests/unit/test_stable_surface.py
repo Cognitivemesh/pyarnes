@@ -75,6 +75,7 @@ STABLE_SURFACE: dict[str, frozenset[str]] = {
             "FactEvaluator",
             "FactMetrics",
             "FactPrompts",
+            "GuardrailComplianceScorer",
             "RaceCriterion",
             "RaceDimension",
             "RaceEvaluator",
@@ -82,6 +83,8 @@ STABLE_SURFACE: dict[str, frozenset[str]] = {
             "RaceScore",
             "RaceWeights",
             "Scorer",
+            "ToolUseCorrectnessScorer",
+            "TrajectoryLengthScorer",
             "effective_citations_across",
         }
     ),

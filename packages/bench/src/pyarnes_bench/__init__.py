@@ -11,6 +11,13 @@ Provides primitives for defining, running, and scoring agent evaluations:
 * **SWEBenchScenario** — SWE-bench instance data record.
 * **RaceEvaluator** — reference-based long-form report evaluation (4 dimensions, LLM-as-judge).
 * **FactEvaluator** — citation trustworthiness evaluation against adopter-supplied sources.
+
+Trajectory scorers (consume ``ToolCallEntry`` iterables from either the
+in-process loop or a Claude Code transcript):
+
+* **ToolUseCorrectnessScorer** — LCS against a reference tool sequence.
+* **TrajectoryLengthScorer** — penalise runs that over/undershoot.
+* **GuardrailComplianceScorer** — ratio of clean calls to sidecar violations.
 """
 
 from __future__ import annotations
@@ -39,6 +46,11 @@ from pyarnes_bench.scorer import (
     LLMJudgeScorer,
     Scorer,
 )
+from pyarnes_bench.scorers import (
+    GuardrailComplianceScorer,
+    ToolUseCorrectnessScorer,
+    TrajectoryLengthScorer,
+)
 from pyarnes_bench.swe_bench import SWEBenchScenario
 
 __all__ = [
@@ -51,6 +63,7 @@ __all__ = [
     "FactEvaluator",
     "FactMetrics",
     "FactPrompts",
+    "GuardrailComplianceScorer",
     "LLMJudgeScorer",
     "RaceCriterion",
     "RaceDimension",
@@ -61,6 +74,8 @@ __all__ = [
     "RegressionReport",
     "SWEBenchScenario",
     "Scorer",
+    "ToolUseCorrectnessScorer",
+    "TrajectoryLengthScorer",
     "effective_citations_across",
 ]
 

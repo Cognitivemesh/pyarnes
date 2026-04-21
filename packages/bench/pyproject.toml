@@ -17,6 +17,7 @@ classifiers = [
 
 dependencies = [
     "pyarnes-core",
+    "pyarnes-harness",
     "more-itertools>=10.5",
     "pydantic>=2.6",
 ]
@@ -30,3 +31,4 @@ packages = ["src/pyarnes_bench"]
 
 [tool.uv.sources]
 pyarnes-core = { workspace = true }
+pyarnes-harness = { workspace = true }
