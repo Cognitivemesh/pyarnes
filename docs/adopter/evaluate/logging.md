@@ -87,3 +87,25 @@ from pyarnes_core.observe.logger import LogFormat
 configure_logging(fmt=LogFormat.JSON)     # JSONL
 configure_logging(fmt=LogFormat.CONSOLE)  # human-readable
 ```
+
+## Operating pyarnes logs in production
+
+### Ship stderr JSONL to your log platform
+
+pyarnes already emits structured JSONL on stderr, so shipping is usually just collector config:
+
+- **Loki:** scrape container stderr and parse JSON fields (`timestamp`, `level`, `event`, `logger_name`)
+- **Datadog:** enable log collection from stderr and apply JSON remapper pipeline
+- **CloudWatch:** route stderr via your runtime log driver (ECS/EKS/Lambda) and keep JSON unmodified
+
+### Correlate events with `tool_call_id`
+
+When a model emits a tool call, carry its ID through to tool result messages (`ToolMessage.tool_call_id`) and include it in related logs. This gives one correlation key across model decision, tool execution, retries, and final answer.
+
+### PII redaction
+
+If tool arguments/results can include PII, run a redaction step before shipping logs to external sinks. A first-class redaction hook is being tracked in [issue #11](https://github.com/Cognitivemesh/pyarnes/issues/11); adopt it once landed.
+
+### Sampling guidance
+
+Use full-fidelity logs for errors, guardrail blocks, and security-relevant events. Sample high-volume success events (for example, `tool.success`) at ingress if needed, but keep unsampled logs in short retention windows during incident investigations.

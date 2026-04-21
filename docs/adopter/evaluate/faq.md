@@ -72,7 +72,7 @@ uv sync
 
 **Symptom.** `PathGuardrail` raises `UserFixableError` on a path that appears to be under `/workspace`.
 
-**Cause.** Canonicalization (`..` collapsed, symlinks followed) resolves to somewhere outside the allowed roots. This is working as intended — see [security.md § Known limits](security.md#known-limits).
+**Cause.** The lexical path check sees a path shape that is outside allowed roots (or uses a key not covered by `path_keys`). Symlink resolution is not part of the current default check — see [security.md](security.md#what-pyarnes-does-not-protect-against-by-default).
 
 **Fix.** Print the canonical form before the call:
 
@@ -95,7 +95,7 @@ If the resolved path is genuinely where you want it, add its *resolved* root to 
 CommandGuardrail(command_keys=("command", "cmd", "exec", "invoke"))
 ```
 
-See [security.md § Known limits](security.md#default-command_keys-is-not-exhaustive).
+See [security.md](security.md#what-pyarnes-does-not-protect-against-by-default).
 
 ## Logging
 
