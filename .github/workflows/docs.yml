@@ -55,4 +55,5 @@ jobs:
           tool: lychee
 
       - name: Link-check rendered site
+        # Fail on any broken links in the rendered static site output.
         run: lychee --base . --verbose ./site
