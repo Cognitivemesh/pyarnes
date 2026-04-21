@@ -1,5 +1,6 @@
 site_name: pyarnes
 site_description: A minimal agentic harness engineering template for Python
+# Keep lowercase owner in Pages URL; GitHub Pages normalizes owner case.
 site_url: https://cognitivemesh.github.io/pyarnes/
 repo_url: https://github.com/Cognitivemesh/pyarnes
 repo_name: Cognitivemesh/pyarnes
@@ -61,6 +62,9 @@ plugins:
             skip_local_inventory: true
             show_root_heading: false
             show_source: false
+  - git-revision-date-localized:
+      fallback_to_build_date: true
+      type: date
   - redirects:
       redirect_maps:
         # Root template shortcut
