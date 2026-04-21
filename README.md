@@ -3,24 +3,27 @@
 > A minimal agentic harness engineering template for Python.
 > It does **not** replace Claude Code, Cursor, or Codex — it **collaborates** with them.
 
-* **pyarnes** is not another high-level agent framework (LangGraph, CrewAI, etc.). It is a foundational engineering template that supplies the pieces most AI coding tools omit: structured verification loops, precise error taxonomy, composable safety guardrails, observable lifecycle FSM, and JSONL logging — all while staying deliberately minimal and async-first.
-* **pyarnes** captures raw outputs and errors, feeds that reality back to the model, applies guardrails around what the system can touch, and makes every step visible and debuggable.
+* **pyarnes** is not another agent framework (Claude Code, LangGraph, CrewAI, etc.) to compete. It a set of tools for collaborating with them.  with 
+It is a foundational engineering template that supplies the pieces most AI coding tools omit: 
+- A collection of tools for structured verification loops (tests, lints, etc.).
+- A precise foundational structure for building deterministic tools such a composable observable lifecycle FSM, and JSONL logging — all while staying deliberately minimal and async-first.
+- A set of evaluation benchmark and safety guardrails for skills.
+-  **pyarnes** captures raw outputs and errors during the execution of its deterministic tools, feeds that reality back to the model, applies guardrails around what the system can touch, and makes every step visible and debuggable.
 
 ## Features
 
 - **Four error types** — transient (retry with backoff), LLM-recoverable (return as ToolMessage), user-fixable (interrupt for human input), and unexpected (bubble up for debugging)
 - **Async-first** — built on `asyncio` to maximise performance and avoid GIL contention
 - **JSONL observability** — single logging layer via `loguru` that agents can parse
-- **Safety guardrails** — composable path, command, tool-allowlist, and AST-based semantic checks
-- **Benchmarking** — `pyarnes-bench` evaluation framework with pluggable `Scorer`, `EvalSuite`, and JSONL result logging
+- **Skills Safety guardrails** — composable path, command, tool-allowlist, and AST-based semantic checks
+- **Benchmarking** — bench evaluation framework with pluggable `Scorer`, `EvalSuite`, and JSONL result logging
 - **Lifecycle FSM** — INIT → RUNNING → PAUSED → COMPLETED / FAILED with full history
-- **Monorepo** — `pyarnes-core` + `pyarnes-harness` + `pyarnes-guardrails` + `pyarnes-bench` + `pyarnes-tasks` as independent uv workspace packages
-- **Cross-platform task runner** — replaces Make with `uv run tasks <name>`
 - **TDD out of the box** — pytest-watch, pytest-bdd (Gherkin), pytest-sugar, hypothesis, coverage
 
 ## To use pyarnes
 
-### Start a new agentic-harness project from the pyarnes template
+### Start a new agentic-harness project from the pyarnes template. 
+
 
 If you're building **your own project** and want to adopt pyarnes as the foundation:
 
@@ -51,6 +54,8 @@ See [docs/maintainer/onboard/setup.md](docs/maintainer/onboard/setup.md) for the
 
 ## Available tasks
 
+It has **Cross-platform task runner** — replaces Make with `uv run tasks <name>`
+
 | Task | Description |
 |---|---|
 | `uv run tasks lint` | Ruff lint |
@@ -76,7 +81,9 @@ See [docs/maintainer/onboard/setup.md](docs/maintainer/onboard/setup.md) for the
 | `uv run tasks check` | lint + typecheck + test |
 | `uv run tasks ci` | Full CI pipeline |
 
-## Error taxonomy
+## Deterministic Tools Framework 
+
+### Error Taxonomy 
 
 ```text
 ┌─────────────────┐    retry (max 2)     ┌─────────────────┐
@@ -97,6 +104,8 @@ See [docs/maintainer/onboard/setup.md](docs/maintainer/onboard/setup.md) for the
 ```
 
 ## Monorepo structure
+
+The project is **Monorepo** — `pyarnes-core` + `pyarnes-harness` + `pyarnes-guardrails` + `pyarnes-bench` + `pyarnes-tasks` as independent uv workspace packages
 
 ```text
 pyarnes/
