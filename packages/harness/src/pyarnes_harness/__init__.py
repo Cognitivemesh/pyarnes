@@ -10,6 +10,7 @@ This package contains the runtime components that drive agent execution:
 
 from __future__ import annotations
 
+from pyarnes_harness.capture.cc_session import read_cc_session, resolve_cc_session_path
 from pyarnes_harness.capture.output import CapturedOutput, OutputCapture
 from pyarnes_harness.capture.tool_log import ToolCallEntry, ToolCallLogger
 from pyarnes_harness.context import AgentContext
@@ -42,6 +43,8 @@ __all__ = [
     "ToolCallLogger",
     "ToolMessage",
     "ToolRegistry",
+    "read_cc_session",
+    "resolve_cc_session_path",
 ]
 
 from pyarnes_core.packaging import version_of

@@ -47,6 +47,8 @@ STABLE_SURFACE: dict[str, frozenset[str]] = {
             "ToolCallLogger",
             "ToolMessage",
             "ToolRegistry",
+            "read_cc_session",
+            "resolve_cc_session_path",
         }
     ),
     "pyarnes_guardrails": frozenset(
