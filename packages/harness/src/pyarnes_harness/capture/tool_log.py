@@ -17,6 +17,7 @@ partial runs are never lost.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TextIO
@@ -93,16 +94,24 @@ class ToolCallLogger:
             log.log_call("echo", {"text": "hi"}, result="hi")
     """
 
-    def __init__(self, path: Path) -> None:
+    def __init__(
+        self,
+        path: Path,
+        *,
+        redactor: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
+    ) -> None:
         """Open (or create) the JSONL file for appending.
 
         Args:
             path: Filesystem path where tool-call entries will be written.
                   Parent directories are created automatically.
+            redactor: Optional callable that receives each JSON-serialisable
+                entry payload and returns the redacted payload to persist.
         """
         path.parent.mkdir(parents=True, exist_ok=True)
         self._path = path
         self._file: TextIO = path.open("a", encoding="utf-8")
+        self._redactor = redactor
 
     # ── public API ─────────────────────────────────────────────────────
 
@@ -184,6 +193,9 @@ class ToolCallLogger:
 
     def _write(self, entry: ToolCallEntry) -> None:
         """Serialise and append one JSON line, then flush."""
-        line = dumps(entry.as_dict())
+        payload = entry.as_dict()
+        if self._redactor is not None:
+            payload = self._redactor(payload)
+        line = dumps(payload)
         self._file.write(line + "\n")
         self._file.flush()

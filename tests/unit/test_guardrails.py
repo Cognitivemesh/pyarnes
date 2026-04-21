@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from pyarnes_core.errors import UserFixableError
@@ -28,6 +30,29 @@ class TestPathGuardrail:
     def test_no_path_arg_passes(self) -> None:
         g = PathGuardrail()
         g.check("some_tool", {"text": "hello"})
+
+    def test_symlink_allowed_when_resolve_symlinks_is_false(self, tmp_path: Path) -> None:
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        sneaky = workspace / "sneaky"
+        sneaky.symlink_to(outside, target_is_directory=True)
+
+        g = PathGuardrail(allowed_roots=(str(workspace),), resolve_symlinks=False)
+        g.check("read_file", {"path": str(sneaky / "secret.txt")})
+
+    def test_symlink_blocked_when_resolve_symlinks_is_true(self, tmp_path: Path) -> None:
+        workspace = tmp_path / "workspace"
+        workspace.mkdir()
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        sneaky = workspace / "sneaky"
+        sneaky.symlink_to(outside, target_is_directory=True)
+
+        g = PathGuardrail(allowed_roots=(str(workspace),), resolve_symlinks=True)
+        with pytest.raises(UserFixableError, match="outside allowed roots"):
+            g.check("read_file", {"path": str(sneaky / "secret.txt")})
 
 
 class TestCommandGuardrail:

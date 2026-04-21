@@ -233,7 +233,13 @@ class AgentLoop:
                 content=f"Unknown tool: {name}",
                 is_error=True,
             )
-            self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
+            await self._log_tool_call(
+                name,
+                arguments,
+                msg,
+                started_at=started_at,
+                start_mono=start_mono,
+            )
             return msg
 
         guard_result = await self._check_guardrails(name, tool_call_id, arguments, started_at, start_mono)
@@ -265,7 +271,7 @@ class AgentLoop:
                         content=f"Transient failure after {attempt + 1} attempts: {exc}",
                         is_error=True,
                     )
-                    self._log_tool_call(
+                    await self._log_tool_call(
                         name,
                         arguments,
                         msg,
@@ -288,7 +294,7 @@ class AgentLoop:
             except LLMRecoverableError as exc:
                 log_warning(logger, "tool.llm_recoverable", tool=name, error=str(exc))
                 msg = self._recoverable_error_message(tool_call_id, exc)
-                self._log_tool_call(
+                await self._log_tool_call(
                     name,
                     arguments,
                     msg,
@@ -319,7 +325,7 @@ class AgentLoop:
                     content=str(result),
                     raw_result=result,
                 )
-                self._log_tool_call(
+                await self._log_tool_call(
                     name,
                     arguments,
                     msg,
@@ -396,7 +402,7 @@ class AgentLoop:
             "is_error": result.is_error,
         }
 
-    def _log_tool_call(
+    async def _log_tool_call(
         self,
         tool: str,
         arguments: dict[str, Any],
@@ -412,7 +418,8 @@ class AgentLoop:
         # Errors carry a human-readable string; successes carry the raw
         # structured return value so ToolCallEntry.result keeps shape.
         payload: Any = result.raw_result if not result.is_error else result.content
-        self.tool_call_logger.log_call(
+        await asyncio.to_thread(
+            self.tool_call_logger.log_call,
             tool,
             arguments,
             result=payload,
