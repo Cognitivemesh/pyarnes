@@ -21,7 +21,7 @@ from __future__ import annotations
 import ast
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 from pyarnes_core.errors import LLMRecoverableError
 from pyarnes_core.safety.arg_walker import walk_strings, walk_values_for_keys
@@ -63,7 +63,7 @@ class Finding:
         col_offset: Column offset (0-indexed).
     """
 
-    kind: str
+    kind: Literal["import", "call"]
     symbol: str
     lineno: int
     col_offset: int
@@ -157,20 +157,17 @@ class _Visitor(ast.NodeVisitor):
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
-            root = alias.name.split(".")[0]
-            if root in self._banned_imports:
+            if _root_module(alias.name) in self._banned_imports:
                 self.findings.append(
                     Finding("import", alias.name, node.lineno, node.col_offset)
                 )
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
-        if node.module:
-            root = node.module.split(".")[0]
-            if root in self._banned_imports:
-                self.findings.append(
-                    Finding("import", node.module, node.lineno, node.col_offset)
-                )
+        if node.module and _root_module(node.module) in self._banned_imports:
+            self.findings.append(
+                Finding("import", node.module, node.lineno, node.col_offset)
+            )
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
@@ -178,6 +175,10 @@ class _Visitor(ast.NodeVisitor):
         if name in self._banned_calls:
             self.findings.append(Finding("call", name, node.lineno, node.col_offset))
         self.generic_visit(node)
+
+
+def _root_module(dotted: str) -> str:
+    return dotted.split(".", maxsplit=1)[0]
 
 
 def _dotted_name(node: ast.expr) -> str:
