@@ -12,18 +12,23 @@ from __future__ import annotations
 
 from pyarnes_harness.capture.output import CapturedOutput, OutputCapture
 from pyarnes_harness.capture.tool_log import ToolCallEntry, ToolCallLogger
+from pyarnes_harness.context import AgentContext
 from pyarnes_harness.guardrails import (
+    AsyncGuardrail,
     CommandGuardrail,
     Guardrail,
     GuardrailChain,
     PathGuardrail,
+    SemanticGuardrail,
     ToolAllowlistGuardrail,
 )
 from pyarnes_harness.loop import AgentLoop, LoopConfig, ToolMessage
 from pyarnes_harness.tools.registry import ToolRegistry
 
 __all__ = [
+    "AgentContext",
     "AgentLoop",
+    "AsyncGuardrail",
     "CapturedOutput",
     "CommandGuardrail",
     "Guardrail",
@@ -31,6 +36,7 @@ __all__ = [
     "LoopConfig",
     "OutputCapture",
     "PathGuardrail",
+    "SemanticGuardrail",
     "ToolAllowlistGuardrail",
     "ToolCallEntry",
     "ToolCallLogger",

@@ -7,9 +7,10 @@ historical import path ``from pyarnes_core.types import ToolHandler``.
 
 from __future__ import annotations
 
-from pyarnes_core.dispatch.ports import ModelClient, ToolHandler
+from pyarnes_core.dispatch.ports import JudgeClient, ModelClient, ToolHandler
 
 __all__ = [
+    "JudgeClient",
     "ModelClient",
     "ToolHandler",
 ]

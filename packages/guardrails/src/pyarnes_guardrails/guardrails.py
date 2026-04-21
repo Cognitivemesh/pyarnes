@@ -24,6 +24,7 @@ from pyarnes_core.safety import (
 )
 
 __all__ = [
+    "AsyncGuardrail",
     "CommandGuardrail",
     "Guardrail",
     "GuardrailChain",
@@ -35,16 +36,37 @@ logger = get_logger(__name__)
 
 
 class Guardrail(ABC):
-    """Abstract base for a single guardrail check.
+    """Abstract base for a synchronous guardrail check.
 
     Subclass and implement :meth:`check` to create a concrete guardrail.
     The method must raise ``UserFixableError`` if the call violates the
     guardrail, or return ``None`` silently if it passes.
+
+    For guardrails that require async I/O (e.g. LLM judge calls),
+    use :class:`AsyncGuardrail` instead.
     """
 
     @abstractmethod
     def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
         """Raise ``UserFixableError`` if the call violates this guardrail.
+
+        Args:
+            tool_name: The name of the tool being invoked.
+            arguments: Key-value arguments passed to the tool.
+        """
+
+
+class AsyncGuardrail(ABC):
+    """Abstract base for guardrails that require async I/O.
+
+    Use this for guardrails that must ``await`` an external call, e.g.
+    an LLM judge. :class:`GuardrailChain` dispatches both
+    ``Guardrail`` and ``AsyncGuardrail`` instances correctly.
+    """
+
+    @abstractmethod
+    async def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
+        """Raise an error if the call violates this guardrail.
 
         Args:
             tool_name: The name of the tool being invoked.
@@ -159,13 +181,17 @@ class ToolAllowlistGuardrail(Guardrail):
 class GuardrailChain:
     """Run a sequence of guardrails; fail on the first violation.
 
+    Accepts both :class:`Guardrail` (sync) and :class:`AsyncGuardrail`
+    members in the same list. Sync members are called directly; async
+    members are awaited.
+
     Attributes:
         guardrails: Ordered list of guardrails to evaluate.
     """
 
-    guardrails: list[Guardrail] = field(default_factory=list)
+    guardrails: list[Guardrail | AsyncGuardrail] = field(default_factory=list)
 
-    def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
+    async def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
         """Run every guardrail in order.
 
         Args:
@@ -173,4 +199,7 @@ class GuardrailChain:
             arguments: Key-value arguments passed to the tool.
         """
         for guardrail in self.guardrails:
-            guardrail.check(tool_name, arguments)
+            if isinstance(guardrail, AsyncGuardrail):
+                await guardrail.check(tool_name, arguments)
+            else:
+                guardrail.check(tool_name, arguments)
