@@ -11,6 +11,7 @@ packages depend on:
 
 from __future__ import annotations
 
+from pyarnes_core.budget import Budget
 from pyarnes_core.errors import (
     HarnessError,
     LLMRecoverableError,
@@ -24,6 +25,7 @@ from pyarnes_core.observe.logger import LogFormat, configure_logging, get_logger
 from pyarnes_core.types import ModelClient, ToolHandler
 
 __all__ = [
+    "Budget",
     "HarnessError",
     "LLMRecoverableError",
     "Lifecycle",

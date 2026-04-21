@@ -7,15 +7,23 @@ Not safe for concurrent mutation: ``transition`` does a classic
 check-then-mutate sequence. Callers are expected to own a single
 ``Lifecycle`` instance per session; concurrent dispatch is not part
 of the current design (see the serial loop in ``pyarnes_harness.loop``).
+
+A ``Lifecycle`` can persist to disk via :meth:`dump` / :meth:`load` so
+a Claude Code ``SessionEnd`` hook can write the final state and the
+next ``SessionStart`` can restore it — the only mechanism Claude Code
+offers for session-to-session continuity.
 """
 
 from __future__ import annotations
 
+import json
 import time
 from dataclasses import dataclass, field
 from enum import Enum
+from pathlib import Path
 from typing import Any
 
+from pyarnes_core.budget import Budget
 from pyarnes_core.observability import log_event
 from pyarnes_core.observe.logger import get_logger
 
@@ -64,10 +72,13 @@ class Lifecycle:
     Attributes:
         phase: Current lifecycle phase.
         metadata: Arbitrary key-value pairs attached to the session.
+        budget: Optional :class:`Budget` attached so it is persisted
+            alongside the phase when :meth:`dump` is called.
     """
 
     phase: Phase = Phase.INIT
     metadata: dict[str, Any] = field(default_factory=dict)
+    budget: Budget | None = None
     _history: list[dict[str, Any]] = field(default_factory=list, repr=False)
 
     # ── transitions ────────────────────────────────────────────────────
@@ -131,3 +142,33 @@ class Lifecycle:
     def is_terminal(self) -> bool:
         """Check whether the lifecycle has reached a terminal phase."""
         return self.phase in _TERMINAL_PHASES
+
+    # ── persistence ────────────────────────────────────────────────────
+
+    def dump(self, path: Path) -> Path:
+        """Serialise the lifecycle to *path* (JSON) and return the path.
+
+        The transition history is NOT persisted — it is a debug aid for
+        the current process. Restored instances start with an empty
+        history.
+        """
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload: dict[str, Any] = {
+            "phase": self.phase.value,
+            "metadata": self.metadata,
+            "budget": self.budget.as_dict() if self.budget is not None else None,
+        }
+        path.write_text(json.dumps(payload))
+        return path
+
+    @classmethod
+    def load(cls, path: Path) -> Lifecycle:
+        """Inverse of :meth:`dump`."""
+        raw = json.loads(path.read_text())
+        budget_raw = raw.get("budget")
+        budget = Budget.from_dict(budget_raw) if budget_raw is not None else None
+        return cls(
+            phase=Phase(raw.get("phase", Phase.INIT.value)),
+            metadata=dict(raw.get("metadata", {})),
+            budget=budget,
+        )

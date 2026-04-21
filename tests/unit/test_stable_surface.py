@@ -16,6 +16,7 @@ import pytest
 STABLE_SURFACE: dict[str, frozenset[str]] = {
     "pyarnes_core": frozenset(
         {
+            "Budget",
             "HarnessError",
             "LLMRecoverableError",
             "Lifecycle",
