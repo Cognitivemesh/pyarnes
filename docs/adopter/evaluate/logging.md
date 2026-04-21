@@ -104,7 +104,7 @@ When a model emits a tool call, carry its ID through to tool result messages (`T
 
 ### PII redaction
 
-If tool arguments/results can include PII, run a redaction step before shipping logs to external sinks. A first-class redaction hook is being tracked in [issue #11](https://github.com/Cognitivemesh/pyarnes/issues/11); adopt it once landed.
+If tool arguments/results can include PII, run a redaction step before shipping logs to external sinks. A first-class redaction hook is being tracked in [issue #11](https://github.com/Cognitivemesh/pyarnes/issues/11); adopt it when it becomes available.
 
 ### Sampling guidance
 

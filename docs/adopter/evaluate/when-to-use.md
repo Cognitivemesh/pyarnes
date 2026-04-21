@@ -18,4 +18,5 @@ Use pyarnes when you want a **small, auditable harness** around tool-calling age
 
 pyarnes sits between “raw loop” and “full framework.” It gives you a tested execution loop, explicit error taxonomy, structured JSONL logging, and opt-in guardrail composition without hiding core control flow. That makes it a strong choice when you need to explain and audit agent behavior in CI or production, but do not want to commit to a large orchestration DSL.
 
-If you already need graph scheduling, long-lived shared memory primitives, or rich built-in agent topologies, higher-level frameworks can be a better default. If you mostly need deterministic tool dispatch, bounded retries, and clear extension points, pyarnes is usually the simpler long-term maintenance choice.
+If you already need graph scheduling, long-lived shared memory primitives, or rich built-in agent topologies, higher-level frameworks can be a better default.
+If you mostly need deterministic tool dispatch, bounded retries, and clear extension points, pyarnes is usually the simpler long-term maintenance choice.
