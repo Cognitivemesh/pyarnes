@@ -203,6 +203,7 @@ cython_debug/
 
 # structlog / JSONL logs
 *.jsonl
+!tests/**/fixtures/*.jsonl
 logs/
 
 # PyPI configuration file

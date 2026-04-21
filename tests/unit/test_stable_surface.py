@@ -53,8 +53,14 @@ STABLE_SURFACE: dict[str, frozenset[str]] = {
             "CommandGuardrail",
             "Guardrail",
             "GuardrailChain",
+            "NetworkEgressGuardrail",
             "PathGuardrail",
+            "RateLimitGuardrail",
+            "SecretLeakGuardrail",
             "ToolAllowlistGuardrail",
+            "Violation",
+            "append_violation",
+            "default_violation_log_path",
         }
     ),
     "pyarnes_bench": frozenset(
