@@ -19,6 +19,19 @@ def _project_dependencies(dest: Path) -> list[str]:
     return list(data.get("project", {}).get("dependencies", []))
 
 
+FORBIDDEN_RUNTIME_DEPS = (
+    "pyarnes-core",
+    "pyarnes-harness",
+    "pyarnes-guardrails",
+    "pyarnes-bench",
+    "presidio-analyzer",
+    "kreuzberg",
+    "boto3",
+    "httpx",
+    "pydantic",
+)
+
+
 @pytest.mark.parametrize(
     "shape",
     ["blank", "pii-redaction", "s3-sweep", "rtm-toggl-agile"],
@@ -86,9 +99,9 @@ def test_shape_specific_deps_are_pep723_inline(
         project_description=f"inline deps for {shape}",
         adopter_shape=shape,
     )
-    # Shape-specific libs must NOT appear in [project.dependencies].
+    # No shape-lib (and no pyarnes) may appear in [project.dependencies].
     deps_text = "\n".join(_project_dependencies(dest))
-    for forbidden in ("kreuzberg", "presidio-analyzer", "boto3", "httpx", "pydantic"):
+    for forbidden in FORBIDDEN_RUNTIME_DEPS:
         assert forbidden not in deps_text
 
     # The shape's example script carries its own PEP 723 header declaring the lib.
@@ -111,17 +124,7 @@ def test_project_dependencies_stay_minimal(shape: str, run_copy, tmp_path: Path)
         adopter_shape=shape,
     )
     deps_text = "\n".join(_project_dependencies(dest))
-    for forbidden in (
-        "pyarnes-core",
-        "pyarnes-harness",
-        "pyarnes-guardrails",
-        "pyarnes-bench",
-        "presidio-analyzer",
-        "kreuzberg",
-        "boto3",
-        "httpx",
-        "pydantic",
-    ):
+    for forbidden in FORBIDDEN_RUNTIME_DEPS:
         assert forbidden not in deps_text, f"{forbidden} leaked into [project.dependencies] for {shape}"
     # Utility libs are still there.
     for expected in ("loguru", "returns", "toolz", "typer"):

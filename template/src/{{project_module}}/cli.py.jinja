@@ -5,9 +5,14 @@ Registered as ``[project.scripts] {{ project_module }} = "{{ project_module }}.c
 in ``pyproject.toml``; run with ``uv run {{ project_module }} --help``.
 
 The scaffolded commands are placeholders. Fill them in with your domain
-logic. For a runnable demo of the shape-specific library stack, see
+logic. {% if adopter_shape != "blank" -%}
+For a runnable demo of the shape-specific library stack, see
 ``scripts/examples/{{ adopter_shape }}/`` (PEP 723 scripts that resolve their
 own deps into an isolated env — no project install required).
+{%- else -%}
+For agent-scaffolding references (pipelines, tool handlers,
+guardrails), see ``.claude/agent_kit/``.
+{%- endif %}
 """
 
 from __future__ import annotations
@@ -16,66 +21,69 @@ import typer
 
 app = typer.Typer(help="{{ project_description }}")
 
+{% if adopter_shape != "blank" -%}
+_SEE_DEMO = "TODO: implement. See scripts/examples/{{ adopter_shape }}/ for a reference demo."
+{%- else -%}
+_SEE_DEMO = "TODO: implement. See .claude/agent_kit/ for agent scaffolding templates."
+{%- endif %}
+
+
+def _stub(summary: str) -> None:
+    """Emit a placeholder summary + a pointer at the reference demo location."""
+    typer.echo(summary)
+    typer.echo(_SEE_DEMO)
+
 
 {% if adopter_shape == "pii-redaction" -%}
 @app.command()
 def ingest(input_path: str, output_dir: str = "./out") -> None:
     """Extract text from a document and write it to ``output_dir``."""
-    typer.echo(f"ingest {input_path} -> {output_dir}")
-    typer.echo("TODO: implement. See scripts/examples/pii-redaction/ for a kreuzberg demo.")
+    _stub(f"ingest {input_path} -> {output_dir}")
 
 
 @app.command()
 def redact(input_path: str, output_dir: str = "./out") -> None:
     """Run the full PII-redaction pipeline on ``input_path``."""
-    typer.echo(f"redact {input_path} -> {output_dir}")
-    typer.echo("TODO: implement. See scripts/examples/pii-redaction/ for a kreuzberg demo.")
+    _stub(f"redact {input_path} -> {output_dir}")
 {%- elif adopter_shape == "s3-sweep" -%}
 @app.command()
 def download(bucket: str, dest: str = "./out") -> None:
     """Download every object from ``bucket`` into ``dest``."""
-    typer.echo(f"download s3://{bucket} -> {dest}")
-    typer.echo("TODO: implement. See scripts/examples/s3-sweep/ for a boto3 demo.")
+    _stub(f"download s3://{bucket} -> {dest}")
 
 
 @app.command()
 def verify(manifest: str = "./out/manifest.json") -> None:
     """Verify every downloaded object against its S3 metadata."""
-    typer.echo(f"verify {manifest}")
-    typer.echo("TODO: implement. See scripts/examples/s3-sweep/ for a boto3 demo.")
+    _stub(f"verify {manifest}")
 
 
 @app.command()
 def sweep(bucket: str, manifest: str = "./out/manifest.json") -> None:
     """Delete ``bucket`` only after every object is verified."""
-    typer.echo(f"sweep s3://{bucket} (manifest={manifest})")
-    typer.echo("TODO: implement. See scripts/examples/s3-sweep/ for a boto3 demo.")
+    _stub(f"sweep s3://{bucket} (manifest={manifest})")
 {%- elif adopter_shape == "rtm-toggl-agile" -%}
 @app.command(name="sync-rtm")
 def sync_rtm() -> None:
     """Pull tasks, lists, and tags from Remember-The-Milk."""
-    typer.echo("sync-rtm")
-    typer.echo("TODO: implement. See scripts/examples/rtm-toggl-agile/ for an httpx+pydantic demo.")
+    _stub("sync-rtm")
 
 
 @app.command(name="sync-toggl")
 def sync_toggl() -> None:
     """Pull time entries, projects, and clients from Toggl."""
-    typer.echo("sync-toggl")
-    typer.echo("TODO: implement. See scripts/examples/rtm-toggl-agile/ for an httpx+pydantic demo.")
+    _stub("sync-toggl")
 
 
 @app.command()
 def promote() -> None:
     """Normalise both sources and push into the unified agile backend."""
-    typer.echo("promote")
-    typer.echo("TODO: implement. See scripts/examples/rtm-toggl-agile/ for an httpx+pydantic demo.")
+    _stub("promote")
 {%- else -%}
 @app.command()
 def run(working_dir: str = ".") -> None:
     """Run {{ project_name }} once against ``working_dir``."""
-    typer.echo(f"run {working_dir}")
-    typer.echo("TODO: implement. See .claude/agent_kit/ for agent scaffolding templates.")
+    _stub(f"run {working_dir}")
 {%- endif %}
 
 
