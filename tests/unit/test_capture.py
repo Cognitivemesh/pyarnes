@@ -71,7 +71,7 @@ class TestOutputCapture:
         def _redactor(payload: dict[str, Any]) -> dict[str, Any]:
             redacted = dict(payload)
             args = dict(redacted["arguments"])
-            args["password"] = "***"
+            args["password"] = "***"  # noqa: S105
             redacted["arguments"] = args
             return redacted
 
@@ -82,4 +82,4 @@ class TestOutputCapture:
             result="ok",
         )
 
-        assert record.arguments["password"] == "***"
+        assert record.arguments["password"] == "***"  # noqa: S105

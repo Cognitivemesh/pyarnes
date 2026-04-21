@@ -210,7 +210,7 @@ class TestToolCallLogger:
         def _redactor(payload: dict[str, Any]) -> dict[str, Any]:
             redacted = dict(payload)
             args = dict(redacted["arguments"])
-            args["password"] = "***"
+            args["password"] = "***"  # noqa: S105
             redacted["arguments"] = args
             return redacted
 
@@ -218,7 +218,7 @@ class TestToolCallLogger:
             log.log_call("login", {"username": "alice", "password": "secret"}, result="ok")
 
         data = json.loads(log_file.read_text().strip())
-        assert data["arguments"]["password"] == "***"
+        assert data["arguments"]["password"] == "***"  # noqa: S105
 
 
 # ── Helpers for loop integration tests ────────────────────────────────────
@@ -284,7 +284,7 @@ class TestLoopWithToolCallLogger:
     @pytest.mark.asyncio()
     async def test_tool_call_logger_write_does_not_block_event_loop(self) -> None:
         class _SlowToolCallLogger:
-            def log_call(self, *args: object, **kwargs: object) -> None:  # noqa: ANN002, ANN003
+            def log_call(self, *args: object, **kwargs: object) -> None:
                 time.sleep(0.2)
 
         model = _FakeModel(
