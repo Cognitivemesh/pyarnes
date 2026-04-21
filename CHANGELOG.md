@@ -34,7 +34,7 @@ performance improvements that preserve behaviour.
 | `pyarnes_core` | `HarnessError`, `TransientError`, `LLMRecoverableError`, `UserFixableError`, `UnexpectedError`, `Severity`, `Lifecycle`, `Phase`, `LogFormat`, `configure_logging`, `get_logger`, `ModelClient`, `ToolHandler` |
 | `pyarnes_harness` | `AgentLoop`, `LoopConfig`, `ToolMessage`, `ToolRegistry`, `Guardrail`, `GuardrailChain`, `PathGuardrail`, `CommandGuardrail`, `ToolAllowlistGuardrail`, `CapturedOutput`, `OutputCapture`, `ToolCallEntry`, `ToolCallLogger` |
 | `pyarnes_guardrails` | `Guardrail`, `GuardrailChain`, `PathGuardrail`, `CommandGuardrail`, `ToolAllowlistGuardrail` |
-| `pyarnes_bench` | `EvalResult`, `EvalSuite`, `Scorer`, `ExactMatchScorer` |
+| `pyarnes_bench` | `EvalResult`, `EvalSuite`, `Scorer`, `ExactMatchScorer`, `RaceEvaluator`, `RaceScore`, `RaceWeights`, `RaceCriterion`, `RaceDimension`, `RacePrompts` |
 
 `pyarnes-tasks` is dev-infrastructure; its contract is the CLI surface
 documented in `docs/packages/tasks.md`, not a Python API.
@@ -54,6 +54,23 @@ documented in `docs/packages/tasks.md`, not a Python API.
 
 ### Added
 
+- `pyarnes_bench.RaceEvaluator` — post-hoc RACE (Reference-based Adaptive
+  Criteria-driven Evaluation) scorer for long-form research reports. Takes a
+  finished target report and a finished reference report, runs an LLM-as-judge
+  over four dimensions (comprehensiveness, depth, instruction following,
+  readability) with dynamically weighted task-specific criteria, and returns a
+  Pydantic `RaceScore` whose `final_score` is normalized against the reference
+  (`S_int(target) / (S_int(target) + S_int(reference))`). Strictly sequential —
+  one judge call at a time.
+- `pyarnes_bench` Pydantic result models: `RaceScore`, `RaceWeights`,
+  `RaceCriterion`, `RacePrompts`, `RaceDimension`. Frozen, `extra="forbid"`,
+  with `@model_validator`-enforced invariants (weights sum to 1, scores in
+  `[0, 1]`). `RaceScore.to_eval_result(scenario, threshold)` adapts the rich
+  verdict back to `EvalResult` so results flow into `EvalSuite` unchanged.
+- `specs/bench-race-evaluator.md` — implementation contract mirroring
+  `specs/bench-scorer-verdict.md`.
+- `pydantic>=2.6` dependency in `packages/bench/pyproject.toml` (validation +
+  JSON parsing for evaluator inputs, outputs, and judge responses).
 - First declaration of the stable public surface (this file).
 - Stability test suite: `tests/unit/test_stable_surface.py` enforces that every
   symbol in the tables above resolves and that no public `__all__` entry is

@@ -18,11 +18,13 @@ Python objects you compose like any other harness component.
 | `EvalSuite` | Collects results, computes pass-rate and average score |
 | `Scorer` | Abstract base — implement `score(expected, actual) → float` |
 | `ExactMatchScorer` | Built-in scorer: 1.0 on exact match, 0.0 otherwise |
+| `RaceEvaluator` | Post-hoc LLM-as-judge for long-form reports (reference-normalized, 4 dimensions) |
+| `RaceScore` | Pydantic result: per-criterion scores + `final_score ∈ [0, 1]`; has `.to_eval_result(...)` |
 
-All four symbols are importable from `pyarnes_bench`:
+All symbols are importable from `pyarnes_bench`:
 
 ```python
-from pyarnes_bench import EvalResult, EvalSuite, ExactMatchScorer, Scorer
+from pyarnes_bench import EvalResult, EvalSuite, ExactMatchScorer, RaceEvaluator, Scorer
 ```
 
 ## Quick start: exact-match suite
@@ -156,6 +158,30 @@ Each log line will be a valid JSON object:
 
 A `pass_rate` of 1.0 means every scenario passed. Use `average_score` to
 track continuous improvement even when pass/fail thresholds are binary.
+
+## Deep-research evaluation — RACE
+
+`RaceEvaluator` scores a finished long-form report against a finished reference report using an
+LLM-as-judge across four dimensions (comprehensiveness, depth, instruction following,
+readability). It is strictly **post-hoc and sequential** — call it from your `pytest` suite, a
+`tasks bench` target, or CI after the agent has produced its report. No URL fetching, no
+orchestration, no internal concurrency.
+
+Inputs it requires:
+
+| Argument | What it is |
+|---|---|
+| `task_prompt` | The original task description given to the agent |
+| `target_report` | The finished report to score |
+| `reference_report` | A finished anchor report for normalization (final_score = target / (target + reference)) |
+
+Return type is a Pydantic `RaceScore` with per-criterion scores, per-dimension weights, the
+internal target/reference scores, and a normalized `final_score ∈ [0, 1]`. Call
+`score.to_eval_result(scenario=..., threshold=0.5)` to feed it into `EvalSuite`.
+
+For runnable usage examples see `tests/unit/bench/test_race.py` (the `ScriptedJudge` pattern
+demonstrates the full flow without hitting a real model) and the
+BDD scenarios in `tests/features/race_evaluation.feature`.
 
 ## See also
 

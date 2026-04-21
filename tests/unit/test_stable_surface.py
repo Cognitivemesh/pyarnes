@@ -62,6 +62,12 @@ STABLE_SURFACE: dict[str, frozenset[str]] = {
             "EvalResult",
             "EvalSuite",
             "ExactMatchScorer",
+            "RaceCriterion",
+            "RaceDimension",
+            "RaceEvaluator",
+            "RacePrompts",
+            "RaceScore",
+            "RaceWeights",
             "Scorer",
         }
     ),
