@@ -359,9 +359,7 @@ class AgentLoop:
             return msg
         return None
 
-    async def _request_reflection(
-        self, messages: list[dict[str, Any]]
-    ) -> dict[str, Any]:
+    async def _request_reflection(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
         """Ask the model to reflect on progress so far.
 
         A probe message is appended to a temporary copy of the history so

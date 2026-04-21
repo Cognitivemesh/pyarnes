@@ -160,11 +160,7 @@ class LLMJudgeScorer(AsyncScorer):
 
     def _build_prompt(self, expected: Any, actual: Any, scenario: str | None) -> str:
         rubric_text = "\n".join(f"{i + 1}. {r}" for i, r in enumerate(self.rubric))
-        ref_section = (
-            f"Reference answer:\n{expected}\n\n"
-            if self.grading_mode == "reference_guided"
-            else ""
-        )
+        ref_section = f"Reference answer:\n{expected}\n\n" if self.grading_mode == "reference_guided" else ""
         return (
             f"You are an expert evaluator.\n\n"
             f"Task: {scenario or 'Evaluate the following output'}\n\n"
@@ -216,9 +212,7 @@ class CodeQualityScorer(AsyncScorer):
         weighted_sum = sum(s * w for s, (_, w) in zip(dim_scores, self.dimension_weights, strict=True))
         return weighted_sum / total_weight
 
-    async def _score_dimension(
-        self, dimension: str, expected: Any, actual: Any, scenario: str | None
-    ) -> float:
+    async def _score_dimension(self, dimension: str, expected: Any, actual: Any, scenario: str | None) -> float:
         prompt = (
             f"Evaluate the following code on the dimension: **{dimension}**\n\n"
             f"Task: {scenario or 'General code evaluation'}\n\n"

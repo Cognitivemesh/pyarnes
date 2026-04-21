@@ -55,16 +55,20 @@ class SemanticGuardrail(AsyncGuardrail):
             score = _extract_score(response)
             reasoning = _extract_reasoning(response)
         except Exception as exc:
-            log_warning(logger, "guardrail.semantic_judge_failed",
-                        tool=tool_name, error=str(exc))
+            log_warning(logger, "guardrail.semantic_judge_failed", tool=tool_name, error=str(exc))
             raise LLMRecoverableError(
                 message=f"Semantic guardrail judge failed: {exc}",
             ) from exc
 
         if score < self.threshold:
-            log_warning(logger, "guardrail.semantic_blocked",
-                        tool=tool_name, score=score,
-                        threshold=self.threshold, reasoning=reasoning)
+            log_warning(
+                logger,
+                "guardrail.semantic_blocked",
+                tool=tool_name,
+                score=score,
+                threshold=self.threshold,
+                reasoning=reasoning,
+            )
             msg = (
                 f"Semantic guardrail blocked '{tool_name}' "
                 f"(score {score:.2f} < threshold {self.threshold:.2f}). "
