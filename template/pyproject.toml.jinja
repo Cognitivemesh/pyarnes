@@ -16,36 +16,20 @@ classifiers = [
 ]
 
 # ---------------------------------------------------------------------------
-# pyarnes packages are pulled from the pyarnes monorepo via git URLs.
-# No PyPI publishing is involved; `uv sync` clones once and caches the result.
-# Pin `pyarnes_ref` to a tag in the pyarnes repo for reproducible builds.
+# Runtime dependencies — plain Python utility libs only.
+# The scaffolded `src/{{ project_module }}/` does not import pyarnes at
+# runtime; pyarnes dev-tool packages are declared in [dependency-groups.dev].
+# Shape-specific libraries (kreuzberg, boto3, httpx, pydantic, …) are not
+# project-wide dependencies either — they appear as PEP 723 inline metadata
+# inside `scripts/examples/<shape>/*.py` and resolve on `uv run`.
 # ---------------------------------------------------------------------------
 dependencies = [
-    "pyarnes-core       @ git+https://github.com/Cognitivemesh/pyarnes.git@{{ pyarnes_ref }}#subdirectory=packages/core",
-    "pyarnes-harness    @ git+https://github.com/Cognitivemesh/pyarnes.git@{{ pyarnes_ref }}#subdirectory=packages/harness",
-    "pyarnes-guardrails @ git+https://github.com/Cognitivemesh/pyarnes.git@{{ pyarnes_ref }}#subdirectory=packages/guardrails",
-    "pyarnes-bench      @ git+https://github.com/Cognitivemesh/pyarnes.git@{{ pyarnes_ref }}#subdirectory=packages/bench",
-    "pyarnes-tasks      @ git+https://github.com/Cognitivemesh/pyarnes.git@{{ pyarnes_ref }}#subdirectory=packages/tasks",
     "loguru>=0.7",
     "returns>=0.24",
     "toolz>=1.0",
     "more-itertools>=10.5",
     "funcy>=2.0",
     "typer>=0.15",
-{%- if adopter_shape == "pii-redaction" %}
-    "kreuzberg>=1.0",
-    "presidio-analyzer>=2.2.354",
-    "presidio-anonymizer==2.2.354",
-    "spacy>=3.7",
-    "scikit-learn>=1.5",
-{%- elif adopter_shape == "s3-sweep" %}
-    "boto3>=1.35",
-    "aioboto3>=13.0",
-    "xxhash>=3.5",
-{%- elif adopter_shape == "rtm-toggl-agile" %}
-    "httpx>=0.27",
-    "pydantic>=2.9",
-{%- endif %}
 ]
 
 [project.scripts]
@@ -69,9 +53,21 @@ tests = ["tests"]
 
 # ---------------------------------------------------------------------------
 # Dev dependency group
+#
+# pyarnes dev-tool packages are pulled from the pyarnes monorepo via git URLs.
+# No PyPI publishing is involved; `uv sync` clones once and caches the result.
+# Pin `pyarnes_ref` to a tag in the pyarnes repo for reproducible builds.
+# These power `.claude/hooks/`, `.claude/agent_kit/`, the `tasks` CLI, and
+# `tests/bench/` — they are NOT imported by code under `src/`.
 # ---------------------------------------------------------------------------
 [dependency-groups]
 dev = [
+    # pyarnes dev-tool packages
+    "pyarnes-core       @ git+https://github.com/Cognitivemesh/pyarnes.git@{{ pyarnes_ref }}#subdirectory=packages/core",
+    "pyarnes-harness    @ git+https://github.com/Cognitivemesh/pyarnes.git@{{ pyarnes_ref }}#subdirectory=packages/harness",
+    "pyarnes-guardrails @ git+https://github.com/Cognitivemesh/pyarnes.git@{{ pyarnes_ref }}#subdirectory=packages/guardrails",
+    "pyarnes-bench      @ git+https://github.com/Cognitivemesh/pyarnes.git@{{ pyarnes_ref }}#subdirectory=packages/bench",
+    "pyarnes-tasks      @ git+https://github.com/Cognitivemesh/pyarnes.git@{{ pyarnes_ref }}#subdirectory=packages/tasks",
     # Type checking
     "ty>=0.0.1",
     # Testing — kept installed even with no tests/ directory yet.

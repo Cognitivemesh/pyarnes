@@ -29,3 +29,36 @@ Runtime state persists to `.claude/pyarnes/` (gitignored). Violation
 records go to `.claude/pyarnes/violations.jsonl` and are consumed by
 `pyarnes_bench.GuardrailComplianceScorer`.
 {% endif %}
+
+## Running examples
+
+The `scripts/examples/{{ adopter_shape }}/` directory holds standalone
+**PEP 723** scripts demonstrating the shape-specific tech stack (kreuzberg,
+boto3, httpx + pydantic, …). Each script's `# /// script ... # ///` header
+declares its own deps — `uv run` resolves them into an isolated cached env
+**without touching the project venv**.
+
+```bash
+uv run scripts/examples/{{ adopter_shape }}/<name>.py   # discover with `ls scripts/examples/{{ adopter_shape }}/`
+```
+
+Shape-specific libraries (kreuzberg, boto3, etc.) are **not** installed into
+your project venv by `uv sync`. Lift a demo into production by adding the
+library to `[project.dependencies]` and porting its logic into `src/` or
+`.claude/agent_kit/`.
+
+## Project layout
+
+- `src/{{ project_module }}/cli.py` — Typer CLI; entry point `{{ project_module }}`. Plain Python, no pyarnes imports.
+- `src/{{ project_module }}/__init__.py` — package marker; add real modules here as the project grows.
+- `.claude/agent_kit/` — reference templates your AI coding agent adapts when asked to add agent features (pipeline, guardrails, tool handlers). Imports pyarnes from the dev group; not part of the runtime wheel.
+- `.claude/hooks/` — Claude Code hooks that wire pyarnes into your dev sessions (pre-/post-tool).
+{%- if adopter_shape != "blank" %}
+- `scripts/examples/{{ adopter_shape }}/` — standalone PEP 723 scripts demonstrating the shape-specific library stack. Run with `uv run scripts/examples/{{ adopter_shape }}/<name>.py`; deps resolve into an isolated cached env.
+{%- else %}
+- `scripts/examples/` — where per-shape standalone PEP 723 demos live when you pick an adopter shape.
+{%- endif %}
+- `tests/` — your tests (start empty; the python-test skill scaffolds as needed).
+- `docs/` — MkDocs Material documentation source.
+
+**Adopter shape:** `{{ adopter_shape }}`{% if adopter_shape != "blank" %} — starter stubs under `.claude/agent_kit/tools/` and `.claude/agent_kit/guardrails.py` reflect this shape. Extend them with real integrations, and see `scripts/examples/{{ adopter_shape }}/` for standalone demos of the shape's tech stack.{% endif %}

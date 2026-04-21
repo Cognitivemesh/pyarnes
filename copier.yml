@@ -26,6 +26,13 @@ _exclude:
   - "{% if not enable_dev_hooks %}tests/bench/**{% endif %}"
   # MCP wiring for code-review-graph ships only when enable_code_graph is true.
   - "{% if not enable_code_graph %}.claude/mcp.json{% endif %}"
+  # Per-shape example scripts — render only the subdir matching adopter_shape.
+  - "{% if adopter_shape != 'pii-redaction' %}scripts/examples/pii-redaction{% endif %}"
+  - "{% if adopter_shape != 'pii-redaction' %}scripts/examples/pii-redaction/**{% endif %}"
+  - "{% if adopter_shape != 's3-sweep' %}scripts/examples/s3-sweep{% endif %}"
+  - "{% if adopter_shape != 's3-sweep' %}scripts/examples/s3-sweep/**{% endif %}"
+  - "{% if adopter_shape != 'rtm-toggl-agile' %}scripts/examples/rtm-toggl-agile{% endif %}"
+  - "{% if adopter_shape != 'rtm-toggl-agile' %}scripts/examples/rtm-toggl-agile/**{% endif %}"
 
 # ---------------------------------------------------------------------------
 # Prompts

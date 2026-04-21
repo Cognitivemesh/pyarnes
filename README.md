@@ -1,23 +1,20 @@
 # pyarnes
 
-> **Pyarnes** is a **minimal agentic harness engineering template for collaborating with tools such as Claude Code, Claude Cowork, Cursor, or Codex**. It is not a runtime agent framework looking to replace them it **collaborates** with them to build Python applications.
+> A dev-time toolkit + Copier template for AI coding agents building Python applications.
+> It does **not** replace Claude Code, Cursor, or Codex — it **collaborates** with them.
 
-* **Pyarnes** is not another agent framework (Claude Code, LangGraph, CrewAI, etc.) to compete, but rather for collaborating with them. It is a foundational engineering template that supplies the pieces most AI coding tools omit: 
-- A collection of tools for structured verification loops (tests, lints, etc.).
-- A precise foundational structure for building deterministic tools such a composable observable lifecycle FSM, and JSONL logging — all while staying deliberately minimal and async-first.
-- A set of evaluation benchmark and safety guardrails for skills.
-- **pyarnes** captures raw outputs and errors during the execution of its deterministic tools, feeds that reality back to the model, applies guardrails around what the system can touch, and makes every step visible and debuggable.
+**pyarnes** gives your AI coding agent extra verification loops, safety enforcement, and lifecycle hooks while it writes your project. Scaffolded apps are plain Python at runtime; pyarnes lives in the dev group, wired into Claude Code hooks, an `agent_kit/` scaffolding directory, and the `tasks` CLI — not in your production wheel.
 
-## Features
+## Features (all dev-time)
 
-It contains a template (Copier template) encoding architectural best practices the project can scaffold from.
-
-- **Clear error types** — transient (retry with backoff), LLM-recoverable (return as ToolMessage), user-fixable (interrupt for human input), and unexpected (bubble up for debugging)
-- **Async-first** — built on `asyncio` to maximise performance and avoid GIL contention
-- **JSONL observability** — single logging layer via `loguru` that agents can parse
-- **Skills Safety guardrails** — composable path, command, tool-allowlist, and AST-based semantic checks
-- **Benchmarking** — bench evaluation framework with pluggable `Scorer`, `EvalSuite`, and JSONL result logging
-- **Lifecycle FSM** — INIT → RUNNING → PAUSED → COMPLETED / FAILED with full history
+- **Error taxonomy** — transient / LLM-recoverable / user-fixable / unexpected, for agent-scaffolding code under `.claude/agent_kit/`
+- **Async-first conventions** — template defaults match modern tool-use patterns (asyncio, no GIL contention)
+- **JSONL observability** — `.claude/hooks/` traces via `loguru`, parseable by other agents
+- **Composable safety guardrails** — path, command, tool-allowlist, and AST-based semantic checks you can wrap around tool handlers in `.claude/agent_kit/`
+- **Agent-quality evals** — `pyarnes-bench` framework with pluggable `Scorer`, `EvalSuite`, and JSONL result logging under `tests/bench/`
+- **Lifecycle FSM helpers** — INIT → RUNNING → PAUSED → COMPLETED / FAILED with full history, available to agent-loop code you scaffold
+- **Monorepo** — `pyarnes-core` + `pyarnes-harness` + `pyarnes-guardrails` + `pyarnes-bench` + `pyarnes-tasks` as independent uv workspace packages (all five are dev-tool packages — not runtime deps of scaffolded apps)
+- **Cross-platform task runner** — replaces Make with `uv run tasks <name>`
 - **TDD out of the box** — pytest-watch, pytest-bdd (Gherkin), pytest-sugar, hypothesis, coverage
 
 ## To use pyarnes
@@ -25,13 +22,13 @@ It contains a template (Copier template) encoding architectural best practices t
 > Start a new python project from the pyarnes template to build. If you're building **your own project** and want to adopt pyarnes as the foundation:
 
 ```bash
-uvx copier copy gh:Cognitivemesh/pyarnes my-awesome-project
-cd my-awesome-project
-uv sync                   # pulls the pyarnes-* packages from git URLs
+uvx copier copy gh:Cognitivemesh/pyarnes my-awesome-agent
+cd my-awesome-agent
+uv sync                   # installs the 5 pyarnes-* packages from git URLs into [dependency-groups.dev]; your [project.dependencies] stays minimal
 uv run tasks check        # lint + typecheck
 ```
 
-No PyPI publishing, no copied source — your project **depends on** the pyarnes packages via git URL. Later, `uv run tasks update` pulls template improvements into your project (wraps `copier update` under the hood). Full walkthrough: [docs/adopter/bootstrap/scaffold.md](docs/adopter/bootstrap/scaffold.md).
+No PyPI publishing, no copied source — your project picks up pyarnes as **dev-only** tooling via git URL. Shape-specific libs (`kreuzberg`, `boto3`, `httpx`, `pydantic`, …) are not installed into your venv; they live as PEP 723 inline deps inside `scripts/examples/<shape>/` and resolve only when you run one of those scripts. Later, `uv run tasks update` pulls template improvements into your project (wraps `copier update` under the hood).
 
 ### To build pyarnes
 
@@ -79,6 +76,10 @@ Inside the pyarnes, we have included a **Cross-platform task runner** which repl
 ## Deterministic Tools Framework 
 
 ### Error Taxonomy 
+
+This taxonomy applies when writing agent scaffolding (e.g. under
+`.claude/agent_kit/` in scaffolded projects). It is not imposed on the
+runtime code in `src/`.
 
 ```text
 ┌─────────────────┐    retry (max 2)     ┌─────────────────┐

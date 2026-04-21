@@ -5,6 +5,11 @@ expected to do — and not do — when working in this project.
 
 Agents that read this file should treat it as a binding policy, not a suggestion.
 
+Shape-specific tech integrations (kreuzberg / boto3 / httpx / pydantic …)
+belong in `scripts/examples/<shape>/` as **PEP 723** scripts. Do not add
+them to `src/` or `[project.dependencies]` — they are illustrative demos,
+not project-wide runtime deps.
+
 ---
 
 ## Allowed actions (no confirmation needed)
@@ -37,7 +42,8 @@ Every code change must:
 
 ## Safety guardrails
 
-This project uses `pyarnes-guardrails`. Agents writing tool handlers must:
+`pyarnes-guardrails` is a dev-time dependency. When scaffolding agent
+features under `.claude/agent_kit/`, tool handlers must:
 
 - Wrap file-access tools with `PathGuardrail(allowed_roots=("/workspace",))`.
 - Wrap shell-execution tools with `CommandGuardrail()`.
@@ -47,6 +53,11 @@ This project uses `pyarnes-guardrails`. Agents writing tool handlers must:
   a tool accepts Python source code as an argument.
 
 ## Error handling contract
+
+These error types are imported from `pyarnes_core.errors` by code under
+`.claude/agent_kit/` and `.claude/hooks/`. When writing plain code under
+`src/`, use standard Python exceptions unless you explicitly add pyarnes
+as a runtime dep.
 
 | Condition | Error to raise |
 |---|---|
@@ -62,4 +73,5 @@ This project uses `pyarnes-guardrails`. Agents writing tool handlers must:
 - Expand scope beyond what the task requires.
 - Commit partial implementations — keep the test suite green at every commit.
 - Add `print()` statements to production code; use `logger.info(...)` from
-  `pyarnes_core.observe`.
+  `loguru` (or `pyarnes_core.observe` when writing agent scaffolding under
+  `.claude/agent_kit/`).

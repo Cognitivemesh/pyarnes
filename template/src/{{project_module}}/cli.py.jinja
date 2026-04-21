@@ -3,11 +3,14 @@
 Typer app exposing the subcommands appropriate to the chosen adopter shape.
 Registered as ``[project.scripts] {{ project_module }} = "{{ project_module }}.cli:app"``
 in ``pyproject.toml``; run with ``uv run {{ project_module }} --help``.
+
+The scaffolded commands are placeholders. Fill them in with your domain
+logic. For a runnable demo of the shape-specific library stack, see
+``scripts/examples/{{ adopter_shape }}/`` (PEP 723 scripts that resolve their
+own deps into an isolated env — no project install required).
 """
 
 from __future__ import annotations
-
-import asyncio
 
 import typer
 
@@ -19,75 +22,61 @@ app = typer.Typer(help="{{ project_description }}")
 def ingest(input_path: str, output_dir: str = "./out") -> None:
     """Extract text from a document and write it to ``output_dir``."""
     typer.echo(f"ingest {input_path} -> {output_dir}")
+    typer.echo("TODO: implement. See scripts/examples/pii-redaction/ for a kreuzberg demo.")
 
 
 @app.command()
 def redact(input_path: str, output_dir: str = "./out") -> None:
     """Run the full PII-redaction pipeline on ``input_path``."""
-    from {{ project_module }}.pipeline import run_pipeline  # noqa: PLC0415
-
-    asyncio.run(run_pipeline(model=_fake_model(), working_dir=output_dir))
+    typer.echo(f"redact {input_path} -> {output_dir}")
+    typer.echo("TODO: implement. See scripts/examples/pii-redaction/ for a kreuzberg demo.")
 {%- elif adopter_shape == "s3-sweep" -%}
 @app.command()
 def download(bucket: str, dest: str = "./out") -> None:
     """Download every object from ``bucket`` into ``dest``."""
     typer.echo(f"download s3://{bucket} -> {dest}")
+    typer.echo("TODO: implement. See scripts/examples/s3-sweep/ for a boto3 demo.")
 
 
 @app.command()
 def verify(manifest: str = "./out/manifest.json") -> None:
     """Verify every downloaded object against its S3 metadata."""
     typer.echo(f"verify {manifest}")
+    typer.echo("TODO: implement. See scripts/examples/s3-sweep/ for a boto3 demo.")
 
 
 @app.command()
 def sweep(bucket: str, manifest: str = "./out/manifest.json") -> None:
     """Delete ``bucket`` only after every object is verified."""
-    from {{ project_module }}.pipeline import run_pipeline  # noqa: PLC0415
-
-    asyncio.run(run_pipeline(model=_fake_model(), working_dir="."))
     typer.echo(f"sweep s3://{bucket} (manifest={manifest})")
+    typer.echo("TODO: implement. See scripts/examples/s3-sweep/ for a boto3 demo.")
 {%- elif adopter_shape == "rtm-toggl-agile" -%}
 @app.command(name="sync-rtm")
 def sync_rtm() -> None:
     """Pull tasks, lists, and tags from Remember-The-Milk."""
     typer.echo("sync-rtm")
+    typer.echo("TODO: implement. See scripts/examples/rtm-toggl-agile/ for an httpx+pydantic demo.")
 
 
 @app.command(name="sync-toggl")
 def sync_toggl() -> None:
     """Pull time entries, projects, and clients from Toggl."""
     typer.echo("sync-toggl")
+    typer.echo("TODO: implement. See scripts/examples/rtm-toggl-agile/ for an httpx+pydantic demo.")
 
 
 @app.command()
 def promote() -> None:
     """Normalise both sources and push into the unified agile backend."""
-    from {{ project_module }}.pipeline import run_pipeline  # noqa: PLC0415
-
-    asyncio.run(run_pipeline(model=_fake_model(), working_dir="."))
+    typer.echo("promote")
+    typer.echo("TODO: implement. See scripts/examples/rtm-toggl-agile/ for an httpx+pydantic demo.")
 {%- else -%}
 @app.command()
 def run(working_dir: str = ".") -> None:
-    """Run the {{ project_name }} agent loop once."""
-    from {{ project_module }}.pipeline import run_pipeline  # noqa: PLC0415
-
-    asyncio.run(run_pipeline(model=_fake_model(), working_dir=working_dir))
+    """Run {{ project_name }} once against ``working_dir``."""
+    typer.echo(f"run {working_dir}")
+    typer.echo("TODO: implement. See .claude/agent_kit/ for agent scaffolding templates.")
 {%- endif %}
-
-
-def _fake_model() -> "ModelClient":  # noqa: F821
-    """Placeholder ``ModelClient`` so the scaffold runs without an API key.
-
-    Replace this with a real subclass that calls your LLM provider.
-    """
-    from pyarnes_core.types import ModelClient  # noqa: PLC0415
-
-    class _Stop(ModelClient):
-        async def next_action(self, messages: list[dict]) -> dict:  # noqa: ARG002
-            return {"type": "final", "content": "replace _fake_model with a real ModelClient"}
-
-    return _Stop()
 
 
 if __name__ == "__main__":
