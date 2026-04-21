@@ -2,9 +2,9 @@
 
 > A minimal agentic harness engineering template for Python.
 > It does **not** replace Claude Code, Cursor, or Codex — it **collaborates** with them.
-pyarnes is not another high-level agent framework (LangGraph, CrewAI, etc.). It is a foundational engineering template that supplies the pieces most AI coding tools omit: structured verification loops, precise error taxonomy, composable safety guardrails, observable lifecycle FSM, and JSONL logging — all while staying deliberately minimal and async-first.
 
-**pyarnes** captures raw outputs and errors, feeds that reality back to the model, applies guardrails around what the system can touch, and makes every step visible and debuggable.
+* **pyarnes** is not another high-level agent framework (LangGraph, CrewAI, etc.). It is a foundational engineering template that supplies the pieces most AI coding tools omit: structured verification loops, precise error taxonomy, composable safety guardrails, observable lifecycle FSM, and JSONL logging — all while staying deliberately minimal and async-first.
+* **pyarnes** captures raw outputs and errors, feeds that reality back to the model, applies guardrails around what the system can touch, and makes every step visible and debuggable.
 
 ## Features
 
