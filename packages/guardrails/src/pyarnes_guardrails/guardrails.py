@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from pathlib import PurePosixPath
+from pathlib import Path
 from typing import Any
 
 from pyarnes_core.errors import UserFixableError
@@ -85,9 +85,10 @@ class PathGuardrail(Guardrail):
 
     By default (``resolve_symlinks=False``), checks are lexical only:
     ``Path.parts`` prefix comparison is used without filesystem resolution.
-    This means symlinks inside allowed roots can still point outside them.
-    Set ``resolve_symlinks=True`` to enforce canonical path resolution and
-    block symlink escapes. Nested and list-valued path arguments are walked
+    This means symlinks inside allowed roots can still point outside them —
+    a potential sandbox-escape risk in security-sensitive deployments. Set
+    ``resolve_symlinks=True`` to enforce canonical path resolution and block
+    symlink escapes. Nested and list-valued path arguments are walked
     recursively.
 
     Attributes:
@@ -109,6 +110,8 @@ class PathGuardrail(Guardrail):
                     if self.resolve_symlinks:
                         assert_within_roots(candidate, self.allowed_roots)
                     else:
+                        # Lexical-only mode is backward compatible but does
+                        # not prevent symlink escapes from allowed roots.
                         self._assert_within_roots_lexical(candidate)
                 except UserFixableError:
                     log_warning(
@@ -128,9 +131,14 @@ class PathGuardrail(Guardrail):
                 prompt_hint=f"Provide an absolute path under {roots_tuple}",
             )
 
-        path_parts = PurePosixPath(path).parts
-        for root in roots_tuple:
-            root_parts = PurePosixPath(root).parts
+        path_parts = Path(path).parts
+        if not path_parts:
+            raise UserFixableError(
+                message=f"Path '{path}' is empty or invalid",
+                prompt_hint=f"Allow access to '{path}'?",
+            )
+        root_parts_list = tuple(Path(root).parts for root in roots_tuple)
+        for root_parts in root_parts_list:
             if path_parts[: len(root_parts)] == root_parts:
                 return
 

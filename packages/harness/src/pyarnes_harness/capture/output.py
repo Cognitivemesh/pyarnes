@@ -99,7 +99,8 @@ class OutputCapture:
 
         Args:
             redactor: Optional callable that receives each capture payload
-                and returns the redacted payload before it is stored.
+                and returns the redacted payload before it is stored. The
+                returned payload must preserve the ``CapturedOutput`` schema.
         """
         self._history: list[CapturedOutput] = []
         self._redactor = redactor

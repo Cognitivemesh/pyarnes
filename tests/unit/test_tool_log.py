@@ -301,5 +301,7 @@ class TestLoopWithToolCallLogger:
         )
 
         run_task = asyncio.create_task(loop.run([]))
-        await asyncio.wait_for(asyncio.sleep(0.01), timeout=0.05)
+        started = time.perf_counter()
+        await asyncio.sleep(0.01)
+        assert time.perf_counter() - started < 0.05
         await run_task
