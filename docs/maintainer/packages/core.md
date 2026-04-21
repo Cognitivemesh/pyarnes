@@ -89,66 +89,43 @@ class MyModel(ModelClient):
 
 Frozen dataclass, also an `Exception`.
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `message` | `str` | *(required)* | Human-readable error description |
-| `context` | `dict[str, Any]` | `{}` | Arbitrary metadata |
-| `severity` | `Severity` | `MEDIUM` | LOW, MEDIUM, HIGH, CRITICAL |
+::: pyarnes_core.errors.HarnessError
 
 ### TransientError
 
 Retriable (network timeout, rate limit). `AgentLoop` retries with exponential backoff.
 
-| Field | Type | Default |
-|---|---|---|
-| `max_retries` | `int` | `2` |
-| `retry_delay_seconds` | `float` | `1.0` |
+::: pyarnes_core.errors.TransientError
 
 ### LLMRecoverableError
 
 The model can recover. Converted into `ToolMessage(is_error=True)` and fed back.
 
-| Field | Type | Default |
-|---|---|---|
-| `tool_call_id` | `str \| None` | `None` |
+::: pyarnes_core.errors.LLMRecoverableError
 
 ### UserFixableError
 
 Requires human intervention. The loop re-raises to the caller.
 
-| Field | Type | Default |
-|---|---|---|
-| `prompt_hint` | `str` | `""` |
+::: pyarnes_core.errors.UserFixableError
 
 ### UnexpectedError
 
 Catch-all for bugs. Wraps the original exception.
 
-| Field | Type | Default |
-|---|---|---|
-| `original` | `BaseException \| None` | `None` |
-| `severity` | `Severity` | `CRITICAL` |
+::: pyarnes_core.errors.UnexpectedError
 
 ### Severity enum
 
-`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
+::: pyarnes_core.errors.Severity
 
 ### Phase enum
 
-`INIT`, `RUNNING`, `PAUSED`, `COMPLETED`, `FAILED`.
+::: pyarnes_core.lifecycle.Phase
 
 ### Lifecycle methods
 
-| Method | Effect |
-|---|---|
-| `start()` | → RUNNING |
-| `pause()` | → PAUSED |
-| `resume()` | → RUNNING (from PAUSED) |
-| `complete()` | → COMPLETED |
-| `fail()` | → FAILED |
-| `transition(target)` | Direct transition (validates) |
-
-Plus: `phase` (current), `is_terminal`, `history` (list of transition dicts).
+::: pyarnes_core.lifecycle.Lifecycle
 
 ### Logging
 

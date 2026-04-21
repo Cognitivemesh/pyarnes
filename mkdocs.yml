@@ -51,6 +51,16 @@ plugins:
   - tags
   - section-index
   - glightbox
+  - mkdocstrings:
+      enable_inventory: false
+      handlers:
+        python:
+          paths:
+            - packages/core/src
+          options:
+            skip_local_inventory: true
+            show_root_heading: false
+            show_source: false
   - redirects:
       redirect_maps:
         # Root template shortcut
@@ -201,3 +211,5 @@ nav:
           - Skills: maintainer/extend/skills.md
           - MCP tools (optional): maintainer/extend/mcp-tools.md
       - Release: maintainer/release.md
+  - Reference:
+      - Glossary: reference/glossary.md

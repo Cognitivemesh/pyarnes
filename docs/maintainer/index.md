@@ -23,6 +23,8 @@ journey
       Preserve stable surface: 4: you
 ```
 
+*Scores reflect perceived ease — higher is smoother.*
+
 <div class="grid cards" markdown>
 
 - :material-account-plus:{ .lg .middle } **Onboard**

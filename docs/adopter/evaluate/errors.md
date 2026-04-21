@@ -9,7 +9,7 @@ tags: [adopter, evaluate, errors]
 
 ## The problem
 
-When an LLM-driven agent calls tools, failures happen constantly: network timeouts, malformed JSON, missing permissions, unexpected crashes. Treating all of them the same way (crash the loop) wastes work and frustrates users.
+When an LLM-driven agent calls tools, failures happen constantly: network timeouts, malformed JSON, missing permissions, unexpected crashes. Treating all of them the same way (crash the loop) wastes work and frustrates you.
 
 ## The solution: four error types
 
@@ -66,46 +66,32 @@ raise UserFixableError(message="Missing OPENAI_API_KEY", prompt_hint="Set the OP
 
 ### HarnessError (base class)
 
-| Field | Type | Default | Description |
-|---|---|---|---|
-| `message` | `str` | *(required)* | Human-readable error description |
-| `context` | `dict[str, Any]` | `{}` | Arbitrary metadata |
-| `severity` | `Severity` | `MEDIUM` | LOW, MEDIUM, HIGH, or CRITICAL |
+::: pyarnes_core.errors.HarnessError
 
 ### TransientError
 
 Retriable failures (network timeout, rate limit). The agent loop retries with exponential backoff.
 
-| Field | Type | Default |
-|---|---|---|
-| `max_retries` | `int` | `2` |
-| `retry_delay_seconds` | `float` | `1.0` |
+::: pyarnes_core.errors.TransientError
 
 ### LLMRecoverableError
 
 Errors the model can recover from. Converted into `ToolMessage(is_error=True)` and fed back.
 
-| Field | Type | Default |
-|---|---|---|
-| `tool_call_id` | `str \| None` | `None` |
+::: pyarnes_core.errors.LLMRecoverableError
 
 ### UserFixableError
 
 Requires human intervention. The loop raises this to the caller.
 
-| Field | Type | Default |
-|---|---|---|
-| `prompt_hint` | `str` | `""` |
+::: pyarnes_core.errors.UserFixableError
 
 ### UnexpectedError
 
 Catch-all for bugs and unknown failures. Wraps the original exception.
 
-| Field | Type | Default |
-|---|---|---|
-| `original` | `BaseException \| None` | `None` |
-| `severity` | `Severity` | `CRITICAL` |
+::: pyarnes_core.errors.UnexpectedError
 
 ### Severity enum
 
-`LOW`, `MEDIUM`, `HIGH`, `CRITICAL` — used to classify impact.
+::: pyarnes_core.errors.Severity

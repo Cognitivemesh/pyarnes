@@ -1,13 +1,12 @@
 ---
 persona: adopter
-level: L3
 tags: [adopter, build, production, deployment]
 ---
 
 # Running in production
 
 This page covers the additional steps needed when moving a pyarnes-based agent
-from a developer laptop to a production environment.
+from your laptop to a production environment.
 
 ## Configuration checklist
 

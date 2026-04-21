@@ -5,7 +5,7 @@ tags: [adopter, bootstrap, scaffold]
 
 # Scaffold a project
 
-`pyarnes` is both a working monorepo **and** a Copier template. Any developer can bootstrap a new agentic-harness project that depends on the pyarnes packages — no copy-paste, no PyPI account required.
+`pyarnes` is both a working monorepo **and** a Copier template. You can bootstrap a new agentic-harness project that depends on the pyarnes packages — no copy-paste, no PyPI account required.
 
 ## The scaffold flow
 
@@ -30,7 +30,7 @@ flowchart TD
 uvx copier copy gh:Cognitivemesh/pyarnes my-awesome-agent
 ```
 
-`uvx` avoids any extra install. Copier then prompts for a handful of answers — every question has a default, so a developer can hit Enter through all of them:
+`uvx` avoids any extra install. Copier then prompts for a handful of answers — every question has a default, so you can hit Enter through all of them:
 
 | Prompt | Default | What it's used for |
 |---|---|---|
@@ -42,7 +42,7 @@ uvx copier copy gh:Cognitivemesh/pyarnes my-awesome-agent
 | `enable_dev_hooks` | auto | wire pyarnes into Claude Code dev-time hooks |
 | `enable_code_graph` | `false` | wire `code-review-graph` MCP server into `.claude/mcp.json` for blast-radius context |
 
-**No author name or email is asked.** The generated `pyproject.toml` omits the `authors` field — PEP 621 allows that, and developers can add it later.
+**No author name or email is asked.** The generated `pyproject.toml` omits the `authors` field — PEP 621 allows that, and you can add it later.
 
 Then:
 
