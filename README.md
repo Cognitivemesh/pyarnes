@@ -3,6 +3,7 @@
 > A minimal agentic harness engineering template for Python.
 > It does **not** replace Claude Code, Cursor, or Codex — it **collaborates** with them.
 pyarnes is not another high-level agent framework (LangGraph, CrewAI, etc.). It is a foundational engineering template that supplies the pieces most AI coding tools omit: structured verification loops, precise error taxonomy, composable safety guardrails, observable lifecycle FSM, and JSONL logging — all while staying deliberately minimal and async-first.
+
 **pyarnes** captures raw outputs and errors, feeds that reality back to the model, applies guardrails around what the system can touch, and makes every step visible and debuggable.
 
 ## Features
@@ -17,9 +18,9 @@ pyarnes is not another high-level agent framework (LangGraph, CrewAI, etc.). It 
 - **Cross-platform task runner** — replaces Make with `uv run tasks <name>`
 - **TDD out of the box** — pytest-watch, pytest-bdd (Gherkin), pytest-sugar, hypothesis, coverage
 
-## Two ways to use pyarnes
+## To use pyarnes
 
-### A. Start a new agentic-harness project from the pyarnes template
+### Start a new agentic-harness project from the pyarnes template
 
 If you're building **your own project** and want to adopt pyarnes as the foundation:
 
@@ -34,7 +35,7 @@ No PyPI publishing, no copied source — your project **depends on** the pyarnes
 
 Full walkthrough: [docs/adopter/bootstrap/scaffold.md](docs/adopter/bootstrap/scaffold.md).
 
-### B. Work on pyarnes itself
+### To build pyarnes
 
 If you're **contributing to pyarnes** (adding a new package, editing the template, writing a feature spec):
 
