@@ -20,11 +20,20 @@ Python objects you compose like any other harness component.
 | `ExactMatchScorer` | Built-in scorer: 1.0 on exact match, 0.0 otherwise |
 | `RaceEvaluator` | Post-hoc LLM-as-judge for long-form reports (reference-normalized, 4 dimensions) |
 | `RaceScore` | Pydantic result: per-criterion scores + `final_score ∈ [0, 1]`; has `.to_eval_result(...)` |
+| `FactEvaluator` | Post-hoc citation trustworthiness (accuracy + effective citations) |
+| `FactMetrics` | Pydantic result: per-claim verifications + `citation_accuracy ∈ [0, 1]`; has `.to_eval_result(...)` |
 
 All symbols are importable from `pyarnes_bench`:
 
 ```python
-from pyarnes_bench import EvalResult, EvalSuite, ExactMatchScorer, RaceEvaluator, Scorer
+from pyarnes_bench import (
+    EvalResult,
+    EvalSuite,
+    ExactMatchScorer,
+    FactEvaluator,
+    RaceEvaluator,
+    Scorer,
+)
 ```
 
 ## Quick start: exact-match suite
@@ -182,6 +191,34 @@ internal target/reference scores, and a normalized `final_score ∈ [0, 1]`. Cal
 For runnable usage examples see `tests/unit/bench/test_race.py` (the `ScriptedJudge` pattern
 demonstrates the full flow without hitting a real model) and the
 BDD scenarios in `tests/features/race_evaluation.feature`.
+
+## Deep-research evaluation — FACT
+
+`FactEvaluator` checks how many of a finished report's cited claims are actually supported by
+their sources (**citation accuracy**) and how many supported citations the agent produced per
+task (**effective citations**, aka factual abundance). It is strictly **post-hoc and
+sequential** — one judge call at a time.
+
+**No URL fetching inside `pyarnes-bench`.** The evaluator takes a caller-prepared
+`sources: Mapping[str, str]` (url → already-fetched content). Fetching, caching, robots-txt
+policy, and authentication are adopter responsibilities.
+
+| Argument | What it is |
+|---|---|
+| `report` | The finished report containing cited claims |
+| `sources` | Adopter-prepared `{url: fetched_content}` map |
+
+Claims whose URL is absent from `sources` get `supported=None` and are excluded from the
+accuracy denominator (matching the paper's semantics). Exact and near-duplicate claims
+(identical URL, statement similarity ≥ 0.97) collapse during extraction.
+
+Return type is a Pydantic `FactMetrics` with `claims`, `total`, `supported`,
+`citation_accuracy`, `effective_citations`, plus `metadata`. Call
+`metrics.to_eval_result(scenario=..., threshold=0.8)` to feed into `EvalSuite`, or
+`effective_citations_across([m1, m2, ...])` to compute the across-task mean.
+
+For runnable usage examples see `tests/unit/bench/test_fact.py` and the BDD scenarios in
+`tests/features/fact_evaluation.feature`.
 
 ## See also
 

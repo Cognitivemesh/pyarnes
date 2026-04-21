@@ -34,7 +34,7 @@ performance improvements that preserve behaviour.
 | `pyarnes_core` | `HarnessError`, `TransientError`, `LLMRecoverableError`, `UserFixableError`, `UnexpectedError`, `Severity`, `Lifecycle`, `Phase`, `LogFormat`, `configure_logging`, `get_logger`, `ModelClient`, `ToolHandler` |
 | `pyarnes_harness` | `AgentLoop`, `LoopConfig`, `ToolMessage`, `ToolRegistry`, `Guardrail`, `GuardrailChain`, `PathGuardrail`, `CommandGuardrail`, `ToolAllowlistGuardrail`, `CapturedOutput`, `OutputCapture`, `ToolCallEntry`, `ToolCallLogger` |
 | `pyarnes_guardrails` | `Guardrail`, `GuardrailChain`, `PathGuardrail`, `CommandGuardrail`, `ToolAllowlistGuardrail` |
-| `pyarnes_bench` | `EvalResult`, `EvalSuite`, `Scorer`, `ExactMatchScorer`, `RaceEvaluator`, `RaceScore`, `RaceWeights`, `RaceCriterion`, `RaceDimension`, `RacePrompts` |
+| `pyarnes_bench` | `EvalResult`, `EvalSuite`, `Scorer`, `ExactMatchScorer`, `RaceEvaluator`, `RaceScore`, `RaceWeights`, `RaceCriterion`, `RaceDimension`, `RacePrompts`, `FactEvaluator`, `FactMetrics`, `FactPrompts`, `CitationClaim`, `effective_citations_across` |
 
 `pyarnes-tasks` is dev-infrastructure; its contract is the CLI surface
 documented in `docs/packages/tasks.md`, not a Python API.
@@ -54,6 +54,25 @@ documented in `docs/packages/tasks.md`, not a Python API.
 
 ### Added
 
+- `pyarnes_bench.FactEvaluator` — post-hoc FACT (Factual Abundance and Citation
+  Trustworthiness) evaluator for finished reports. Extracts cited claims via an
+  LLM-as-judge, deduplicates exact and near-duplicate pairs (similarity ≥ 0.97
+  on identical URLs), and verifies each survivor against a caller-supplied
+  `sources: Mapping[str, str]`. Missing URLs are marked `supported=None` and
+  excluded from the accuracy denominator. Returns a Pydantic `FactMetrics`
+  carrying `citation_accuracy ∈ [0, 1]` and `effective_citations` (supported
+  claim count). No URL fetching inside `pyarnes-bench`.
+- `pyarnes_bench` Pydantic result models: `FactMetrics`, `CitationClaim`,
+  `FactPrompts`. Frozen, `extra="forbid"`, with validators enforcing
+  `supported <= total` and `effective_citations == supported`.
+- `pyarnes_bench.effective_citations_across(metrics)` — free helper that
+  averages supported-citation counts across a batch of tasks (DeepResearch
+  Bench's abundance metric).
+- `specs/bench-fact-evaluator.md` — implementation contract.
+- `specs/claudecode-pyarnes-judge-plugin.md` — deferred, future-work design
+  for a Claude Code plug-in that wraps RACE and FACT behind skills and a
+  `SubagentStop` hook. Status: not implemented; captured so later
+  implementation does not require library changes.
 - `pyarnes_bench.RaceEvaluator` — post-hoc RACE (Reference-based Adaptive
   Criteria-driven Evaluation) scorer for long-form research reports. Takes a
   finished target report and a finished reference report, runs an LLM-as-judge

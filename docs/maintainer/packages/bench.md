@@ -16,6 +16,7 @@ graph TB
     Eval[eval.py<br/>EvalResult, EvalSuite]
     Scorer[scorer.py<br/>Scorer ABC<br/>ExactMatchScorer]
     Race[race.py<br/>RaceEvaluator<br/>RaceScore]
+    Fact[fact.py<br/>FactEvaluator<br/>FactMetrics]
     Judge[_judge.py<br/>judge_json helper]
     Cits[_citations.py<br/>strip_markers]
 
@@ -23,6 +24,8 @@ graph TB
     Race --> Judge
     Race --> Cits
     Race --> Eval
+    Fact --> Judge
+    Fact --> Eval
 ```
 
 | Module | Role |
@@ -30,6 +33,7 @@ graph TB
 | `eval.py` | `EvalResult` (immutable record) + `EvalSuite` (collects, runs, summarises batches). |
 | `scorer.py` | `Scorer` ABC with `score(expected, actual) -> float` + `ExactMatchScorer` built-in. |
 | `race.py` | `RaceEvaluator` (post-hoc LLM-as-judge, 4 dimensions, reference-normalized) + Pydantic result models (`RaceScore`, `RaceWeights`, `RaceCriterion`, `RacePrompts`, `RaceDimension`). |
+| `fact.py` | `FactEvaluator` (citation accuracy + effective citations, adopter-supplied sources) + Pydantic result models (`FactMetrics`, `CitationClaim`, `FactPrompts`) and `effective_citations_across` helper. |
 | `_judge.py` | Private — `judge_json(client, prompt, PydanticModel)` helper with single retry + `LLMRecoverableError` on persistent failure. |
 | `_citations.py` | Private — `strip_markers` + `URL_RE` utilities shared by report evaluators. |
 
@@ -162,9 +166,37 @@ score.to_eval_result(scenario="q1", threshold=0.5)  # -> EvalResult
 
 `RaceScore`, `RaceWeights`, `RaceCriterion`, `RacePrompts`, `RaceDimension` are Pydantic v2 `BaseModel`s (frozen, `extra="forbid"`). Invariants — weights sum ≈ 1, per-dimension criterion weights sum ≈ 1, scores ∈ [0, 1] — are enforced by `@model_validator`s at construction time.
 
+### FactEvaluator
+
+Post-hoc citation-trustworthiness evaluator for finished reports. **Not a `Scorer` subclass** — same reasoning as `RaceEvaluator`.
+
+```python
+from pyarnes_bench import FactEvaluator
+
+evaluator = FactEvaluator(client=my_model_client)
+metrics = await evaluator.evaluate(report=report_text, sources=url_to_content_map)
+metrics.citation_accuracy                             # float in [0, 1]
+metrics.effective_citations                           # int (= supported)
+metrics.to_eval_result(scenario="q1", threshold=0.8)  # -> EvalResult
+```
+
+| Constructor arg | Default | Description |
+|---|---|---|
+| `client` | required | Any `ModelClient` (structural Protocol) |
+| `prompts` | `FactPrompts()` | Overridable extraction + verification prompts |
+
+Inputs at `.evaluate(...)` time:
+
+| Argument | Type | Description |
+|---|---|---|
+| `report` | `str` | Finished report. Empty → `UserFixableError`. |
+| `sources` | `Mapping[str, str]` | Caller-prepared `{url: fetched_content}`. URLs absent → `supported=None`, excluded from accuracy denominator. |
+
+Exact and near-duplicate claims (same URL, statement similarity ≥ 0.97) collapse during extraction so the model isn't billed twice for the same citation. `effective_citations_across(metrics_iter)` is a free helper for the across-task abundance mean.
+
 ### Future work
 
-- `specs/claudecode-pyarnes-judge-plugin.md` — deferred design for a Claude Code plug-in that wraps `RaceEvaluator` (and `FactEvaluator`, once PR 2 lands) behind two skills and a `SubagentStop` hook. Status: not implemented; library surface is sufficient to build it.
+- `specs/claudecode-pyarnes-judge-plugin.md` — deferred design for a Claude Code plug-in that wraps `RaceEvaluator` and `FactEvaluator` behind two skills and a `SubagentStop` hook. Status: not implemented; library surface is sufficient to build it.
 
 ## Extension points
 

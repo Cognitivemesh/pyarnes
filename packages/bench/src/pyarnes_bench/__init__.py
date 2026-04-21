@@ -10,6 +10,13 @@ Provides primitives for defining, running, and scoring agent evaluations:
 from __future__ import annotations
 
 from pyarnes_bench.eval import EvalResult, EvalSuite
+from pyarnes_bench.fact import (
+    CitationClaim,
+    FactEvaluator,
+    FactMetrics,
+    FactPrompts,
+    effective_citations_across,
+)
 from pyarnes_bench.race import (
     RaceCriterion,
     RaceDimension,
@@ -21,9 +28,13 @@ from pyarnes_bench.race import (
 from pyarnes_bench.scorer import ExactMatchScorer, Scorer
 
 __all__ = [
+    "CitationClaim",
     "EvalResult",
     "EvalSuite",
     "ExactMatchScorer",
+    "FactEvaluator",
+    "FactMetrics",
+    "FactPrompts",
     "RaceCriterion",
     "RaceDimension",
     "RaceEvaluator",
@@ -31,6 +42,7 @@ __all__ = [
     "RaceScore",
     "RaceWeights",
     "Scorer",
+    "effective_citations_across",
 ]
 
 from pyarnes_core.packaging import version_of
