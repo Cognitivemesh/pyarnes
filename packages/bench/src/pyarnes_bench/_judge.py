@@ -14,6 +14,7 @@ one retry / error-mapping policy for every judge call:
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 from typing import Any
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
@@ -29,6 +30,11 @@ __all__ = [
 logger = get_logger(__name__)
 
 _FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
+
+
+@lru_cache(maxsize=128)
+def _adapter_for(model: type[BaseModel]) -> TypeAdapter[Any]:
+    return TypeAdapter(model)
 
 
 def _extract_text(payload: dict[str, Any]) -> str:
@@ -81,7 +87,7 @@ async def judge_json[ModelT: BaseModel](
             the outer harness, which feeds it back to the LLM as a
             ToolMessage.
     """
-    adapter: TypeAdapter[ModelT] = TypeAdapter(model)
+    adapter = _adapter_for(model)
     messages = [{"role": "user", "content": prompt}]
     last_error: str = ""
 

@@ -90,11 +90,17 @@ class FactMetrics(BaseModel):
     total: int                  # >= 0
     supported: int              # >= 0, <= total
     citation_accuracy: float    # in [0, 1]
-    effective_citations: int    # >= 0, must equal supported
     metadata: dict[str, Any]
 
     @model_validator(mode="after")
     def _validate_counts(self) -> Self: ...
+
+    @computed_field
+    @property
+    def effective_citations(self) -> int:
+        # Paper names the abundance metric separately but within one
+        # task it IS the supported count — avoid storing twice.
+        return self.supported
 
     def to_eval_result(self, *, scenario: str, threshold: float = 0.8) -> EvalResult: ...
 ```
@@ -155,7 +161,9 @@ packages/bench/README.md           # EDIT — one-line mention
   - Empty report → `UserFixableError`.
   - Zero claims → `citation_accuracy == 0.0`.
   - `to_eval_result` threshold routing.
-  - `FactMetrics` rejects inconsistent counts.
+  - `FactMetrics` rejects `supported > total`; `effective_citations`
+    is derived (via `@computed_field`) and appears in
+    `model_dump()`.
   - `CitationClaim` rejects empty statement / empty URL.
   - `effective_citations_across` mean + empty-input zero.
 - `tests/features/fact_evaluation.feature` + steps: three scenarios

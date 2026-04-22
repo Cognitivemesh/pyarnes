@@ -72,9 +72,9 @@ _UnitFloat = Annotated[float, Field(ge=0.0, le=1.0)]
 class RaceWeights(BaseModel):
     """Per-dimension weights produced by the weighting judge.
 
-    Weights sum to 1 ± ``_WEIGHT_SUM_TOLERANCE``; the validator re-
-    normalizes when the sum is within ``[_WEIGHT_RENORM_FLOOR, 1]`` but
-    drifts slightly (the judge is an LLM, not a calculator).
+    Weights sum to 1 ± ``_WEIGHT_SUM_TOLERANCE``; the post-validator
+    re-normalizes when the judge's output drifts slightly. Field-level
+    constraints (each weight in ``[0, 1]``) still run on the raw input.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -82,14 +82,15 @@ class RaceWeights(BaseModel):
     weights: dict[RaceDimension, _UnitFloat]
 
     @model_validator(mode="after")
-    def _validate_sum(self) -> RaceWeights:
+    def _normalize_sum(self) -> RaceWeights:
         total = sum(self.weights.values())
         if total < _WEIGHT_RENORM_FLOOR:
             raise ValueError(f"RaceWeights sum {total} below floor {_WEIGHT_RENORM_FLOOR}")
-        if not math.isclose(total, 1.0, abs_tol=_WEIGHT_SUM_TOLERANCE):
-            normalized = {d: w / total for d, w in self.weights.items()}
-            object.__setattr__(self, "weights", normalized)
-        return self
+        if math.isclose(total, 1.0, abs_tol=_WEIGHT_SUM_TOLERANCE):
+            return self
+        return self.model_copy(
+            update={"weights": {d: w / total for d, w in self.weights.items()}}
+        )
 
 
 class RaceCriterion(BaseModel):

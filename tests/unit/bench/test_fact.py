@@ -177,23 +177,13 @@ class TestFactEvaluator:
 class TestFactMetricsValidation:
     def test_supported_cannot_exceed_total(self) -> None:
         with pytest.raises(ValidationError):
-            FactMetrics(
-                claims=(),
-                total=1,
-                supported=2,
-                citation_accuracy=1.0,
-                effective_citations=2,
-            )
+            FactMetrics(claims=(), total=1, supported=2, citation_accuracy=1.0)
 
-    def test_effective_citations_must_equal_supported(self) -> None:
-        with pytest.raises(ValidationError):
-            FactMetrics(
-                claims=(),
-                total=2,
-                supported=2,
-                citation_accuracy=1.0,
-                effective_citations=3,
-            )
+    def test_effective_citations_is_derived(self) -> None:
+        metrics = FactMetrics(claims=(), total=3, supported=2, citation_accuracy=2 / 3)
+        assert metrics.effective_citations == 2
+        # Derived fields appear in model_dump; explicit assignment is rejected.
+        assert metrics.model_dump()["effective_citations"] == 2
 
     def test_citation_claim_requires_non_empty(self) -> None:
         with pytest.raises(ValidationError):
@@ -204,9 +194,9 @@ class TestFactMetricsValidation:
 
 class TestAcrossTask:
     def test_mean_across_tasks(self) -> None:
-        m1 = FactMetrics(claims=(), total=3, supported=3, citation_accuracy=1.0, effective_citations=3)
-        m2 = FactMetrics(claims=(), total=2, supported=1, citation_accuracy=0.5, effective_citations=1)
-        m3 = FactMetrics(claims=(), total=2, supported=2, citation_accuracy=1.0, effective_citations=2)
+        m1 = FactMetrics(claims=(), total=3, supported=3, citation_accuracy=1.0)
+        m2 = FactMetrics(claims=(), total=2, supported=1, citation_accuracy=0.5)
+        m3 = FactMetrics(claims=(), total=2, supported=2, citation_accuracy=1.0)
         assert effective_citations_across([m1, m2, m3]) == pytest.approx(2.0)
 
     def test_empty_returns_zero(self) -> None:

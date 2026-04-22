@@ -29,7 +29,7 @@ from collections.abc import Iterable, Mapping
 from difflib import SequenceMatcher
 from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
 from pyarnes_bench._judge import judge_json
 from pyarnes_bench.eval import EvalResult
@@ -53,6 +53,7 @@ Sources = Mapping[str, str]
 
 _UnitFloat = Annotated[float, Field(ge=0.0, le=1.0)]
 _DEDUP_SIMILARITY = 0.97
+_MISSING_SOURCE_REASON = "source_not_provided"
 
 
 class CitationClaim(BaseModel):
@@ -67,7 +68,13 @@ class CitationClaim(BaseModel):
 
 
 class FactMetrics(BaseModel):
-    """Aggregate verification metrics for one report."""
+    """Aggregate verification metrics for one report.
+
+    ``effective_citations`` is derived from ``supported`` — DeepResearch
+    Bench names them separately in the paper, but within a single task
+    they are the same number. The alias keeps the paper's vocabulary
+    intact without storing the value twice.
+    """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -75,16 +82,19 @@ class FactMetrics(BaseModel):
     total: int = Field(ge=0)
     supported: int = Field(ge=0)
     citation_accuracy: _UnitFloat
-    effective_citations: int = Field(ge=0)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _validate_counts(self) -> FactMetrics:
         if self.supported > self.total:
             raise ValueError("supported count cannot exceed total")
-        if self.effective_citations != self.supported:
-            raise ValueError("effective_citations must equal supported claim count")
         return self
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def effective_citations(self) -> int:
+        """Supported-claim count — the abundance metric within one task."""
+        return self.supported
 
     def to_eval_result(self, *, scenario: str, threshold: float = 0.8) -> EvalResult:
         """Adapt to :class:`pyarnes_bench.EvalResult` for ``EvalSuite``."""
@@ -209,7 +219,7 @@ class FactEvaluator:
                         statement=statement,
                         url=url,
                         supported=None,
-                        reason="source_not_provided",
+                        reason=_MISSING_SOURCE_REASON,
                     )
                 )
                 continue
@@ -231,7 +241,6 @@ class FactEvaluator:
             total=total,
             supported=supported,
             citation_accuracy=accuracy,
-            effective_citations=supported,
             metadata={"raw_claims": len(extracted), "dedup_claims": len(pairs)},
         )
 
@@ -257,19 +266,23 @@ class FactEvaluator:
 def _dedupe(claims: list[_ExtractedClaim]) -> list[tuple[str, str]]:
     """Collapse identical and near-identical ``(statement, url)`` pairs.
 
-    Two claims collapse when their URLs match and either
-    ``statement``s are byte-equal or their similarity ratio is
-    ``>= _DEDUP_SIMILARITY``.
+    Two claims collapse when their URLs match and either ``statement``s
+    are byte-equal or their similarity ratio is ``>= _DEDUP_SIMILARITY``.
+    SequenceMatcher is only invoked within same-URL buckets so the cost
+    is quadratic in duplicates-per-URL, not in total claim count.
     """
     kept: list[tuple[str, str]] = []
+    seen_by_url: dict[str, list[str]] = {}
     for claim in claims:
+        bucket = seen_by_url.setdefault(claim.url, [])
         if any(
-            u == claim.url
-            and (s == claim.statement or SequenceMatcher(None, s, claim.statement).ratio() >= _DEDUP_SIMILARITY)
-            for s, u in kept
+            s == claim.statement
+            or SequenceMatcher(None, s, claim.statement).ratio() >= _DEDUP_SIMILARITY
+            for s in bucket
         ):
             continue
         kept.append((claim.statement, claim.url))
+        bucket.append(claim.statement)
     return kept
 
 
