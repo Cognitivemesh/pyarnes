@@ -1,0 +1,136 @@
+# {{ project_name }} — Agent Instructions
+
+This file is read by every AI coding CLI — Claude Code, Codex, Cursor,
+Gemini, Aider — via the shared ``AGENTS.md`` convention. It is the
+**source of truth** for agent behaviour in this project. CLI-specific
+files (``CLAUDE.md``, ``.cursorrules``, …) defer to it.
+
+## What is this?
+
+{{ project_description }}
+
+Built on top of the [pyarnes](https://github.com/Cognitivemesh/pyarnes)
+agentic harness. pyarnes **collaborates** with your AI coding CLI — it
+does not replace the CLI's agent loop. It provides verification loops,
+safety guardrails, and lifecycle management that plug into whatever
+loop your CLI already runs.
+
+## Agent Behavioral Guidelines
+
+Behavioural guidelines to reduce common LLM coding mistakes. Merge with
+project-specific instructions as needed.
+
+**Tradeoff:** These guidelines bias toward caution over speed. For
+trivial tasks, use judgment.
+
+### 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them — don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+### 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?"
+If yes, simplify.
+
+### 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it — don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+### 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+## Quick commands
+
+```bash
+uv run tasks help        # list all tasks
+uv run tasks test        # run tests
+uv run tasks check       # lint + typecheck + test
+uv run tasks watch       # TDD watch mode
+uv run tasks format      # auto-format
+uv run tasks lint        # ruff lint
+uv run tasks security    # bandit security scan
+uv run tasks update      # pull latest pyarnes template improvements
+```
+
+## Project layout
+
+- `src/{{ project_module }}/pipeline.py` — the `AgentLoop` builder
+- `src/{{ project_module }}/cli.py` — Typer CLI; entry point `{{ project_module }}`
+- `src/{{ project_module }}/tools/` — project-specific `ToolHandler` subclasses
+- `src/{{ project_module }}/guardrails.py` — project-specific `Guardrail` subclasses
+- `tests/` — your tests
+- `docs/` — MkDocs Material documentation source
+{%- if enable_dev_hooks %}
+- `.claude/hooks/` — pyarnes Claude Code hooks (PreToolUse, PostToolUse, Stop, Session*)
+- `.claude/pyarnes/` — runtime state the hooks persist (gitignored)
+{%- endif %}
+
+**Adopter shape:** `{{ adopter_shape }}`{% if adopter_shape != "blank" %} — starter stubs under `tools/` and `guardrails.py` reflect this shape.{% endif %}
+
+## pyarnes dependencies (installed via git URLs)
+
+| Package | What it provides |
+|---|---|
+| `pyarnes_core` | Types (`ToolHandler`, `ModelClient`), error taxonomy, lifecycle FSM, `Budget`, JSONL logging |
+| `pyarnes_harness` | `AgentLoop`, `ToolRegistry`, output capture, tool-call logger, CC-transcript adapter |
+| `pyarnes_guardrails` | `PathGuardrail`, `CommandGuardrail`, `SecretLeakGuardrail`, `NetworkEgressGuardrail`, `RateLimitGuardrail`, `GuardrailChain` |
+| `pyarnes_bench` | Evaluation scorers, including `ToolUseCorrectnessScorer`, `TrajectoryLengthScorer`, `GuardrailComplianceScorer` |
+| `pyarnes_tasks` | The `tasks` CLI that `uv run tasks …` invokes |
+
+## Error taxonomy (from pyarnes)
+
+| Type | Behaviour |
+|---|---|
+| `TransientError` | Retry with exponential backoff (cap: 2) |
+| `LLMRecoverableError` | Return as ToolMessage so the model adjusts |
+| `UserFixableError` | Interrupt for human input |
+| `UnexpectedError` | Bubble up for debugging |
+
+All four types live in `pyarnes_core.errors`.
+
+## Conventions
+
+- All code is **async-first** (asyncio) to avoid GIL contention.
+- Logging goes to **stderr** as JSONL via **loguru**; stdout is reserved for tool results.
+- Docstrings follow **PEP 257** conventions (Google style).
+- Use Red → Green → Refactor TDD workflow when adding behaviour.
+- Types are enforced via `ruff` + `ty`.
+
+## Functional utilities (included, use them)
+
+| Library | When to use |
+|---|---|
+| `returns` | Explicit error paths — wrap risky operations in `Result`/`Maybe` instead of bare `try/except` |
+| `toolz` | Data transformation pipelines — `pipe(data, step1, step2)`, `compose`, `curry` |
+| `funcy` | Collection helpers — `lmap`, `lfilter`, `chunks`, `take`, `distinct` on tool result lists |
+| `more-itertools` | Advanced iteration — `batched`, `windowed`, `flatten` for streaming tool outputs |

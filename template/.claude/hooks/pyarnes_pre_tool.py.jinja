@@ -16,8 +16,13 @@ from pyarnes_core.observe.logger import LogFormat, configure_logging, get_logger
 from pyarnes_guardrails import (
     CommandGuardrail,
     GuardrailChain,
+    NetworkEgressGuardrail,
     PathGuardrail,
+    RateLimitGuardrail,
+    SecretLeakGuardrail,
     ToolAllowlistGuardrail,
+    Violation,
+    append_violation,
 )
 
 configure_logging(fmt=LogFormat.JSON, level="INFO")
@@ -29,6 +34,11 @@ CHAIN = GuardrailChain(guardrails=[
         path_keys=("path", "file_path", "directory", "target"),
     ),
     CommandGuardrail(),
+    SecretLeakGuardrail(),
+    NetworkEgressGuardrail(
+        allowed_hosts=("github.com", "pypi.org", "files.pythonhosted.org"),
+    ),
+    RateLimitGuardrail(max_calls=120, window_seconds=60.0),
     ToolAllowlistGuardrail(allowed_tools=frozenset({
 {%- for tool in allowed_claude_tools %}
         "{{ tool }}",
@@ -42,11 +52,21 @@ def main() -> int:
     event = json.load(sys.stdin)
     tool = event.get("tool_name", "")
     args = event.get("tool_input", {})
+    session_id = event.get("session_id")
     log.info("tool.pre tool={tool}", tool=tool)
     try:
         asyncio.run(CHAIN.check(tool, args))
     except UserFixableError as exc:
         log.warning("tool.pre.block tool={tool} reason={reason}", tool=tool, reason=str(exc))
+        append_violation(
+            Violation(
+                guardrail=type(exc).__name__,
+                tool=tool,
+                reason=str(exc),
+                hook="PreToolUse",
+                session_id=session_id,
+            )
+        )
         print(json.dumps({"decision": "block", "reason": str(exc)}))
         return 2
     return 0

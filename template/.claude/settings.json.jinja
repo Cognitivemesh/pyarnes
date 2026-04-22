@@ -19,6 +19,36 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python .claude/hooks/pyarnes_stop.py"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python .claude/hooks/pyarnes_session_start.py"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python .claude/hooks/pyarnes_session_end.py"
+          }
+        ]
+      }
     ]
   }
 }

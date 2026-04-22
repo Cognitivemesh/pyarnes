@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+"""Claude Code Stop hook — terminal Budget check.
+
+Reads the Lifecycle checkpoint written by the PostToolUse hook and emits
+``{"continue": false, "stopReason": ...}`` when a configured cap has
+been hit. CC has no native ``max_turns`` knob — this hook is the only
+mechanism that can force-stop a runaway session.
+"""
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+from pyarnes_core import Lifecycle
+
+_STATE_DIR = Path(".claude/pyarnes")
+
+
+def _checkpoint_path(session_id: str | None) -> Path:
+    return _STATE_DIR / f"checkpoint-{session_id or 'default'}.json"
+
+
+def main() -> int:
+    """Entry point; always exits 0. Decision conveyed via JSON on stdout."""
+    event = json.load(sys.stdin)
+    session_id = event.get("session_id")
+    path = _checkpoint_path(session_id)
+    if not path.is_file():
+        return 0
+
+    lifecycle = Lifecycle.load(path)
+    budget = lifecycle.budget
+    if budget is None:
+        return 0
+
+    cap = budget.exceeded_cap()
+    if cap is None:
+        return 0
+
+    print(json.dumps({
+        "continue": False,
+        "stopReason": f"pyarnes.Budget cap {cap!r} exceeded: {budget.as_dict()}",
+    }))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
