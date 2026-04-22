@@ -1,5 +1,22 @@
 # bench-scorer-verdict
 
+**Status:** Partially implemented (scorer catalog landed; typed verdict
+shape still pending). Last refreshed 2026-04-22.
+
+## Scorer catalog
+
+| Scorer | Signature | Consumes |
+|---|---|---|
+| `ExactMatchScorer` | `score(expected, actual, ...) -> float` | arbitrary values |
+| `ToolUseCorrectnessScorer` | same | `Iterable[ToolCallEntry]` + reference tool-name sequence; LCS ratio |
+| `TrajectoryLengthScorer` | same | `Iterable[ToolCallEntry]` + `target_length` + `tolerance`; linear decay outside window |
+| `GuardrailComplianceScorer` | same | `Iterable[ToolCallEntry]` + path to sidecar `violations.jsonl`; `1 - violations/calls` |
+
+All four satisfy the stable `Scorer` ABC so they drop into existing
+`EvalSuite` flows. Trajectory scorers accept the same `ToolCallEntry`
+shape whether it came from `ToolCallLogger` or from
+`read_cc_session` — see [harness-run-logger.md](./harness-run-logger.md#sources).
+
 Contract for expanding `pyarnes-bench` scorers with a typed verdict
 shape and four new concrete scorers, without breaking the existing
 `Scorer` ABC.

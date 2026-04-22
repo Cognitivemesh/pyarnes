@@ -1,5 +1,13 @@
 # 01 — Core stable API surface
 
+**Status:** Implemented — stable surface enforced via
+`tests/unit/test_stable_surface.py`. Last refreshed 2026-04-22 to cover
+the Phase 1–4 additions (`Budget`, `SecretLeakGuardrail`,
+`NetworkEgressGuardrail`, `RateLimitGuardrail`, `Violation`,
+`append_violation`, `default_violation_log_path`, `read_cc_session`,
+`resolve_cc_session_path`, `ToolUseCorrectnessScorer`,
+`TrajectoryLengthScorer`, `GuardrailComplianceScorer`).
+
 ## Context
 
 pyarnes is a library that adopters pin by git ref (`pyarnes_ref` in their `pyproject.toml`). Adopters A (PII redaction), B (S3 sweep), and C (RTM+Toggl→agile) all build on the same public symbols across `pyarnes-core`, `pyarnes-harness`, `pyarnes-guardrails`, and `pyarnes-bench`. Today these packages export what they export without an explicit contract — which means any internal rename can silently break every adopter's `uv sync`.
@@ -29,10 +37,13 @@ Source plan: `/root/.claude/plans/as-an-expert-in-mellow-whisper.md` — see the
 
 | Package | Exports (enforced via `__all__`) |
 |---|---|
-| `pyarnes_core` | `Lifecycle`, `Phase`; errors `TransientError`, `LLMRecoverableError`, `UserFixableError`, `UnexpectedError`; observe `get_logger`, `configure_logging`, `LogFormat`. |
-| `pyarnes_harness` | `AgentLoop`, `LoopConfig`, `ToolHandler`, `ToolRegistry`, `ModelClient`, `ToolCallLogger`. |
-| `pyarnes_guardrails` | `Guardrail`, `GuardrailChain`, `PathGuardrail`, `CommandGuardrail`, `ToolAllowlistGuardrail`. |
-| `pyarnes_bench` | `EvalSuite`, `EvalResult`, `Scorer`, `ExactMatchScorer`. |
+| `pyarnes_core` | `Lifecycle`, `Phase`, `Budget`; errors `TransientError`, `LLMRecoverableError`, `UserFixableError`, `UnexpectedError`, `HarnessError`, `Severity`; types `ToolHandler`, `ModelClient`; observe `get_logger`, `configure_logging`, `LogFormat`. |
+| `pyarnes_harness` | `AgentLoop`, `LoopConfig`, `ToolMessage`, `ToolRegistry`, `ToolCallLogger`, `ToolCallEntry`, `OutputCapture`, `CapturedOutput`; transcript adapter `read_cc_session`, `resolve_cc_session_path`; re-exported guardrails `Guardrail`, `GuardrailChain`, `PathGuardrail`, `CommandGuardrail`, `ToolAllowlistGuardrail`. |
+| `pyarnes_guardrails` | `Guardrail`, `GuardrailChain`, `PathGuardrail`, `CommandGuardrail`, `ToolAllowlistGuardrail`, `SecretLeakGuardrail`, `NetworkEgressGuardrail`, `RateLimitGuardrail`; sidecar `Violation`, `append_violation`, `default_violation_log_path`. |
+| `pyarnes_bench` | `EvalSuite`, `EvalResult`, `Scorer`, `ExactMatchScorer`, `ToolUseCorrectnessScorer`, `TrajectoryLengthScorer`, `GuardrailComplianceScorer`. |
+
+`Lifecycle` also exposes `.budget` + `.dump(path)` + `.load(path)` for
+the Claude Code `SessionStart` / `SessionEnd` hooks.
 
 ### Explicitly private
 
