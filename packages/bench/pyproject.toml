@@ -18,6 +18,7 @@ classifiers = [
 dependencies = [
     "pyarnes-core",
     "more-itertools>=10.5",
+    "pydantic>=2.6",
 ]
 
 [build-system]
