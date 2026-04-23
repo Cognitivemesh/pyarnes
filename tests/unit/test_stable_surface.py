@@ -28,8 +28,11 @@ STABLE_SURFACE: dict[str, frozenset[str]] = {
             "TransientError",
             "UnexpectedError",
             "UserFixableError",
+            "append_private",
             "configure_logging",
             "get_logger",
+            "safe_session_id",
+            "write_private",
         }
     ),
     "pyarnes_harness": frozenset(
