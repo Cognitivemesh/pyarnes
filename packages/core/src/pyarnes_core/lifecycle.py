@@ -23,6 +23,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+from pyarnes_core.atomic_write import write_private
 from pyarnes_core.budget import Budget
 from pyarnes_core.observability import log_event
 from pyarnes_core.observe.logger import get_logger
@@ -148,27 +149,47 @@ class Lifecycle:
     def dump(self, path: Path) -> Path:
         """Serialise the lifecycle to *path* (JSON) and return the path.
 
+        Writes go through :func:`pyarnes_core.atomic_write.write_private`
+        so the resulting file is created ``0o600`` and a crash mid-write
+        leaves the prior file intact rather than truncating it.
+
         The transition history is NOT persisted — it is a debug aid for
         the current process. Restored instances start with an empty
         history.
         """
-        path.parent.mkdir(parents=True, exist_ok=True)
         payload: dict[str, Any] = {
             "phase": self.phase.value,
             "metadata": self.metadata,
             "budget": self.budget.as_dict() if self.budget is not None else None,
         }
-        path.write_text(json.dumps(payload))
+        write_private(path, json.dumps(payload))
         return path
 
     @classmethod
     def load(cls, path: Path) -> Lifecycle:
-        """Inverse of :meth:`dump`."""
-        raw = json.loads(path.read_text())
+        """Inverse of :meth:`dump`; fails closed on a tampered file.
+
+        Raises ``ValueError`` when *path* cannot be parsed as JSON or
+        when the recorded ``phase`` value is not one of the known
+        :class:`Phase` members. Hooks that want to treat a missing or
+        corrupt checkpoint as "start fresh" must catch explicitly.
+        """
+        try:
+            raw = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            msg = f"Lifecycle checkpoint at {path} is unreadable: {type(exc).__name__}"
+            raise ValueError(msg) from exc
+        if not isinstance(raw, dict):
+            msg = f"Lifecycle checkpoint at {path} is not a JSON object"
+            raise TypeError(msg)
+        phase_raw = raw.get("phase", Phase.INIT.value)
+        try:
+            phase = Phase(phase_raw)
+        except ValueError as exc:
+            msg = f"Lifecycle checkpoint at {path} has unknown phase {phase_raw!r}"
+            raise ValueError(msg) from exc
         budget_raw = raw.get("budget")
-        budget = Budget.from_dict(budget_raw) if budget_raw is not None else None
-        return cls(
-            phase=Phase(raw.get("phase", Phase.INIT.value)),
-            metadata=dict(raw.get("metadata", {})),
-            budget=budget,
-        )
+        budget = Budget.from_dict(budget_raw) if isinstance(budget_raw, dict) else None
+        metadata_raw = raw.get("metadata", {})
+        metadata = dict(metadata_raw) if isinstance(metadata_raw, dict) else {}
+        return cls(phase=phase, metadata=metadata, budget=budget)
