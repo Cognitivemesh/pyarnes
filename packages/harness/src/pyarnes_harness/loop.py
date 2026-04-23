@@ -48,7 +48,9 @@ from pyarnes_core.observability import (
 )
 from pyarnes_core.observe.logger import get_logger
 from pyarnes_core.types import ModelClient, ToolHandler
+from pyarnes_guardrails.guardrails import GuardrailChain
 from pyarnes_harness.capture.tool_log import ToolCallLogger
+from pyarnes_harness.context import AgentContext
 
 __all__ = [
     "AgentLoop",
@@ -93,11 +95,14 @@ class LoopConfig:
             maximum of both.
         retry_base_delay: Seconds before the first retry. Likewise, a
             ``TransientError.retry_delay_seconds`` may raise this floor.
+        reflection_interval: Inject a reflection checkpoint every N iterations.
+            ``0`` (the default) disables reflection.
     """
 
     max_iterations: int = 50
     max_retries: int = 2
     retry_base_delay: float = 1.0
+    reflection_interval: int = 0
 
     def __post_init__(self) -> None:
         """Validate configuration values."""
@@ -106,6 +111,9 @@ class LoopConfig:
             raise ValueError(msg)
         if self.max_retries < 0:
             msg = "max_retries must be >= 0"
+            raise ValueError(msg)
+        if self.reflection_interval < 0:
+            msg = "reflection_interval must be >= 0"
             raise ValueError(msg)
 
 
@@ -127,12 +135,18 @@ class AgentLoop:
         tool_call_logger: Optional JSONL logger that persists every tool
             invocation to disk.  When ``None`` (the default), file-based
             logging is skipped.
+        guardrail_chain: Optional chain of guardrails checked before each
+            tool execution. ``None`` skips all guardrail checks.
+        agent_context: Optional domain-specific guidance injected into the
+            system message before the first iteration.
     """
 
     tools: dict[str, ToolHandler]
     model: ModelClient
     config: LoopConfig = field(default_factory=LoopConfig)
     tool_call_logger: ToolCallLogger | None = None
+    guardrail_chain: GuardrailChain | None = None
+    agent_context: AgentContext | None = None
 
     async def run(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Execute the agent loop until completion or limit.
@@ -147,8 +161,24 @@ class AgentLoop:
             UserFixableError: When human intervention is required.
             UnexpectedError: On unrecoverable internal failures.
         """
+        if self.agent_context is not None and messages and messages[0].get("role") == "system":
+            ctx_fragment = self.agent_context.to_system_prompt()
+            messages = [
+                {**messages[0], "content": f"{messages[0]['content']}\n\n{ctx_fragment}"},
+                *messages[1:],
+            ]
+
         for iteration in range(self.config.max_iterations):
             log_event(logger, "loop.iteration", iteration=iteration)
+
+            if (
+                self.config.reflection_interval > 0
+                and iteration > 0
+                and iteration % self.config.reflection_interval == 0
+            ):
+                reflection = await self._request_reflection(messages)
+                messages.append(reflection)
+
             action = await self.model.next_action(messages)
             kind = classify(action)
 
@@ -182,7 +212,7 @@ class AgentLoop:
         )
         return messages
 
-    async def _call_tool(
+    async def _call_tool(  # noqa: C901
         self,
         name: str,
         tool_call_id: str,
@@ -205,6 +235,10 @@ class AgentLoop:
             )
             self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
             return msg
+
+        guard_result = await self._check_guardrails(name, tool_call_id, arguments, started_at, start_mono)
+        if guard_result is not None:
+            return guard_result
 
         attempt = 0
         max_attempts = self.config.max_retries + 1
@@ -253,11 +287,7 @@ class AgentLoop:
 
             except LLMRecoverableError as exc:
                 log_warning(logger, "tool.llm_recoverable", tool=name, error=str(exc))
-                msg = ToolMessage(
-                    tool_call_id=tool_call_id,
-                    content=f"Error (model can retry): {exc}",
-                    is_error=True,
-                )
+                msg = self._recoverable_error_message(tool_call_id, exc)
                 self._log_tool_call(
                     name,
                     arguments,
@@ -302,6 +332,59 @@ class AgentLoop:
         raise AssertionError(msg)  # pragma: no cover
 
     # ── internals ──────────────────────────────────────────────────────
+
+    async def _check_guardrails(
+        self,
+        name: str,
+        tool_call_id: str,
+        arguments: dict[str, Any],
+        started_at: str,
+        start_mono: float,
+    ) -> ToolMessage | None:
+        """Run the guardrail chain before tool execution.
+
+        Returns a ``ToolMessage`` error on recoverable violations, re-raises
+        ``UserFixableError`` for human-intervention cases, and returns
+        ``None`` when all guardrails pass.
+        """
+        if self.guardrail_chain is None:
+            return None
+        try:
+            await self.guardrail_chain.check(name, arguments)
+        except UserFixableError:
+            raise
+        except LLMRecoverableError as exc:
+            msg = self._recoverable_error_message(tool_call_id, exc)
+            self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
+            return msg
+        return None
+
+    async def _request_reflection(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
+        """Ask the model to reflect on progress so far.
+
+        A probe message is appended to a temporary copy of the history so
+        the probe itself is not permanently recorded. The model's response
+        is returned as an assistant turn.
+        """
+        probe = {
+            "role": "user",
+            "content": (
+                "REFLECTION CHECKPOINT: Briefly review your progress. "
+                "Are you on track? Have you made any mistakes? "
+                "Should you backtrack or adjust your approach?"
+            ),
+        }
+        response = await self.model.next_action([*messages, probe])
+        return {"role": "assistant", "content": response.get("content", "")}
+
+    @staticmethod
+    def _recoverable_error_message(tool_call_id: str, exc: Exception) -> ToolMessage:
+        """Build a ToolMessage that feeds a recoverable error back to the model."""
+        return ToolMessage(
+            tool_call_id=tool_call_id,
+            content=f"Error (model can retry): {exc}",
+            is_error=True,
+        )
 
     @staticmethod
     def _as_tool_entry(result: ToolMessage) -> dict[str, Any]:

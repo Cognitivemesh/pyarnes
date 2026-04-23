@@ -1741,12 +1741,14 @@ source = { editable = "packages/bench" }
 dependencies = [
     { name = "more-itertools" },
     { name = "pyarnes-core" },
+    { name = "pydantic" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "more-itertools", specifier = ">=10.5" },
     { name = "pyarnes-core", editable = "packages/core" },
+    { name = "pydantic", specifier = ">=2.6" },
 ]
 
 [[package]]

@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from operator import attrgetter
+from pathlib import Path
 from typing import Any
 
 from more_itertools import quantify
@@ -104,6 +106,44 @@ class EvalSuite:
             "pass_rate": passed / total if total else 0.0,
             "average_score": self.average_score,
         }
+
+    def to_json(self, path: Path) -> None:
+        """Persist the suite as a JSON file for regression comparison.
+
+        Args:
+            path: Destination file path. Parent directories must exist.
+        """
+        payload = {
+            "suite": self.name,
+            "results": [r.as_dict() for r in self.results],
+        }
+        path.write_text(json.dumps(payload, indent=2, default=str))
+
+    @classmethod
+    def from_json(cls, path: Path) -> EvalSuite:
+        """Restore a suite from a JSON file written by :meth:`to_json`.
+
+        Only ``scenario``, ``score``, and ``passed`` are preserved —
+        ``expected`` and ``actual`` are stored as strings and
+        ``metadata`` defaults to ``{}``.
+
+        Args:
+            path: Path to a JSON file previously written by ``to_json``.
+        """
+        payload: dict[str, Any] = json.loads(path.read_text())
+        suite = cls(name=payload.get("suite", "default"))
+        for raw in payload.get("results", []):
+            suite.results.append(
+                EvalResult(
+                    scenario=raw["scenario"],
+                    expected=raw.get("expected", ""),
+                    actual=raw.get("actual", ""),
+                    score=float(raw["score"]),
+                    passed=bool(raw["passed"]),
+                    metadata=raw.get("metadata", {}),
+                )
+            )
+        return suite
 
     def __len__(self) -> int:  # noqa: D105
         return len(self.results)

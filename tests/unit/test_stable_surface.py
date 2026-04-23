@@ -59,10 +59,21 @@ STABLE_SURFACE: dict[str, frozenset[str]] = {
     ),
     "pyarnes_bench": frozenset(
         {
+            "CitationClaim",
             "EvalResult",
             "EvalSuite",
             "ExactMatchScorer",
+            "FactEvaluator",
+            "FactMetrics",
+            "FactPrompts",
+            "RaceCriterion",
+            "RaceDimension",
+            "RaceEvaluator",
+            "RacePrompts",
+            "RaceScore",
+            "RaceWeights",
             "Scorer",
+            "effective_citations_across",
         }
     ),
 }

@@ -72,16 +72,18 @@ class TestToolAllowlistGuardrail:
 class TestGuardrailChain:
     """GuardrailChain composes multiple guardrails."""
 
-    def test_all_pass(self) -> None:
+    @pytest.mark.asyncio
+    async def test_all_pass(self) -> None:
         chain = GuardrailChain(
             guardrails=[
                 PathGuardrail(allowed_roots=("/workspace",)),
                 CommandGuardrail(),
             ]
         )
-        chain.check("shell", {"command": "echo hi", "path": "/workspace/file.txt"})
+        await chain.check("shell", {"command": "echo hi", "path": "/workspace/file.txt"})
 
-    def test_first_failure_stops(self) -> None:
+    @pytest.mark.asyncio
+    async def test_first_failure_stops(self) -> None:
         chain = GuardrailChain(
             guardrails=[
                 PathGuardrail(allowed_roots=("/workspace",)),
@@ -89,7 +91,7 @@ class TestGuardrailChain:
             ]
         )
         with pytest.raises(UserFixableError):
-            chain.check("shell", {"path": "/root/.ssh/id_rsa"})
+            await chain.check("shell", {"path": "/root/.ssh/id_rsa"})
 
 
 class TestPathGuardrailSecurityRegressions:

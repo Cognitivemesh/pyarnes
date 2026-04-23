@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import Any, Protocol, runtime_checkable
 
 __all__ = [
+    "JudgeClient",
     "ModelClient",
     "ToolHandler",
 ]
@@ -46,6 +47,28 @@ class ToolHandler(Protocol):
 
         Returns:
             The tool's result (will be serialized for the model).
+        """
+        ...
+
+
+@runtime_checkable
+class JudgeClient(Protocol):
+    """Structural contract for a free-form LLM judge.
+
+    Separate from ``ModelClient`` because judge calls take a plain-text
+    prompt and return a text response — they do not dispatch tool calls.
+    Any client implementing ``async def judge(self, prompt)`` satisfies
+    this protocol without inheritance.
+    """
+
+    async def judge(self, prompt: str) -> str:
+        """Call the LLM with a plain-text prompt and return its response.
+
+        Args:
+            prompt: The evaluation prompt to send to the LLM.
+
+        Returns:
+            The LLM's text response.
         """
         ...
 

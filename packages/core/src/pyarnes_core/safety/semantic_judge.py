@@ -158,16 +158,12 @@ class _Visitor(ast.NodeVisitor):
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             if _root_module(alias.name) in self._banned_imports:
-                self.findings.append(
-                    Finding("import", alias.name, node.lineno, node.col_offset)
-                )
+                self.findings.append(Finding("import", alias.name, node.lineno, node.col_offset))
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         if node.module and _root_module(node.module) in self._banned_imports:
-            self.findings.append(
-                Finding("import", node.module, node.lineno, node.col_offset)
-            )
+            self.findings.append(Finding("import", node.module, node.lineno, node.col_offset))
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
