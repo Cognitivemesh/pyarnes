@@ -6,9 +6,15 @@ parsing the CC transcript itself — hooks know which guardrail fired;
 the transcript does not.
 
 Default location is ``$CLAUDE_PROJECT_DIR/.claude/pyarnes/violations.jsonl``;
-when the env var is unset we fall back to the same relative path. Rotation
-is not handled here — adopters who want log rotation can swap in logrotate
-or point each session at its own path.
+when the env var is unset we fall back to the same relative path.
+
+**Permissions.** Appends go through
+:func:`pyarnes_core.atomic_write.append_private` so the file is created
+``0o600``. The log may contain high-signal strings (which tool was
+attempted, which guardrail tripped, a human-readable reason) — never
+the matched secret itself. Callers who build the ``reason`` field are
+responsible for keeping the matched text out of it; the shipped
+``SecretLeakGuardrail`` does so by design.
 """
 
 from __future__ import annotations
@@ -18,7 +24,8 @@ import os
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+
+from pyarnes_core.atomic_write import append_private
 
 __all__ = ["Violation", "append_violation", "default_violation_log_path"]
 
@@ -33,11 +40,13 @@ class Violation:
         guardrail: Class name of the guardrail that fired.
         tool: Name of the tool the agent tried to call.
         reason: Human-readable description copied from the error.
+            **Must not contain the secret itself** — the shipped
+            ``SecretLeakGuardrail`` enforces this by emitting a generic
+            message.
         hook: Which CC hook detected the violation (``PreToolUse`` /
             ``PostToolUse``).
         session_id: CC session identifier, when available.
         timestamp: Epoch seconds at detection time.
-        extra: Free-form key-value metadata attached by the hook.
     """
 
     guardrail: str
@@ -46,7 +55,6 @@ class Violation:
     hook: str
     session_id: str | None = None
     timestamp: float = field(default_factory=time.time)
-    extra: dict[str, Any] = field(default_factory=dict)
 
 
 def default_violation_log_path() -> Path:
@@ -60,7 +68,5 @@ def default_violation_log_path() -> Path:
 def append_violation(violation: Violation, *, path: Path | None = None) -> Path:
     """Append *violation* as one JSON line and return the path written to."""
     target = path or default_violation_log_path()
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("a", encoding="utf-8") as fh:
-        fh.write(json.dumps(asdict(violation)) + "\n")
+    append_private(target, json.dumps(asdict(violation)) + "\n")
     return target

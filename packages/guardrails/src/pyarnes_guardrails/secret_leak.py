@@ -1,8 +1,4 @@
-"""Detect plaintext secrets inside tool inputs or outputs.
-
-The guardrail reuses ``pyarnes_core.safety.walk_strings`` to descend
-into nested dicts and lists so alternate argument shapes (``content``,
-``body``, ``text``, list-of-strings) are all covered.
+r"""Detect plaintext secrets inside tool inputs or outputs.
 
 Two modes of use — both via the same ``check`` signature:
 
@@ -13,12 +9,25 @@ Two modes of use — both via the same ``check`` signature:
   ``tool_response`` wrapped as ``{"output": tool_response}``. Detect-
   and-halt only — the model has already seen the response; CC's
   PostToolUse contract does not let us rewrite it.
+
+Defenses that matter:
+
+- Patterns compile with ``re.IGNORECASE`` so
+  ``AWS_SECRET_ACCESS_KEY`` is caught alongside its lower-case variant.
+- Every candidate string is ``NFKC``-normalised and has zero-width /
+  RTL marks stripped before matching so confusables do not slip past
+  ``\b``-anchored patterns.
+- The ``UserFixableError`` message names the tool but **not** the
+  pattern or the matched text — so a probing agent cannot enumerate
+  which pattern a near-miss triggered, and the sidecar violation log
+  never contains the secret itself.
 """
 
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+import unicodedata
+from dataclasses import dataclass
 from typing import Any
 
 from pyarnes_core.errors import UserFixableError
@@ -31,8 +40,8 @@ __all__ = ["SecretLeakGuardrail"]
 
 logger = get_logger(__name__)
 
-# Common high-signal, low-false-positive patterns. Adopters add their own
-# via the ``extra_patterns`` field.
+# Common high-signal, low-false-positive patterns. Adopters add their
+# own via the ``extra_patterns`` field.
 _DEFAULT_PATTERNS: tuple[str, ...] = (
     # AWS access key IDs — fixed 20-char prefix shape.
     r"\bAKIA[0-9A-Z]{16}\b",
@@ -50,6 +59,21 @@ _DEFAULT_PATTERNS: tuple[str, ...] = (
     r"-----BEGIN [A-Z ]*PRIVATE KEY-----",
 )
 
+# Zero-width joiners, non-joiners, LTR/RTL marks — strip before match.
+# Ranges: U+200B..U+200F (ZW joiners + LTR/RTL marks), U+202A..U+202E
+# (explicit directional overrides), U+2060..U+2064 (word joiner, etc.),
+# U+FEFF (BOM). Built as a translate table of codepoints so the source
+# file itself stays printable ASCII.
+_INVISIBLE_TABLE = dict.fromkeys(
+    [
+        *range(0x200B, 0x2010),  # ZW space, joiners, LTR/RTL marks
+        *range(0x202A, 0x202F),  # directional embedding / override
+        *range(0x2060, 0x2065),  # word joiner + invisible separators
+        0xFEFF,  # BOM / ZW no-break space
+    ],
+    None,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class SecretLeakGuardrail(Guardrail):
@@ -58,29 +82,17 @@ class SecretLeakGuardrail(Guardrail):
     Attributes:
         extra_patterns: Additional regex patterns the adopter wants to
             enforce on top of :data:`_DEFAULT_PATTERNS`.
-        scan_keys: When set, only descend into values under these keys.
-            When empty (the default), every string value is scanned —
-            which is the right choice for PostToolUse where output can
-            land in any nested field.
     """
 
     extra_patterns: tuple[str, ...] = ()
-    scan_keys: tuple[str, ...] = ()
-    _compiled: tuple[re.Pattern[str], ...] = field(init=False, repr=False, default=())
-
-    def __post_init__(self) -> None:
-        """Pre-compile the combined pattern list once per instance."""
-        patterns = _DEFAULT_PATTERNS + tuple(self.extra_patterns)
-        compiled = tuple(re.compile(p) for p in patterns)
-        object.__setattr__(self, "_compiled", compiled)
 
     def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
         """Raise ``UserFixableError`` when a value matches a secret pattern."""
-        for value in self._values(arguments):
-            for candidate in walk_strings(value):
-                if not isinstance(candidate, str):
-                    continue
-                for pattern in self._compiled:
+        patterns = self._compile()
+        for value in arguments.values():
+            for raw in walk_strings(value):
+                candidate = _normalise(raw)
+                for pattern in patterns:
                     if pattern.search(candidate):
                         log_warning(
                             logger,
@@ -88,17 +100,23 @@ class SecretLeakGuardrail(Guardrail):
                             tool=tool_name,
                             pattern=pattern.pattern,
                         )
-                        msg = (
-                            f"Potential secret matching {pattern.pattern!r} "
-                            f"detected in tool '{tool_name}' arguments/output."
-                        )
+                        # Generic exception message on purpose — never
+                        # echo the pattern or the matched text into a
+                        # place the violation log or the model will see.
                         raise UserFixableError(
-                            message=msg,
-                            prompt_hint="Remove the secret or redact it before continuing.",
+                            message=(
+                                f"Tool '{tool_name}' blocked: output or "
+                                f"arguments match a secret pattern."
+                            ),
+                            prompt_hint="Remove or redact the secret before continuing.",
                         )
 
-    def _values(self, arguments: dict[str, Any]) -> list[Any]:
-        """Return the value subset to scan (all values, or filtered by key)."""
-        if not self.scan_keys:
-            return list(arguments.values())
-        return [arguments[k] for k in self.scan_keys if k in arguments]
+    def _compile(self) -> tuple[re.Pattern[str], ...]:
+        """Compile patterns once per call; trivial cost for ~10 entries."""
+        raw = _DEFAULT_PATTERNS + tuple(self.extra_patterns)
+        return tuple(re.compile(p, re.IGNORECASE) for p in raw)
+
+
+def _normalise(text: str) -> str:
+    """NFKC-normalise and strip zero-width / RTL marks before matching."""
+    return unicodedata.normalize("NFKC", text).translate(_INVISIBLE_TABLE)
