@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Claude Code SessionEnd hook — finalise the Lifecycle checkpoint.
 
-Loads the in-flight checkpoint (if any), transitions it to the
-terminal ``COMPLETED`` phase, and dumps it back to disk so the next
+Loads the in-flight checkpoint (if any) and the flat ``Budget`` file
+the PostToolUse hook has been updating, transitions the Lifecycle to
+``COMPLETED``, and dumps a combined snapshot so the next
 ``SessionStart`` can surface it via ``additionalContext``. A missing
-checkpoint is not an error — it just means no tool calls were recorded
-during the session.
+checkpoint or a missing budget file is not an error — either just
+means no relevant activity was recorded.
 """
 from __future__ import annotations
 
@@ -13,29 +14,52 @@ import json
 import sys
 from pathlib import Path
 
-from pyarnes_core import Lifecycle, Phase
+from pyarnes_core import Budget, Lifecycle, Phase, safe_session_id
 
 _STATE_DIR = Path(".claude/pyarnes")
 
 
-def _checkpoint_path(session_id: str | None) -> Path:
-    return _STATE_DIR / f"checkpoint-{session_id or 'default'}.json"
+def _checkpoint_path(session_id: str) -> Path:
+    return _STATE_DIR / f"checkpoint-{session_id}.json"
+
+
+def _budget_path(session_id: str) -> Path:
+    return _STATE_DIR / f"budget-{session_id}.json"
+
+
+def _load_budget_or_none(path: Path) -> Budget | None:
+    if not path.is_file():
+        return None
+    try:
+        raw = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+    return Budget.from_dict(raw) if isinstance(raw, dict) else None
 
 
 def main() -> int:
     """Entry point; persists a terminal-phase snapshot."""
     event = json.load(sys.stdin)
-    session_id = event.get("session_id")
-    path = _checkpoint_path(session_id)
+    session_id = safe_session_id(event.get("session_id"))
+    checkpoint = _checkpoint_path(session_id)
 
-    lifecycle = Lifecycle.load(path) if path.is_file() else Lifecycle(metadata={"session_id": session_id or ""})
-    # Only transition when the state machine allows it — a checkpoint that
-    # was already terminal (e.g. failed mid-session) stays terminal.
-    if lifecycle.phase in (Phase.INIT, Phase.RUNNING, Phase.PAUSED):
-        if lifecycle.phase == Phase.INIT:
-            lifecycle.start()
+    try:
+        lifecycle = Lifecycle.load(checkpoint)
+    except (ValueError, OSError):
+        lifecycle = Lifecycle(metadata={"session_id": session_id})
+
+    # Fold the running budget file into the final checkpoint snapshot.
+    budget = _load_budget_or_none(_budget_path(session_id))
+    if budget is not None:
+        lifecycle.budget = budget
+
+    # Only transition when the state machine allows it — a checkpoint
+    # that was already terminal stays terminal.
+    if lifecycle.phase == Phase.INIT:
+        lifecycle.start()
+    if lifecycle.phase in (Phase.RUNNING, Phase.PAUSED):
         lifecycle.complete()
-    lifecycle.dump(path)
+    lifecycle.dump(checkpoint)
     return 0
 
 

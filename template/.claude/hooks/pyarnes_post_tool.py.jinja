@@ -5,14 +5,20 @@ Reads a JSON event from stdin and:
 
 1. Appends the tool call to ``.pyarnes/agent_tool_calls.jsonl`` via
    ``ToolCallLogger`` (the shipped runtime uses the same schema, so
-   adopters can grep both streams with one query).
-2. Scans the tool response for secrets via ``SecretLeakGuardrail``.
-   CC's PostToolUse contract does not permit rewriting the response, so
-   a detected secret is logged to ``.claude/pyarnes/violations.jsonl``
-   and the hook returns ``{"decision": "block"}`` so the model stops
-   reasoning over leaked material.
-3. Increments the per-session ``Budget`` counter so the ``Stop`` hook
-   can force session end when caps are hit.
+   adopters can grep both streams with one query). The ``tool_response``
+   field is truncated to ``_MAX_RESPONSE_BYTES`` before logging or
+   scanning to bound memory use.
+2. Scans the truncated tool response for secrets via
+   ``SecretLeakGuardrail``. CC's PostToolUse contract does not permit
+   rewriting the response, so a detected secret is logged to
+   ``.claude/pyarnes/violations.jsonl`` and the hook returns
+   ``{"decision": "block"}`` so the model stops reasoning over leaked
+   material.
+3. Increments a **flat** ``Budget`` counter file (not a Lifecycle
+   snapshot — the FSM belongs in the Session hooks) so the ``Stop``
+   hook can force session end when the call cap is hit. We do not
+   track wall time here because CC's ``PostToolUse`` payload does not
+   carry ``started_at`` / ``finished_at``.
 """
 from __future__ import annotations
 
@@ -20,7 +26,7 @@ import json
 import sys
 from pathlib import Path
 
-from pyarnes_core import Budget, Lifecycle
+from pyarnes_core import Budget, safe_session_id, write_private
 from pyarnes_core.errors import UserFixableError
 from pyarnes_guardrails import SecretLeakGuardrail, Violation, append_violation
 from pyarnes_harness import ToolCallLogger
@@ -31,38 +37,56 @@ _STATE_DIR = Path(".claude/pyarnes")
 _STATE_DIR.mkdir(parents=True, exist_ok=True)
 _OUTPUT_SCANNER = SecretLeakGuardrail()
 
+# Cap the tool response we look at to 64 KiB. Larger outputs are
+# truncated before scanning + logging so a multi-megabyte Bash result
+# cannot pin memory or feed a regex-DoS through the guardrails.
+_MAX_RESPONSE_BYTES = 64 * 1024
 
-def _checkpoint_path(session_id: str | None) -> Path:
-    return _STATE_DIR / f"checkpoint-{session_id or 'default'}.json"
+
+def _budget_path(session_id: str) -> Path:
+    return _STATE_DIR / f"budget-{session_id}.json"
+
+
+def _load_budget(path: Path) -> Budget:
+    """Read the saved budget or return a fresh one; fail closed on tamper."""
+    if not path.is_file():
+        return Budget()
+    raw = json.loads(path.read_text())
+    if not isinstance(raw, dict):
+        # Fail closed — a tampered counter file is refused rather than
+        # silently reset.
+        msg = f"Budget state at {path} is not a JSON object"
+        raise ValueError(msg)
+    return Budget.from_dict(raw)
+
+
+def _truncate(response: object) -> str:
+    text = str(response)
+    data = text.encode("utf-8", errors="replace")
+    if len(data) <= _MAX_RESPONSE_BYTES:
+        return text
+    return data[:_MAX_RESPONSE_BYTES].decode("utf-8", errors="replace") + "...[truncated]"
 
 
 def main() -> int:
     """Entry point; blocks only when the output contains a detected secret."""
     event = json.load(sys.stdin)
     tool = event.get("tool_name", "unknown")
-    session_id = event.get("session_id")
-    response = event.get("tool_response", "")
+    session_id = safe_session_id(event.get("session_id"))
+    response_truncated = _truncate(event.get("tool_response", ""))
 
     # 1. Append to the audit trail.
     logger = ToolCallLogger(path=_LOG_DIR / "agent_tool_calls.jsonl")
-    started_raw = event.get("started_at")
-    finished_raw = event.get("finished_at")
-    duration: float | None = None
-    if isinstance(started_raw, (int, float)) and isinstance(finished_raw, (int, float)):
-        duration = float(finished_raw) - float(started_raw)
     logger.log_call(
         tool,
         event.get("tool_input", {}),
-        result=str(response),
+        result=response_truncated,
         is_error=bool(event.get("is_error", False)),
-        started_at=str(started_raw) if started_raw is not None else None,
-        finished_at=str(finished_raw) if finished_raw is not None else None,
-        duration_seconds=duration,
     )
 
     # 2. Scan the output for secrets.
     try:
-        _OUTPUT_SCANNER.check(tool, {"output": response})
+        _OUTPUT_SCANNER.check(tool, {"output": response_truncated})
     except UserFixableError as exc:
         append_violation(
             Violation(
@@ -78,12 +102,10 @@ def main() -> int:
         print(json.dumps({"decision": "block", "reason": str(exc)}))
         return 0
 
-    # 3. Bump the budget counter.
-    path = _checkpoint_path(session_id)
-    lifecycle = Lifecycle.load(path) if path.is_file() else Lifecycle(metadata={"session_id": session_id or ""})
-    budget = lifecycle.budget or Budget()
-    lifecycle.budget = budget.consume(calls=1, seconds=duration or 0.0)
-    lifecycle.dump(path)
+    # 3. Bump the flat budget counter.
+    path = _budget_path(session_id)
+    budget = _load_budget(path).consume(calls=1)
+    write_private(path, json.dumps(budget.as_dict()))
 
     return 0
 

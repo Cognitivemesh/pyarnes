@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 """Claude Code Stop hook — terminal Budget check.
 
-Reads the Lifecycle checkpoint written by the PostToolUse hook and emits
-``{"continue": false, "stopReason": ...}`` when a configured cap has
-been hit. CC has no native ``max_turns`` knob — this hook is the only
-mechanism that can force-stop a runaway session.
+Reads the flat Budget counter file written by the PostToolUse hook and
+emits ``{"continue": false, "stopReason": ...}`` when a configured cap
+has been hit. CC has no native ``max_turns`` knob — this hook is the
+only mechanism that can force-stop a runaway session.
+
+The stop hook does **not** manage Lifecycle state; that lives in the
+SessionStart / SessionEnd hooks. A missing or tampered budget file is
+treated as "no cap configured" and the session is allowed to stop
+normally — the right cap enforcement boundary is the pre/post hooks
+that have full event context.
 """
 from __future__ import annotations
 
@@ -12,28 +18,30 @@ import json
 import sys
 from pathlib import Path
 
-from pyarnes_core import Lifecycle
+from pyarnes_core import Budget, safe_session_id
 
 _STATE_DIR = Path(".claude/pyarnes")
 
 
-def _checkpoint_path(session_id: str | None) -> Path:
-    return _STATE_DIR / f"checkpoint-{session_id or 'default'}.json"
+def _budget_path(session_id: str) -> Path:
+    return _STATE_DIR / f"budget-{session_id}.json"
 
 
 def main() -> int:
     """Entry point; always exits 0. Decision conveyed via JSON on stdout."""
     event = json.load(sys.stdin)
-    session_id = event.get("session_id")
-    path = _checkpoint_path(session_id)
+    session_id = safe_session_id(event.get("session_id"))
+    path = _budget_path(session_id)
     if not path.is_file():
         return 0
 
-    lifecycle = Lifecycle.load(path)
-    budget = lifecycle.budget
-    if budget is None:
+    try:
+        raw = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
         return 0
-
+    if not isinstance(raw, dict):
+        return 0
+    budget = Budget.from_dict(raw)
     cap = budget.exceeded_cap()
     if cap is None:
         return 0

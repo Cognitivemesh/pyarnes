@@ -11,6 +11,7 @@ import asyncio
 import json
 import sys
 
+from pyarnes_core import safe_session_id
 from pyarnes_core.errors import UserFixableError
 from pyarnes_core.observe.logger import LogFormat, configure_logging, get_logger
 from pyarnes_guardrails import (
@@ -52,7 +53,9 @@ def main() -> int:
     event = json.load(sys.stdin)
     tool = event.get("tool_name", "")
     args = event.get("tool_input", {})
-    session_id = event.get("session_id")
+    # safe_session_id rejects path-traversal strings and falls back to
+    # "default" — never trust the raw event value.
+    session_id = safe_session_id(event.get("session_id"))
     log.info("tool.pre tool={tool}", tool=tool)
     try:
         asyncio.run(CHAIN.check(tool, args))
