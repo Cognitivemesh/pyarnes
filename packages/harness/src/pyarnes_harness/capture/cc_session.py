@@ -32,7 +32,14 @@ from typing import Any
 
 from pyarnes_harness.capture.tool_log import ToolCallEntry
 
-__all__ = ["read_cc_session", "resolve_cc_session_path"]
+__all__ = ["MAX_TRANSCRIPT_LINE_BYTES", "read_cc_session", "resolve_cc_session_path"]
+
+# 1 MiB per JSONL line is a generous ceiling: even a transcript with a
+# full file ``Read`` tool result rarely crosses a few hundred KiB. Any
+# line larger than this is almost certainly a malformed / adversarial
+# entry and we refuse it rather than risk unbounded memory on
+# ``json.loads``.
+MAX_TRANSCRIPT_LINE_BYTES = 1_048_576
 
 
 def resolve_cc_session_path(
@@ -58,7 +65,11 @@ def resolve_cc_session_path(
         FileNotFoundError: When *session_id* is ``None`` and the project
             directory has no JSONL transcripts.
     """
-    target_cwd = Path(cwd).resolve() if cwd is not None else Path.cwd().resolve()
+    # ``.absolute()`` rather than ``.resolve()`` so we don't touch the
+    # filesystem when the caller hands us a non-existent cwd in tests,
+    # and so we don't accidentally follow symlinks across trust
+    # boundaries.
+    target_cwd = Path(cwd).absolute() if cwd is not None else Path.cwd().absolute()
     target_home = home or Path.home()
     escaped = "-" + "-".join(target_cwd.parts[1:]) if target_cwd.parts else "-"
     project_dir = target_home / ".claude" / "projects" / escaped
@@ -87,52 +98,80 @@ def read_cc_session(path: Path) -> Iterator[ToolCallEntry]:
         tool_result line timestamps when available; ``duration_seconds``
         is left at ``0.0`` because CC does not record it explicitly.
     """
-    with path.open(encoding="utf-8") as fh:
-        lines = [json.loads(ln) for ln in fh if ln.strip()]
+    lines = _read_bounded_lines(path)
+    results_by_id = _index_tool_results(lines)
+    for line in lines:
+        if line.get("type") != "assistant":
+            continue
+        yield from _assistant_tool_uses(line, results_by_id)
 
+
+def _read_bounded_lines(path: Path) -> list[dict[str, Any]]:
+    """Read the transcript into memory, dropping oversize or malformed lines."""
+    lines: list[dict[str, Any]] = []
+    with path.open(encoding="utf-8") as fh:
+        for raw in fh:
+            if not raw.strip():
+                continue
+            if len(raw.encode("utf-8")) > MAX_TRANSCRIPT_LINE_BYTES:
+                continue
+            try:
+                lines.append(json.loads(raw))
+            except json.JSONDecodeError:
+                continue
+    return lines
+
+
+def _index_tool_results(lines: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Return ``{tool_use_id: {content, is_error, timestamp}}`` for every tool result."""
     results_by_id: dict[str, dict[str, Any]] = {}
     for line in lines:
         if line.get("type") != "user":
             continue
-        content = _message_content(line)
-        for part in _iter_list(content):
-            if part.get("type") == "tool_result":
-                tool_use_id = part.get("tool_use_id")
-                if isinstance(tool_use_id, str):
-                    results_by_id[tool_use_id] = {
-                        "content": part.get("content"),
-                        "is_error": bool(part.get("is_error", False)),
-                        "timestamp": line.get("timestamp"),
-                    }
-
-    for line in lines:
-        if line.get("type") != "assistant":
-            continue
-        message = line.get("message", {})
-        content = message.get("content")
-        model = message.get("model") if isinstance(message, dict) else None
-        usage = message.get("usage") if isinstance(message, dict) else None
-        started_at = line.get("timestamp") or ""
-        token_in = _int_or_none(usage, "input_tokens") if isinstance(usage, dict) else None
-        token_out = _int_or_none(usage, "output_tokens") if isinstance(usage, dict) else None
-        for part in _iter_list(content):
-            if part.get("type") != "tool_use":
+        for part in _iter_list(_message_content(line)):
+            if part.get("type") != "tool_result":
                 continue
-            use_id = part.get("id")
-            result_entry = results_by_id.get(use_id) if isinstance(use_id, str) else None
-            finished_at = (result_entry or {}).get("timestamp") or started_at
-            yield ToolCallEntry(
-                tool=str(part.get("name", "unknown")),
-                arguments=part.get("input", {}) or {},
-                result=_stringify(result_entry["content"]) if result_entry else None,
-                is_error=bool(result_entry["is_error"]) if result_entry else False,
-                started_at=str(started_at),
-                finished_at=str(finished_at),
-                duration_seconds=0.0,
-                token_in=token_in,
-                token_out=token_out,
-                model=model if isinstance(model, str) else None,
-            )
+            tool_use_id = part.get("tool_use_id")
+            if isinstance(tool_use_id, str):
+                results_by_id[tool_use_id] = {
+                    "content": part.get("content"),
+                    "is_error": bool(part.get("is_error", False)),
+                    "timestamp": line.get("timestamp"),
+                }
+    return results_by_id
+
+
+def _assistant_tool_uses(
+    line: dict[str, Any],
+    results_by_id: dict[str, dict[str, Any]],
+) -> Iterator[ToolCallEntry]:
+    """Yield one ``ToolCallEntry`` per ``tool_use`` block in an assistant line."""
+    message = line.get("message") or {}
+    if not isinstance(message, dict):
+        return
+    usage = message.get("usage") if isinstance(message.get("usage"), dict) else None
+    model = message.get("model") if isinstance(message.get("model"), str) else None
+    started_at = str(line.get("timestamp") or "")
+    token_in = _int_or_none(usage, "input_tokens") if usage else None
+    token_out = _int_or_none(usage, "output_tokens") if usage else None
+    for part in _iter_list(message.get("content")):
+        if part.get("type") != "tool_use":
+            continue
+        use_id = part.get("id")
+        result = results_by_id.get(use_id) if isinstance(use_id, str) else None
+        finished_at = str((result or {}).get("timestamp") or started_at)
+        yield ToolCallEntry(
+            tool=str(part.get("name", "unknown")),
+            arguments=part.get("input", {}) or {},
+            result=_stringify(result["content"]) if result else None,
+            is_error=bool(result["is_error"]) if result else False,
+            started_at=started_at,
+            finished_at=finished_at,
+            duration_seconds=0.0,
+            token_in=token_in,
+            token_out=token_out,
+            model=model,
+        )
 
 
 # ── helpers ────────────────────────────────────────────────────────────────

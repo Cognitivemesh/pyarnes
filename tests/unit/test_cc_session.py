@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from pyarnes_harness import read_cc_session, resolve_cc_session_path
+from pyarnes_harness.capture.cc_session import MAX_TRANSCRIPT_LINE_BYTES
 from pyarnes_harness.capture.tool_log import ToolCallEntry
 
 FIXTURE = Path(__file__).parent / "fixtures" / "cc_session_sample.jsonl"
@@ -141,6 +142,48 @@ class TestReadCCSession:
         transcript.write_text("\n".join(json.dumps(ln) for ln in lines) + "\n")
         entry = next(iter(read_cc_session(transcript)))
         assert entry.result == "part1part2"
+
+    def test_oversize_line_is_skipped(self, tmp_path: Path) -> None:
+        # A single line larger than MAX_TRANSCRIPT_LINE_BYTES is dropped
+        # silently — we refuse to feed an adversarial transcript into
+        # json.loads.
+        transcript = tmp_path / "t.jsonl"
+        huge_assistant = {
+            "type": "assistant",
+            "timestamp": "2026-04-21T10:00:00Z",
+            "message": {
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "id": "toolu_big",
+                        "name": "Bash",
+                        "input": {"command": "x" * (MAX_TRANSCRIPT_LINE_BYTES + 1)},
+                    }
+                ]
+            },
+        }
+        normal_assistant = {
+            "type": "assistant",
+            "timestamp": "2026-04-21T10:00:01Z",
+            "message": {
+                "content": [
+                    {"type": "tool_use", "id": "toolu_ok", "name": "Bash", "input": {"command": "ls"}}
+                ]
+            },
+        }
+        transcript.write_text(
+            json.dumps(huge_assistant) + "\n" + json.dumps(normal_assistant) + "\n"
+        )
+        entries = list(read_cc_session(transcript))
+        assert len(entries) == 1
+        assert entries[0].tool == "Bash"
+        assert entries[0].arguments == {"command": "ls"}
+
+    def test_malformed_json_line_is_skipped(self, tmp_path: Path) -> None:
+        transcript = tmp_path / "t.jsonl"
+        transcript.write_text("{not json\n")
+        # Should yield nothing, not crash.
+        assert list(read_cc_session(transcript)) == []
 
 
 class TestResolveCCSessionPath:
