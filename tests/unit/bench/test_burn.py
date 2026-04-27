@@ -168,6 +168,15 @@ class TestCostCalculator:
         calc = LiteLLMCostCalculator()
         assert calc.calculate("unknown-model", _usage()) is None
 
+    def test_non_import_error_propagates(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Non-ImportError exceptions (litellm schema changes) must surface, not be swallowed."""
+        import litellm  # noqa: PLC0415
+
+        monkeypatch.delattr(litellm, "model_cost")
+        calc = LiteLLMCostCalculator()
+        with pytest.raises(AttributeError):
+            calc.calculate("some-model", _usage())
+
     def test_cache_multipliers_applied(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Cache creation and read tokens use different multipliers."""
         import litellm  # noqa: PLC0415
@@ -182,7 +191,7 @@ class TestCostCalculator:
             input_tokens=0,
             output_tokens=0,
             cache_creation_tokens=10,  # 10 * 1.0 * 1.25 = 12.5
-            cache_read_tokens=10,       # 10 * 1.0 * 0.10 = 1.0
+            cache_read_tokens=10,  # 10 * 1.0 * 0.10 = 1.0
         )
         result = calc.calculate("stub-model", usage)
         assert result is not None
@@ -195,10 +204,13 @@ class TestCostCalculator:
 class TestJsonlProvider:
     def test_builds_session_burn_from_file(self, tmp_path: Path) -> None:
         f = tmp_path / "s.jsonl"
-        _write_jsonl(f, [
-            {"k": "t", "u": {"i": 10, "o": 5}, "m": "fam-v1", "ts": "2026-01-01T00:00:00Z"},
-            {"k": "t", "u": {"i": 20, "o": 10}, "m": "fam-v1", "ts": "2026-01-01T01:00:00Z"},
-        ])
+        _write_jsonl(
+            f,
+            [
+                {"k": "t", "u": {"i": 10, "o": 5}, "m": "fam-v1", "ts": "2026-01-01T00:00:00Z"},
+                {"k": "t", "u": {"i": 20, "o": 10}, "m": "fam-v1", "ts": "2026-01-01T01:00:00Z"},
+            ],
+        )
         provider = _StubJsonlProvider()
         result = provider.parse_session(f)
         assert result is not None

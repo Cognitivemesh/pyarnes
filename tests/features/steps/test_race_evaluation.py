@@ -28,26 +28,23 @@ def test_empty_target() -> None:
 
 
 class _ScriptedJudge:
-    def __init__(self, score_fn: Any) -> None:
+    def __init__(self, score_fn: object) -> None:
         self._score_fn = score_fn
 
-    async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
-        prompt = messages[-1]["content"]
+    async def judge(self, prompt: str) -> str:
         if "importance weights" in prompt:
-            return {"content": json.dumps({"weights": {d.value: 0.25 for d in RaceDimension}})}
+            return json.dumps({"weights": {d.value: 0.25 for d in RaceDimension}})
         if "sub-criteria" in prompt:
             dim = next(d.value for d in RaceDimension if f'"{d.value}"' in prompt)
-            return {
-                "content": json.dumps(
-                    {
-                        "criteria": [
-                            {"dimension": dim, "text": f"{dim}_a", "weight": 0.5},
-                            {"dimension": dim, "text": f"{dim}_b", "weight": 0.5},
-                        ]
-                    }
-                )
-            }
-        return {"content": json.dumps({"score": self._score_fn(prompt), "reason": "ok"})}
+            return json.dumps(
+                {
+                    "criteria": [
+                        {"dimension": dim, "text": f"{dim}_a", "weight": 0.5},
+                        {"dimension": dim, "text": f"{dim}_b", "weight": 0.5},
+                    ]
+                }
+            )
+        return json.dumps({"score": self._score_fn(prompt), "reason": "ok"})
 
 
 @given("a scripted judge with uniform weights and a constant score", target_fixture="race_ctx")
@@ -92,9 +89,7 @@ def _when_runs(race_ctx: dict[str, Any]) -> None:
 def _when_empty_target(race_ctx: dict[str, Any]) -> None:
     evaluator = RaceEvaluator(client=race_ctx["judge"], trials=1)
     try:
-        asyncio.run(
-            evaluator.evaluate(task_prompt="task", target_report="", reference_report="r")
-        )
+        asyncio.run(evaluator.evaluate(task_prompt="task", target_report="", reference_report="r"))
     except UserFixableError as exc:
         race_ctx["exc"] = exc
 

@@ -114,10 +114,7 @@ class TestGuardrailComplianceScorer:
     def test_more_violations_than_calls_clamps_to_zero(self, tmp_path: Path) -> None:
         log = tmp_path / "violations.jsonl"
         log.write_text(
-            "\n".join(
-                json.dumps({"guardrail": "X", "tool": "Bash", "reason": "r", "hook": "Pre"})
-                for _ in range(5)
-            )
+            "\n".join(json.dumps({"guardrail": "X", "tool": "Bash", "reason": "r", "hook": "Pre"}) for _ in range(5))
             + "\n"
         )
         s = GuardrailComplianceScorer()

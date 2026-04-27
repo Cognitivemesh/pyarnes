@@ -58,10 +58,20 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-_WORKSPACE_DIRS = frozenset({
-    "GitHub", "GitLab", "Bitbucket", "repos", "projects",
-    "code", "dev", "workspace", "src", "work",
-})
+_WORKSPACE_DIRS = frozenset(
+    {
+        "GitHub",
+        "GitLab",
+        "Bitbucket",
+        "repos",
+        "projects",
+        "code",
+        "dev",
+        "workspace",
+        "src",
+        "work",
+    }
+)
 
 
 def _short_name(project: str) -> str:
@@ -75,7 +85,7 @@ def _short_name(project: str) -> str:
     parts = project.lstrip("-").split("-")
     for i in range(len(parts) - 1, 0, -1):
         if parts[i] in _WORKSPACE_DIRS:
-            remainder = parts[i + 1:]
+            remainder = parts[i + 1 :]
             if remainder:
                 return "-".join(remainder)
     return parts[-1] if parts else project
@@ -84,10 +94,7 @@ def _short_name(project: str) -> str:
 def _render_table(rows: list[dict[str, Any]], totals: dict[str, Any]) -> None:
     headers = list(totals.keys())
     all_rows = [*rows, totals]
-    widths = [
-        max(len(h), *(len(str(r[h])) for r in all_rows))
-        for h in headers
-    ]
+    widths = [max(len(h), *(len(str(r[h])) for r in all_rows)) for h in headers]
     sep = "  "
     fmt = sep.join(f"{{:<{w}}}" for w in widths)
     divider = sep.join("-" * w for w in widths)
@@ -142,15 +149,17 @@ def main() -> int:
         )
         grand_usage = grand_usage + usage
         grand_cost += cost_total
-        rows.append({
-            "project": slug,
-            "sessions": len(sessions),
-            "input": f"{usage.input_tokens:,}",
-            "output": f"{usage.output_tokens:,}",
-            "cache-create": f"{usage.cache_creation_tokens:,}",
-            "cache-read": f"{usage.cache_read_tokens:,}",
-            "cost": f"{cost_total:.4f} {args.currency}",
-        })
+        rows.append(
+            {
+                "project": slug,
+                "sessions": len(sessions),
+                "input": f"{usage.input_tokens:,}",
+                "output": f"{usage.output_tokens:,}",
+                "cache-create": f"{usage.cache_creation_tokens:,}",
+                "cache-read": f"{usage.cache_read_tokens:,}",
+                "cost": f"{cost_total:.4f} {args.currency}",
+            }
+        )
 
     totals = {
         "project": "TOTAL",

@@ -104,10 +104,7 @@ class SecretLeakGuardrail(Guardrail):
                         # echo the pattern or the matched text into a
                         # place the violation log or the model will see.
                         raise UserFixableError(
-                            message=(
-                                f"Tool '{tool_name}' blocked: output or "
-                                f"arguments match a secret pattern."
-                            ),
+                            message=(f"Tool '{tool_name}' blocked: output or arguments match a secret pattern."),
                             prompt_hint="Remove or redact the secret before continuing.",
                         )
 

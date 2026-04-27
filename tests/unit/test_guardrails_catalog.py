@@ -184,7 +184,7 @@ class TestRateLimitGuardrail:
 
     def test_wrong_shape_state_file_fails_closed(self, tmp_path: Path) -> None:
         path = tmp_path / "rl.json"
-        path.write_text("[\"not an object\"]")
+        path.write_text('["not an object"]')
         with pytest.raises(UserFixableError, match="wrong shape"):
             RateLimitGuardrail(max_calls=1, window_seconds=60, state_path=path).check("Bash", {})
 

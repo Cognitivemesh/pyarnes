@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
 import pytest
 from hypothesis import given, settings
@@ -31,7 +30,7 @@ class ScriptedJudge:
         self,
         *,
         weights: dict[str, float] | None = None,
-        score_fn: Any = None,
+        score_fn: object = None,
         criteria_per_dimension: int = 2,
     ) -> None:
         self._weights = weights or {
@@ -44,26 +43,18 @@ class ScriptedJudge:
         self._k = criteria_per_dimension
         self.calls = 0
 
-    async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
+    async def judge(self, prompt: str) -> str:
         self.calls += 1
-        prompt = messages[-1]["content"]
         if "importance weights" in prompt:
-            return {"content": json.dumps({"weights": self._weights})}
+            return json.dumps({"weights": self._weights})
         if "sub-criteria" in prompt:
             dim = self._dimension_from_prompt(prompt)
             equal = 1.0 / self._k
-            return {
-                "content": json.dumps(
-                    {
-                        "criteria": [
-                            {"dimension": dim, "text": f"{dim}_c{i}", "weight": equal}
-                            for i in range(self._k)
-                        ]
-                    }
-                )
-            }
+            return json.dumps(
+                {"criteria": [{"dimension": dim, "text": f"{dim}_c{i}", "weight": equal} for i in range(self._k)]}
+            )
         if "Rate the report" in prompt:
-            return {"content": json.dumps({"score": self._score_fn(prompt), "reason": "ok"})}
+            return json.dumps({"score": self._score_fn(prompt), "reason": "ok"})
         raise RuntimeError(f"unexpected prompt: {prompt[:80]}")
 
     @staticmethod
@@ -177,8 +168,8 @@ class TestRaceEvaluator:
     @pytest.mark.asyncio
     async def test_malformed_json_raises_llm_recoverable(self) -> None:
         class BadJudge:
-            async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
-                return {"content": "not json"}
+            async def judge(self, prompt: str) -> str:
+                return "not json"
 
         evaluator = RaceEvaluator(client=BadJudge(), trials=1)
         with pytest.raises(LLMRecoverableError):
@@ -191,9 +182,7 @@ class TestRaceEvaluator:
 
 class TestRaceScoreAlignment:
     def test_score_arrays_must_align(self) -> None:
-        criteria = (
-            RaceCriterion(dimension=RaceDimension.DEPTH, text="c1", weight=1.0),
-        )
+        criteria = (RaceCriterion(dimension=RaceDimension.DEPTH, text="c1", weight=1.0),)
         with pytest.raises(ValidationError):
             RaceScore(
                 weights=RaceWeights(weights=dict.fromkeys(RaceDimension, 0.25)),

@@ -37,9 +37,7 @@ _URL_PREFIX = re.compile(r"[A-Za-z][A-Za-z0-9+.\-]{1,19}://")
 # Schemes we understand and are willing to allow when the host passes.
 # Anything else (``file://``, ``gopher://``, ``data:``, ``jar:``, bare
 # schemes) is rejected unconditionally.
-_DEFAULT_ALLOWED_SCHEMES: frozenset[str] = frozenset(
-    {"http", "https", "ws", "wss", "ftp", "ftps"}
-)
+_DEFAULT_ALLOWED_SCHEMES: frozenset[str] = frozenset({"http", "https", "ws", "wss", "ftp", "ftps"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,10 +73,7 @@ class NetworkEgressGuardrail(Guardrail):
                             host=host,
                         )
                         raise UserFixableError(
-                            message=(
-                                f"Tool '{tool_name}' attempted to reach "
-                                f"blocked host {host!r}."
-                            ),
+                            message=(f"Tool '{tool_name}' attempted to reach blocked host {host!r}."),
                             prompt_hint="Add the host to allowed_hosts or choose another target.",
                         )
 

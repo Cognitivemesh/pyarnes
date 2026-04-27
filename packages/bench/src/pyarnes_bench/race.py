@@ -39,8 +39,9 @@ from pyarnes_bench._citations import strip_markers
 from pyarnes_bench._judge import judge_json
 from pyarnes_bench.eval import EvalResult
 from pyarnes_core.errors import UserFixableError
+from pyarnes_core.observability import log_event
 from pyarnes_core.observe.logger import get_logger
-from pyarnes_core.types import ModelClient
+from pyarnes_core.types import JudgeClient
 
 __all__ = [
     "RaceCriterion",
@@ -88,9 +89,7 @@ class RaceWeights(BaseModel):
             raise ValueError(f"RaceWeights sum {total} below floor {_WEIGHT_RENORM_FLOOR}")
         if math.isclose(total, 1.0, abs_tol=_WEIGHT_SUM_TOLERANCE):
             return self
-        return self.model_copy(
-            update={"weights": {d: w / total for d, w in self.weights.items()}}
-        )
+        return self.model_copy(update={"weights": {d: w / total for d, w in self.weights.items()}})
 
 
 class RaceCriterion(BaseModel):
@@ -216,7 +215,7 @@ class RaceEvaluator:
     """Post-hoc, sequential RACE evaluator.
 
     Args:
-        client: Any ``ModelClient``; the judge.
+        client: Any ``JudgeClient``; the judge.
         prompts: Overridable prompt templates; default
             :class:`RacePrompts` covers the zero-config path.
         trials: Number of weighting-judge trials to average; paper uses
@@ -228,7 +227,7 @@ class RaceEvaluator:
 
     def __init__(
         self,
-        client: ModelClient,
+        client: JudgeClient,
         *,
         prompts: RacePrompts | None = None,
         trials: int = 3,
@@ -286,8 +285,9 @@ class RaceEvaluator:
         reference = strip_markers(reference_report)
 
         weights = await self._judge_weights(task_prompt)
-        logger.info(
-            "race.weights weights={weights}",
+        log_event(
+            logger,
+            "race.weights",
             weights={d.value: round(w, 4) for d, w in weights.weights.items()},
         )
 
@@ -351,10 +351,7 @@ class RaceEvaluator:
                 message=f"criteria for {dimension.value} have non-positive weight sum",
                 prompt_hint="Check the criteria prompt template.",
             )
-        return [
-            RaceCriterion(dimension=c.dimension, text=c.text, weight=c.weight / total)
-            for c in raw
-        ]
+        return [RaceCriterion(dimension=c.dimension, text=c.text, weight=c.weight / total) for c in raw]
 
     async def _judge_score(self, criterion: RaceCriterion, report: str) -> float:
         prompt = self._prompts.scoring_prompt.format(

@@ -206,9 +206,45 @@ Exact and near-duplicate claims (same URL, statement similarity ≥ 0.97) collap
 - **Composite scorer:** hold a list of `Scorer` instances, delegate, return max/mean — this lives in adopter code, not in pyarnes-bench.
 - **Persistent results:** subclass `EvalSuite` to flush on `add()` or implement your own loader — keep the core `EvalSuite` in-memory only.
 
+## Burn subsystem
+
+Token and cost accounting for agentic sessions. Reads provider JSONL logs and produces per-session usage summaries.
+
+### Public symbols
+
+| Symbol | Role |
+|---|---|
+| `BurnTracker` | Orchestrates one or more providers; merges results via `report()` |
+| `Provider` | Root ABC — implement `discover_sessions()` and `parse_session()` |
+| `JsonlProvider` | Intermediate ABC — owns JSONL parsing; subclasses map field names only |
+| `ClaudeCodeProvider` | Reads `~/.claude/projects/*/*.jsonl` (Claude Code session files) |
+| `TokenUsage` | Immutable token counts (input, output, cache_creation, cache_read) |
+| `Cost` | Monetary amount + ISO-4217 currency |
+| `CostCalculator` | Protocol — implement `calculate(model_id, usage) -> Cost \| None` |
+| `LiteLLMCostCalculator` | Default implementation; requires `litellm` installed |
+| `SessionBurn` | Aggregated token/cost record for one session |
+| `SessionMetadata` | Provider-supplied identifiers (tool, ai_provider, model_id, model_family) |
+
+### Usage
+
+```python
+from pyarnes_bench import BurnTracker, ClaudeCodeProvider, LiteLLMCostCalculator
+
+tracker = BurnTracker(
+    providers=[ClaudeCodeProvider()],
+    calculator=LiteLLMCostCalculator(),
+)
+report = await tracker.report()   # dict[tool_name, list[SessionBurn]]
+total = tracker.total_usage()     # TokenUsage across all providers
+cost = tracker.total_cost()       # Cost | None (None if litellm not installed)
+```
+
+`LiteLLMCostCalculator` returns `None` for unrecognised models (not an error). If `litellm` is not installed the import is deferred and `calculate()` returns `None`.
+
 ## Hazards / stable surface
 
 - `EvalResult`, `EvalSuite`, `Scorer`, `ExactMatchScorer` (`pyarnes_bench`) — stable API, renames breaking.
+- All 10 burn symbols (`BurnTracker`, `Provider`, `JsonlProvider`, `ClaudeCodeProvider`, `TokenUsage`, `Cost`, `CostCalculator`, `LiteLLMCostCalculator`, `SessionBurn`, `SessionMetadata`) — stable API; covered by `test_stable_surface.py`.
 - `EvalSuite.summary()` keys (`total`, `passed`, `failed`, `pass_rate`, `average_score`) — downstream scripts parse by name. Add keys freely; never rename or remove.
 - The meta-use pattern (`tests/bench/test_agent_quality.py` in adopter projects) plugs domain scorers into `EvalSuite` — keep `add()` cheap and re-entrant.
 

@@ -63,9 +63,7 @@ class ToolUseCorrectnessScorer(Scorer):
         del scenario, metadata
         expected_seq = _as_name_tuple(expected)
         observed_seq = tuple(
-            entry.tool
-            for entry in _iter_entries(actual)
-            if not (self.ignore_errors and entry.is_error)
+            entry.tool for entry in _iter_entries(actual) if not (self.ignore_errors and entry.is_error)
         )
         if not expected_seq:
             return 1.0 if not observed_seq else 0.0

@@ -30,7 +30,7 @@ class TokenUsage:
     input_tokens: int = 0
     output_tokens: int = 0
     cache_creation_tokens: int = 0  # prompt-cache write tokens
-    cache_read_tokens: int = 0      # prompt-cache read tokens
+    cache_read_tokens: int = 0  # prompt-cache read tokens
 
     @property
     def total_tokens(self) -> int:
@@ -71,7 +71,7 @@ class Cost:
     """
 
     amount: Decimal  # raw amount from the CostCalculator
-    currency: str    # ISO 4217 — "USD", "EUR", "GBP", …
+    currency: str  # ISO 4217 — "USD", "EUR", "GBP", …
 
     def as_dict(self) -> dict[str, Any]:
         """Serialise to a plain dict."""
@@ -86,9 +86,9 @@ class SessionMetadata:
     and no field references a specific tool or provider by type.
     """
 
-    tool: str          # coding-assistant identifier
-    ai_provider: str   # API-provider identifier
-    model_id: str      # exact model string from the session file
+    tool: str  # coding-assistant identifier
+    ai_provider: str  # API-provider identifier
+    model_id: str  # exact model string from the session file
     model_family: str  # high-level family derived from model_id
 
 
@@ -97,13 +97,13 @@ class SessionBurn:
     """Aggregated token and cost data for a single coding session."""
 
     session_id: str
-    project: str               # derived from on-disk directory name
+    project: str  # derived from on-disk directory name
     metadata: SessionMetadata
-    start_time: str            # ISO-8601 of first model turn
-    end_time: str              # ISO-8601 of last model turn
-    turns: int                 # count of model responses
+    start_time: str  # ISO-8601 of first model turn
+    end_time: str  # ISO-8601 of last model turn
+    turns: int  # count of model responses
     usage: TokenUsage
-    cost: Cost | None = None   # None when no CostCalculator was supplied
+    cost: Cost | None = None  # None when no CostCalculator was supplied
 
     def as_dict(self) -> dict[str, Any]:
         """Serialise to a plain dict (suitable for JSONL logging)."""

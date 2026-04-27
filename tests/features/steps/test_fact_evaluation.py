@@ -32,15 +32,10 @@ class _ScriptedFactJudge:
         self._claims = claims
         self._supported = supported
 
-    async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
-        prompt = messages[-1]["content"]
+    async def judge(self, prompt: str) -> str:
         if "Extract every cited claim" in prompt:
-            return {
-                "content": json.dumps(
-                    {"claims": [{"statement": s, "url": u} for s, u in self._claims]}
-                )
-            }
-        return {"content": json.dumps({"supported": self._supported, "reason": "ok"})}
+            return json.dumps({"claims": [{"statement": s, "url": u} for s, u in self._claims]})
+        return json.dumps({"supported": self._supported, "reason": "ok"})
 
 
 @given("a scripted FACT judge that supports every claim", target_fixture="fact_ctx")
@@ -79,9 +74,7 @@ def _given_sources_missing(fact_ctx: dict[str, Any]) -> None:
 @when("the FACT evaluator runs")
 def _when_runs(fact_ctx: dict[str, Any]) -> None:
     evaluator = FactEvaluator(client=fact_ctx["judge"])
-    fact_ctx["result"] = asyncio.run(
-        evaluator.evaluate(report="a report", sources=fact_ctx["sources"])
-    )
+    fact_ctx["result"] = asyncio.run(evaluator.evaluate(report="a report", sources=fact_ctx["sources"]))
 
 
 @when("the FACT evaluator is called with an empty report")
