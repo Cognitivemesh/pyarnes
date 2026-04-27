@@ -1,0 +1,36 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">={{ python_version }}"
+# dependencies = [
+#   "kreuzberg>=1.0,<2",
+# ]
+# ///
+"""Extract text from a PDF with kreuzberg.
+
+Usage:
+    uv run scripts/examples/pii-redaction/extract-pdf.py path/to.pdf
+
+uv resolves `kreuzberg` into an isolated cached env on first run — the
+project venv is not touched.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import sys
+from pathlib import Path
+
+
+async def main(path: Path) -> None:
+    """Extract text from ``path`` and print it to stdout."""
+    from kreuzberg import extract_file  # noqa: PLC0415
+
+    result = await extract_file(str(path))
+    sys.stdout.write(result.content)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        sys.stderr.write("usage: extract-pdf.py <path-to-pdf>\n")
+        sys.exit(2)
+    asyncio.run(main(Path(sys.argv[1])))

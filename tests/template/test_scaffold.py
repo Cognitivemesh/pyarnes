@@ -7,9 +7,29 @@ in ``conftest.py``.
 
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
 
 import pytest
+
+
+def _project_dependencies(dest: Path) -> list[str]:
+    """Return the parsed ``[project.dependencies]`` list from ``dest/pyproject.toml``."""
+    data = tomllib.loads((dest / "pyproject.toml").read_text())
+    return list(data.get("project", {}).get("dependencies", []))
+
+
+FORBIDDEN_RUNTIME_DEPS = (
+    "pyarnes-core",
+    "pyarnes-harness",
+    "pyarnes-guardrails",
+    "pyarnes-bench",
+    "presidio-analyzer",
+    "kreuzberg",
+    "boto3",
+    "httpx",
+    "pydantic",
+)
 
 
 @pytest.mark.parametrize(
@@ -17,7 +37,12 @@ import pytest
     ["blank", "pii-redaction", "s3-sweep", "rtm-toggl-agile"],
 )
 def test_scaffold_generates(shape: str, run_copy, tmp_path: Path) -> None:
-    """Every adopter shape renders a minimum viable file tree."""
+    """Every adopter shape renders a minimum viable file tree.
+
+    Runtime ``src/<module>/`` stays plain Python (no pyarnes, no shape-libs).
+    Agent scaffolding lives under ``.claude/agent_kit/``; pyarnes lands in
+    ``[dependency-groups.dev]``.
+    """
     dest = run_copy(
         tmp_path / f"scaffold-{shape}",
         project_name=f"scaffold-{shape}",
@@ -26,49 +51,84 @@ def test_scaffold_generates(shape: str, run_copy, tmp_path: Path) -> None:
     )
 
     module_dir = dest / "src" / f"scaffold_{shape.replace('-', '_')}"
+    agent_kit = dest / ".claude" / "agent_kit"
     assert (dest / "pyproject.toml").is_file()
     assert (dest / "CLAUDE.md").is_file()
     assert (dest / "AGENTS.md").is_file()
-    assert (module_dir / "pipeline.py").is_file()
+    # Runtime src/ is plain Python — only cli.py and __init__.py.
     assert (module_dir / "cli.py").is_file()
-    assert (module_dir / "guardrails.py").is_file()
-    assert (module_dir / "tools" / "__init__.py").is_file()
+    assert (module_dir / "__init__.py").is_file()
+    assert not (module_dir / "pipeline.py").exists()
+    assert not (module_dir / "guardrails.py").exists()
+    assert not (module_dir / "tools").exists()
+    # Agent scaffolding relocated under .claude/agent_kit/.
+    assert (agent_kit / "pipeline.py").is_file()
+    assert (agent_kit / "guardrails.py").is_file()
+    assert (agent_kit / "tools" / "__init__.py").is_file()
+    assert (agent_kit / "README.md").is_file()
 
     # CLAUDE.md defers to AGENTS.md as the shared source of truth.
     claude = (dest / "CLAUDE.md").read_text()
     assert "AGENTS.md" in claude
 
     pyproject = (dest / "pyproject.toml").read_text()
-    assert "pyarnes-core" in pyproject
+    assert "pyarnes-core" in pyproject  # now in dev group, still present
     assert "[project.scripts]" in pyproject
     assert f"scaffold_{shape.replace('-', '_')}.cli:app" in pyproject
 
 
-def test_shape_specific_deps(run_copy, tmp_path: Path) -> None:
-    """Shape-specific runtime deps land in the generated pyproject.toml."""
+@pytest.mark.parametrize(
+    ("shape", "script_path", "inline_dep"),
+    [
+        ("pii-redaction", "scripts/examples/pii-redaction/extract-pdf.py", "kreuzberg"),
+        ("s3-sweep", "scripts/examples/s3-sweep/list-bucket.py", "boto3"),
+        ("rtm-toggl-agile", "scripts/examples/rtm-toggl-agile/fetch-entries.py", "httpx"),
+    ],
+)
+def test_shape_specific_deps_are_pep723_inline(
+    shape: str,
+    script_path: str,
+    inline_dep: str,
+    run_copy,
+    tmp_path: Path,
+) -> None:
+    """Shape-specific libs appear as PEP 723 inline metadata — not in pyproject.toml."""
     dest = run_copy(
-        tmp_path / "scaffold-deps-pii",
-        project_name="scaffold-deps-pii",
-        project_description="pii deps",
-        adopter_shape="pii-redaction",
+        tmp_path / f"scaffold-inline-{shape}",
+        project_name=f"scaffold-inline-{shape}",
+        project_description=f"inline deps for {shape}",
+        adopter_shape=shape,
     )
-    pyproject = (dest / "pyproject.toml").read_text()
-    assert "presidio-analyzer" in pyproject
-    assert "kreuzberg" in pyproject
+    # No shape-lib (and no pyarnes) may appear in [project.dependencies].
+    deps_text = "\n".join(_project_dependencies(dest))
+    for forbidden in FORBIDDEN_RUNTIME_DEPS:
+        assert forbidden not in deps_text
+
+    # The shape's example script carries its own PEP 723 header declaring the lib.
+    script = (dest / script_path).read_text()
+    assert "# /// script" in script
+    assert "# ///" in script
+    assert inline_dep in script
 
 
-def test_blank_has_no_shape_specific_deps(run_copy, tmp_path: Path) -> None:
-    """Blank shape keeps the dependency list minimal."""
+@pytest.mark.parametrize(
+    "shape",
+    ["blank", "pii-redaction", "s3-sweep", "rtm-toggl-agile"],
+)
+def test_project_dependencies_stay_minimal(shape: str, run_copy, tmp_path: Path) -> None:
+    """``[project.dependencies]`` holds only utility libs — no pyarnes, no shape-libs."""
     dest = run_copy(
-        tmp_path / "scaffold-deps-blank",
-        project_name="scaffold-deps-blank",
-        project_description="blank deps",
-        adopter_shape="blank",
+        tmp_path / f"scaffold-deps-{shape}",
+        project_name=f"scaffold-deps-{shape}",
+        project_description=f"deps check for {shape}",
+        adopter_shape=shape,
     )
-    pyproject = (dest / "pyproject.toml").read_text()
-    assert "presidio-analyzer" not in pyproject
-    assert "boto3" not in pyproject
-    assert "httpx" not in pyproject
+    deps_text = "\n".join(_project_dependencies(dest))
+    for forbidden in FORBIDDEN_RUNTIME_DEPS:
+        assert forbidden not in deps_text, f"{forbidden} leaked into [project.dependencies] for {shape}"
+    # Utility libs are still there.
+    for expected in ("loguru", "returns", "toolz", "typer"):
+        assert expected in deps_text
 
 
 def test_dev_hooks_ship_only_when_enabled(run_copy, tmp_path: Path) -> None:

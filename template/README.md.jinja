@@ -2,16 +2,27 @@
 
 > {{ project_description }}
 
-Built on [pyarnes](https://github.com/Cognitivemesh/pyarnes) — an agentic harness engineering template that adds verification loops, safety guardrails, and lifecycle management on top of AI coding tools.
+Scaffolded from the [pyarnes](https://github.com/Cognitivemesh/pyarnes) Copier template. The code under `src/` is plain Python; pyarnes dev-tool packages (wired into `.claude/hooks/`, `.claude/agent_kit/`, and the `tasks` CLI) augment your AI coding agent during development only.
 
 ## Quick start
 
 ```bash
-uv sync                  # install dependencies (pyarnes packages + dev tooling)
+uv sync                  # install runtime deps + dev tools (pyarnes-* resolve into the dev group)
 uv run tasks help        # list available tasks
 uv run tasks check       # lint + typecheck + test
 uv run tasks watch       # TDD watch mode
 ```
+{% if adopter_shape != "blank" %}
+## Try the example
+
+```bash
+uv run scripts/examples/{{ adopter_shape }}/<name>.py   # ls scripts/examples/{{ adopter_shape }}/ to discover
+```
+
+These are **PEP 723** scripts: each file's `# /// script ... # ///` header
+declares its own deps, which `uv run` resolves into an isolated cached env
+— the project venv is not touched.
+{% endif %}
 
 ## Writing your first test
 

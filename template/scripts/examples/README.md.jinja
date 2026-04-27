@@ -1,0 +1,45 @@
+# scripts/examples/
+
+Standalone demo scripts for this project's adopter shape. Each script is a
+single Python file with **PEP 723 inline script metadata**: the `# /// script
+... # ///` header declares its own Python version and dependencies.
+
+`uv run scripts/examples/<shape>/<script>.py` resolves those deps into an
+isolated, cached virtualenv the first time it runs. Subsequent runs reuse
+the cache. **The project venv is never touched** — `uv sync` does not
+install these deps.
+
+## Why this pattern?
+
+- **Zero project pollution.** Shape-specific libs (kreuzberg, boto3, httpx,
+  pydantic, …) don't belong in `[project.dependencies]` of a scaffolded
+  project. They demonstrate *one* approach; the developer may pick another.
+- **Portable demos.** A fresh clone runs any example with just `uv run` —
+  no prior `uv sync`, no manual install.
+- **Discoverable.** When your AI coding agent asks "how do I extract text
+  from a PDF?", these examples are in a predictable location.
+
+## Adding a new example
+
+Create `scripts/examples/<category>/<name>.py` with a PEP 723 header:
+
+```python
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">={{ python_version }}"
+# dependencies = [
+#   "some-library>=1.0,<2",
+# ]
+# ///
+"""One-line description of what this demonstrates."""
+```
+
+Make it executable (`chmod +x`) or run it with `uv run`.
+
+## Not for production
+
+These scripts are **illustrative**. Do not import from them in `src/` —
+they live outside the packaged wheel and their deps aren't in your
+`pyproject.toml`. When a demo graduates to production, lift its logic into
+`src/{{ project_module }}/` and add any required libraries to
+`[project.dependencies]`.

@@ -1,0 +1,55 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">={{ python_version }}"
+# dependencies = [
+#   "httpx>=0.27",
+#   "pydantic>=2.9",
+# ]
+# ///
+"""Fetch recent Toggl time entries and pretty-print them as pydantic models.
+
+Usage:
+    TOGGL_API_TOKEN=... uv run scripts/examples/rtm-toggl-agile/fetch-entries.py
+
+uv resolves `httpx` and `pydantic` into an isolated cached env on first
+run. The Toggl API token comes from ``TOGGL_API_TOKEN`` in the environment.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import os
+import sys
+from datetime import datetime
+
+
+async def main(token: str) -> None:
+    """Fetch and print the current user's recent Toggl time entries."""
+    import httpx  # noqa: PLC0415
+    from pydantic import BaseModel  # noqa: PLC0415
+
+    class TimeEntry(BaseModel):
+        id: int
+        description: str | None = None
+        start: datetime
+        duration: int
+
+    async with httpx.AsyncClient(
+        base_url="https://api.track.toggl.com/api/v9",
+        auth=(token, "api_token"),
+        timeout=10.0,
+    ) as client:
+        response = await client.get("/me/time_entries")
+        response.raise_for_status()
+        entries = [TimeEntry.model_validate(row) for row in response.json()]
+
+    for entry in entries:
+        sys.stdout.write(f"{entry.start.isoformat()}  {entry.duration:>6}s  {entry.description or '-'}\n")
+
+
+if __name__ == "__main__":
+    api_token = os.environ.get("TOGGL_API_TOKEN")
+    if not api_token:
+        sys.stderr.write("set TOGGL_API_TOKEN in the environment\n")
+        sys.exit(2)
+    asyncio.run(main(api_token))

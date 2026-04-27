@@ -1,55 +1,61 @@
 # Quick Start
 
-## 1. Define a tool handler
+## 1. Scaffold & install
 
-```python
-from dataclasses import dataclass
-from typing import Any
-from pathlib import Path
-
-from pyarnes_core.types import ToolHandler
-
-
-@dataclass
-class ReadFileTool(ToolHandler):
-    """Read a file from the workspace."""
-
-    async def execute(self, arguments: dict[str, Any]) -> str:
-        path = Path(arguments["path"])
-        return path.read_text()
+```bash
+uvx copier copy gh:Cognitivemesh/pyarnes {{ project_module }}
+cd {{ project_module }}
+uv sync                  # runtime deps + pyarnes-* into [dependency-groups.dev]
+uv run tasks check       # lint + typecheck + test
 ```
 
-## 2. Wire up the agent loop
+`src/{{ project_module }}/` is plain Python — it doesn't import pyarnes.
+Pyarnes packages live in the dev group and power `.claude/hooks/`,
+`.claude/agent_kit/`, the `tasks` CLI, and `tests/bench/`.
+{% if adopter_shape != "blank" %}
+## 2. Try the shape example
 
-```python
-import asyncio
-
-from pyarnes_harness.loop import AgentLoop, LoopConfig
-from pyarnes_harness.tools.registry import ToolRegistry
-
-registry = ToolRegistry()
-registry.register("read_file", ReadFileTool())
-
-loop = AgentLoop(
-    tools=registry.as_dict(),
-    model=MyModel(),
-    config=LoopConfig(max_iterations=10, max_retries=2),
-)
-
-messages = asyncio.run(loop.run([{"role": "user", "content": "Read main.py"}]))
+```bash
+uv run scripts/examples/{{ adopter_shape }}/<name>.py   # ls scripts/examples/{{ adopter_shape }}/ to discover
 ```
 
-See the full [pyarnes docs](https://github.com/Cognitivemesh/pyarnes) for `ModelClient` patterns, guardrails, and JSONL tool-call logging.
+Each example is a **PEP 723** script. The `# /// script ... # ///` header
+declares exactly the deps it needs (kreuzberg, boto3, httpx + pydantic, …);
+`uv run` resolves them into an isolated cached env without touching your
+project venv.
 
+These scripts are **illustrative only** — when you're ready to integrate a
+library into your app, add it to `[project.dependencies]` and port the
+logic into `src/` or `.claude/agent_kit/tools/`.
+{% endif %}
 ## 3. Write your first test
 
 This project starts with no `tests/` directory. When you're ready, ask Claude Code:
 
-> "Write a test for my `ReadFileTool` class"
+> "Write a test for my `Greeter` class"
 
-The bundled **python-test skill** scaffolds the `tests/` tree and your first test file, following pyarnes TDD conventions (async-first, Red → Green → Refactor). Then:
+The bundled **python-test skill** scaffolds the `tests/` tree and your
+first test file, following pyarnes TDD conventions (async-first,
+Red → Green → Refactor). Then:
 
 ```bash
 uv run tasks test        # now runs something
 uv run tasks watch       # TDD watch mode
 ```
+
+## 4. Add agent features
+
+When you need an agent loop, tool handlers, or custom guardrails, look at
+`.claude/agent_kit/`:
+
+- `pipeline.py` — reference `AgentLoop` builder
+- `guardrails.py` — example `Guardrail` subclasses
+- `tools/` — example `ToolHandler` subclasses
+
+These reference templates import from `pyarnes_harness` / `pyarnes_core` /
+`pyarnes_guardrails` (resolved via the dev group). Your AI coding agent
+adapts them when you ask "add a custom guardrail" or "wire up a new tool".
+See the full [pyarnes docs](https://github.com/Cognitivemesh/pyarnes) for
+`ModelClient` patterns, guardrails, and JSONL tool-call logging (relevant
+when building agent scaffolding under `.claude/agent_kit/`, not for `src/`
+code).
