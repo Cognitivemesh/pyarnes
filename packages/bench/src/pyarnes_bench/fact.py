@@ -34,8 +34,9 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validat
 from pyarnes_bench._judge import judge_json
 from pyarnes_bench.eval import EvalResult
 from pyarnes_core.errors import UserFixableError
+from pyarnes_core.observability import log_event
 from pyarnes_core.observe.logger import get_logger
-from pyarnes_core.types import ModelClient
+from pyarnes_core.types import JudgeClient
 
 __all__ = [
     "CitationClaim",
@@ -160,13 +161,13 @@ class FactEvaluator:
     """Post-hoc, sequential FACT evaluator.
 
     Args:
-        client: Any ``ModelClient``; the judge.
+        client: Any ``JudgeClient``; the judge.
         prompts: Overridable prompt templates.
     """
 
     def __init__(
         self,
-        client: ModelClient,
+        client: JudgeClient,
         *,
         prompts: FactPrompts | None = None,
     ) -> None:
@@ -204,8 +205,9 @@ class FactEvaluator:
 
         extracted = await self._extract_claims(report)
         pairs = _dedupe(extracted)
-        logger.info(
-            "fact.extracted raw={raw} dedup={dedup}",
+        log_event(
+            logger,
+            "fact.extracted",
             raw=len(extracted),
             dedup=len(pairs),
         )
@@ -276,8 +278,7 @@ def _dedupe(claims: list[_ExtractedClaim]) -> list[tuple[str, str]]:
     for claim in claims:
         bucket = seen_by_url.setdefault(claim.url, [])
         if any(
-            s == claim.statement
-            or SequenceMatcher(None, s, claim.statement).ratio() >= _DEDUP_SIMILARITY
+            s == claim.statement or SequenceMatcher(None, s, claim.statement).ratio() >= _DEDUP_SIMILARITY
             for s in bucket
         ):
             continue

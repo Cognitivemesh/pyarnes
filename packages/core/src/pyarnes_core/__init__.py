@@ -24,11 +24,12 @@ from pyarnes_core.errors import (
 from pyarnes_core.lifecycle import Lifecycle, Phase
 from pyarnes_core.observe.logger import LogFormat, configure_logging, get_logger
 from pyarnes_core.session_id import safe_session_id
-from pyarnes_core.types import ModelClient, ToolHandler
+from pyarnes_core.types import JudgeClient, ModelClient, ToolHandler
 
 __all__ = [
     "Budget",
     "HarnessError",
+    "JudgeClient",
     "LLMRecoverableError",
     "Lifecycle",
     "LogFormat",

@@ -144,7 +144,6 @@ Scans every string reachable in the tool arguments (or in the tool response, whe
 | Field | Default | Description |
 |---|---|---|
 | `extra_patterns` | `()` | Additional regex patterns on top of the built-in set |
-| `scan_keys` | `()` | When non-empty, restrict scanning to these top-level keys |
 
 ```python
 g = SecretLeakGuardrail()
@@ -187,7 +186,10 @@ chain = GuardrailChain(guardrails=[
     CommandGuardrail(),
     ToolAllowlistGuardrail(allowed_tools=frozenset({"shell", "read_file"})),
 ])
-chain.check("shell", {"command": "ls -la", "path": "/workspace/src"})
+# In an async context:
+await chain.check("shell", {"command": "ls -la", "path": "/workspace/src"})
+# In a sync entry-point (e.g. a PreToolUse hook):
+asyncio.run(chain.check("shell", {"command": "ls -la", "path": "/workspace/src"}))
 ```
 
 ## Extension points
@@ -203,7 +205,7 @@ chain.check("shell", {"command": "ls -la", "path": "/workspace/src"})
 - `PathGuardrail.path_keys` — the default tuple is the union of keys Claude Code, Cursor, and Codex use. Extending is safe; shrinking is breaking.
 - All guardrails raise `UserFixableError`. Changing to a different error class reroutes every caller's error handler — don't.
 
-The meta-use pattern (`template/.claude/hooks/pyarnes_pre_tool.py`) depends on `GuardrailChain.check` being synchronous and cheap — do not make it async or add I/O.
+The hook (`template/.claude/hooks/pyarnes_pre_tool.py.jinja`) wraps the async chain via `asyncio.run()`. `GuardrailChain.check` is `async` — callers must either `await` it (async context) or use `asyncio.run()` (sync entry-point). Calling it without either returns a coroutine that silently never fires.
 
 ## See also
 

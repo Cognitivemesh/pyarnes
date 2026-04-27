@@ -254,3 +254,81 @@ class TestAgentLoop:
         # Should have exactly max_iter iterations worth of tool results
         tool_results = [m for m in result if m.get("role") == "tool"]
         assert len(tool_results) == max_iter
+
+
+class TestReflectionInterval:
+    """LoopConfig.reflection_interval fires at the right iterations."""
+
+    def _make_counting_model(
+        self,
+        *,
+        normal_responses: list[dict[str, Any]],
+    ) -> tuple[Any, list[int]]:
+        """Return a model and a mutable list that records which calls were reflection probes."""
+        reflection_calls: list[int] = []
+        call_counter: list[int] = [0]
+        normal_iter: list[int] = [0]
+
+        class CountingModel:
+            async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
+                call_counter[0] += 1
+                # Reflection probes end with the sentinel phrase
+                last = messages[-1] if messages else {}
+                if "REFLECTION CHECKPOINT" in last.get("content", ""):
+                    reflection_calls.append(call_counter[0])
+                    return {"role": "assistant", "content": "reflecting"}
+                idx = normal_iter[0]
+                normal_iter[0] += 1
+                return normal_responses[idx]
+
+        return CountingModel(), reflection_calls
+
+    @pytest.mark.asyncio()
+    async def test_reflection_disabled_when_zero(self) -> None:
+        responses = [
+            {"type": "tool_call", "tool": "echo", "id": "r1", "arguments": {}},
+            {"type": "tool_call", "tool": "echo", "id": "r2", "arguments": {}},
+            {"type": "final_answer", "content": "done"},
+        ]
+        model, reflections = self._make_counting_model(normal_responses=responses)
+        loop = AgentLoop(
+            tools={"echo": EchoTool()},
+            model=model,
+            config=LoopConfig(reflection_interval=0),
+        )
+        await loop.run([])
+        assert reflections == []
+
+    @pytest.mark.asyncio()
+    async def test_reflection_fires_at_interval(self) -> None:
+        # interval=2, max_iterations=5 → reflection fires at iterations 2 and 4 only
+        responses = [
+            {"type": "tool_call", "tool": "echo", "id": "r1", "arguments": {}},
+            {"type": "tool_call", "tool": "echo", "id": "r2", "arguments": {}},
+            {"type": "tool_call", "tool": "echo", "id": "r3", "arguments": {}},
+            {"type": "tool_call", "tool": "echo", "id": "r4", "arguments": {}},
+            {"type": "final_answer", "content": "done"},
+        ]
+        model, reflections = self._make_counting_model(normal_responses=responses)
+        loop = AgentLoop(
+            tools={"echo": EchoTool()},
+            model=model,
+            config=LoopConfig(reflection_interval=2, max_iterations=5),
+        )
+        await loop.run([])
+        assert len(reflections) == 2
+
+    @pytest.mark.asyncio()
+    async def test_reflection_skips_when_interval_exceeds_max(self) -> None:
+        responses = [
+            {"type": "tool_call", "tool": "echo", "id": "r1", "arguments": {}},
+            {"type": "final_answer", "content": "done"},
+        ]
+        model, reflections = self._make_counting_model(normal_responses=responses)
+        loop = AgentLoop(
+            tools={"echo": EchoTool()},
+            model=model,
+            config=LoopConfig(reflection_interval=10, max_iterations=5),
+        )
+        await loop.run([])
+        assert reflections == []

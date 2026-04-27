@@ -83,11 +83,7 @@ class Provider(ABC):
         Args:
             base: Root directory passed to ``discover_sessions``.
         """
-        return [
-            burn
-            for path in self.discover_sessions(base)
-            if (burn := self.parse_session(path)) is not None
-        ]
+        return [burn for path in self.discover_sessions(base) if (burn := self.parse_session(path)) is not None]
 
 
 class JsonlProvider(Provider, ABC):
@@ -159,11 +155,13 @@ class JsonlProvider(Provider, ABC):
             usage = self.extract_usage(entry)
             if usage is None:
                 continue
-            turns.append((
-                self.extract_timestamp(entry),
-                usage,
-                self.extract_model_id(entry),
-            ))
+            turns.append(
+                (
+                    self.extract_timestamp(entry),
+                    usage,
+                    self.extract_model_id(entry),
+                )
+            )
 
         if not turns:
             return None
@@ -202,8 +200,8 @@ class BurnTracker:
             calculator=SomeCostCalculator(currency="EUR"),
         )
         report = tracker.report()
-        usage  = tracker.total_usage()
-        cost   = tracker.total_cost()
+        usage = tracker.total_usage()
+        cost = tracker.total_cost()
     """
 
     def __init__(
@@ -248,12 +246,7 @@ class BurnTracker:
             no sessions exist.
         """
         rep = self.report()
-        usages = [
-            s.usage
-            for t, sessions in rep.items()
-            if tool is None or t == tool
-            for s in sessions
-        ]
+        usages = [s.usage for t, sessions in rep.items() if tool is None or t == tool for s in sessions]
         if not usages:
             return TokenUsage()
         return reduce(lambda a, b: a + b, usages)
@@ -271,11 +264,7 @@ class BurnTracker:
         """
         rep = self.report()
         costs = [
-            s.cost
-            for t, sessions in rep.items()
-            if tool is None or t == tool
-            for s in sessions
-            if s.cost is not None
+            s.cost for t, sessions in rep.items() if tool is None or t == tool for s in sessions if s.cost is not None
         ]
         if not costs:
             return None

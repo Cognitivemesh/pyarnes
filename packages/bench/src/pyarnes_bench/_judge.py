@@ -1,9 +1,9 @@
-"""LLM-as-judge helper — call a ``ModelClient`` and parse a Pydantic model.
+"""LLM-as-judge helper — call a ``JudgeClient`` and parse a Pydantic model.
 
 This module is private. It exists so ``race.py`` and ``fact.py`` share
 one retry / error-mapping policy for every judge call:
 
-* Extract the model's textual content from the ``next_action`` payload.
+* Call ``client.judge(prompt)`` to get the model's textual response.
 * Validate the JSON body against a caller-supplied Pydantic model via
   :class:`pydantic.TypeAdapter`.
 * On ``ValidationError`` or non-JSON output, retry **once** (Stripe-
@@ -20,8 +20,9 @@ from typing import Any
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from pyarnes_core.errors import LLMRecoverableError
+from pyarnes_core.observability import log_warning
 from pyarnes_core.observe.logger import get_logger
-from pyarnes_core.types import ModelClient
+from pyarnes_core.types import JudgeClient
 
 __all__ = [
     "judge_json",
@@ -37,24 +38,6 @@ def _adapter_for(model: type[BaseModel]) -> TypeAdapter[Any]:
     return TypeAdapter(model)
 
 
-def _extract_text(payload: dict[str, Any]) -> str:
-    """Pull the textual content out of a ``next_action`` return value.
-
-    The ``ModelClient`` Protocol is loose: providers return slightly
-    different shapes. We accept the two that matter in practice:
-    ``{"content": str}`` and ``{"content": {"text": str}}``.
-    """
-    content = payload.get("content")
-    if isinstance(content, str):
-        return content
-    if isinstance(content, dict) and isinstance(content.get("text"), str):
-        return content["text"]
-    raise LLMRecoverableError(
-        message="judge response has no textual content",
-        context={"payload_keys": sorted(payload.keys())},
-    )
-
-
 def _strip_fence(text: str) -> str:
     """Return the body of a ```...``` fence if present, else ``text``."""
     match = _FENCE_RE.search(text)
@@ -62,7 +45,7 @@ def _strip_fence(text: str) -> str:
 
 
 async def judge_json[ModelT: BaseModel](
-    client: ModelClient,
+    client: JudgeClient,
     prompt: str,
     model: type[ModelT],
     *,
@@ -71,7 +54,7 @@ async def judge_json[ModelT: BaseModel](
     """Ask the judge for a JSON answer and parse it into ``model``.
 
     Args:
-        client: Any ``ModelClient`` (structural Protocol).
+        client: Any ``JudgeClient`` (structural Protocol).
         prompt: Rendered user-turn prompt.
         model: A ``pydantic.BaseModel`` subclass to validate against.
         max_attempts: Upper bound on judge invocations (default 2 —
@@ -88,18 +71,18 @@ async def judge_json[ModelT: BaseModel](
             ToolMessage.
     """
     adapter = _adapter_for(model)
-    messages = [{"role": "user", "content": prompt}]
     last_error: str = ""
 
     for attempt in range(1, max_attempts + 1):
-        payload = await client.next_action(messages)
+        raw_text = await client.judge(prompt)
         try:
-            raw = _strip_fence(_extract_text(payload))
+            raw = _strip_fence(raw_text)
             return adapter.validate_json(raw)
         except (ValidationError, ValueError) as exc:
             last_error = str(exc)
-            logger.warning(
-                "judge.parse_failed attempt={attempt} model={model} error={error}",
+            log_warning(
+                logger,
+                "judge.parse_failed",
                 attempt=attempt,
                 model=model.__name__,
                 error=last_error[:200],

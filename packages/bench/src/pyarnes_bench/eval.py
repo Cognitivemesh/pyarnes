@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 
 from more_itertools import quantify
 
+from pyarnes_core.observability import log_event
 from pyarnes_core.observe.logger import get_logger
 
 __all__ = [
@@ -101,8 +102,9 @@ class EvalSuite:
             result: The ``EvalResult`` to record.
         """
         self.results.append(result)
-        logger.info(
-            "eval.recorded scenario={scenario} score={score} passed={passed}",
+        log_event(
+            logger,
+            "eval.recorded",
             scenario=result.scenario,
             score=result.score,
             passed=result.passed,
@@ -154,7 +156,7 @@ class EvalSuite:
         if len(currencies) != 1:
             return None  # mixed currencies: summation would be misleading
 
-        total_cost = sum((c.amount for c in costs), Decimal("0"))
+        total_cost = sum((c.amount for c in costs), Decimal(0))
         if total_cost == 0:
             return None
 

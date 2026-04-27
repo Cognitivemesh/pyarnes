@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
 import pytest
 from pydantic import ValidationError
@@ -24,21 +23,16 @@ class ScriptedFactJudge:
         self,
         *,
         claims: list[tuple[str, str]],
-        verify_fn: Any = None,
+        verify_fn: object = None,
     ) -> None:
         self._claims = claims
         self._verify_fn = verify_fn or (lambda statement, url, source: (True, "ok"))
         self.calls = 0
 
-    async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]:
+    async def judge(self, prompt: str) -> str:
         self.calls += 1
-        prompt = messages[-1]["content"]
         if "Extract every cited claim" in prompt:
-            return {
-                "content": json.dumps(
-                    {"claims": [{"statement": s, "url": u} for s, u in self._claims]}
-                )
-            }
+            return json.dumps({"claims": [{"statement": s, "url": u} for s, u in self._claims]})
         # Parse statement + url back out of the verification prompt.
         # Prompt contains "Claim: {statement}\nURL: {url}\n\nSource:\n{source}"
         marker = prompt.index("Claim: ") + len("Claim: ")
@@ -48,8 +42,8 @@ class ScriptedFactJudge:
         source_idx = prompt.index("\n\nSource:\n", url_start)
         url = prompt[url_start:source_idx]
         source = prompt[source_idx + len("\n\nSource:\n") :]
-        supported, reason = self._verify_fn(statement, url, source)
-        return {"content": json.dumps({"supported": supported, "reason": reason})}
+        supported, reason = self._verify_fn(statement, url, source)  # type: ignore[misc]
+        return json.dumps({"supported": supported, "reason": reason})
 
 
 class TestFactEvaluator:

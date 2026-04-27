@@ -38,6 +38,7 @@ graph TB
     Harness --> Core
     Harness --> Guardrails
     Bench --> Core
+    Bench --> Harness
 ```
 
 `pyarnes-core` is the foundation — every other package depends on it for error types and logging. `pyarnes-tasks` is dev-infrastructure; it's excluded from the runtime dep graph.

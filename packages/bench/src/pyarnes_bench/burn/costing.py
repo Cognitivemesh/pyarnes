@@ -76,7 +76,7 @@ class LiteLLMCostCalculator:
             import litellm  # deferred: keeps litellm optional at module load time  # noqa: PLC0415
 
             pricing = litellm.model_cost.get(model_id)
-        except Exception:
+        except ImportError:
             return None
 
         if pricing is None:
@@ -86,9 +86,9 @@ class LiteLLMCostCalculator:
         out_rate: float = pricing.get("output_cost_per_token", 0.0)
 
         raw = (
-            usage.input_tokens          * inp_rate
-            + usage.output_tokens       * out_rate
-            + usage.cache_creation_tokens * inp_rate * 1.25   # Anthropic cache-write pricing multiplier
-            + usage.cache_read_tokens     * inp_rate * 0.10   # Anthropic cache-read pricing multiplier
+            usage.input_tokens * inp_rate
+            + usage.output_tokens * out_rate
+            + usage.cache_creation_tokens * inp_rate * 1.25  # Anthropic cache-write pricing multiplier
+            + usage.cache_read_tokens * inp_rate * 0.10  # Anthropic cache-read pricing multiplier
         )
         return Cost(amount=Decimal(str(raw)), currency=self._currency)

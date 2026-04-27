@@ -71,9 +71,7 @@ class TestReadCCSession:
                 "timestamp": "2026-04-21T10:00:00Z",
                 "message": {
                     "model": "claude-sonnet-4-6",
-                    "content": [
-                        {"type": "tool_use", "id": "toolu_x", "name": "Bash", "input": {"command": "ls"}}
-                    ],
+                    "content": [{"type": "tool_use", "id": "toolu_x", "name": "Bash", "input": {"command": "ls"}}],
                     "usage": {"input_tokens": 10, "output_tokens": 5},
                 },
             },
@@ -91,18 +89,14 @@ class TestReadCCSession:
                 "type": "assistant",
                 "timestamp": "2026-04-21T10:00:00Z",
                 "message": {
-                    "content": [
-                        {"type": "tool_use", "id": "toolu_1", "name": "Bash", "input": {"command": "ls"}}
-                    ],
+                    "content": [{"type": "tool_use", "id": "toolu_1", "name": "Bash", "input": {"command": "ls"}}],
                 },
             },
             {
                 "type": "user",
                 "timestamp": "2026-04-21T10:00:01Z",
                 "message": {
-                    "content": [
-                        {"type": "tool_result", "tool_use_id": "toolu_1", "is_error": False, "content": "ok"}
-                    ]
+                    "content": [{"type": "tool_result", "tool_use_id": "toolu_1", "is_error": False, "content": "ok"}]
                 },
             },
         ]
@@ -119,9 +113,7 @@ class TestReadCCSession:
                 "type": "assistant",
                 "timestamp": "2026-04-21T10:00:00Z",
                 "message": {
-                    "content": [
-                        {"type": "tool_use", "id": "toolu_1", "name": "Read", "input": {"file_path": "/a"}}
-                    ]
+                    "content": [{"type": "tool_use", "id": "toolu_1", "name": "Read", "input": {"file_path": "/a"}}]
                 },
             },
             {
@@ -166,14 +158,10 @@ class TestReadCCSession:
             "type": "assistant",
             "timestamp": "2026-04-21T10:00:01Z",
             "message": {
-                "content": [
-                    {"type": "tool_use", "id": "toolu_ok", "name": "Bash", "input": {"command": "ls"}}
-                ]
+                "content": [{"type": "tool_use", "id": "toolu_ok", "name": "Bash", "input": {"command": "ls"}}]
             },
         }
-        transcript.write_text(
-            json.dumps(huge_assistant) + "\n" + json.dumps(normal_assistant) + "\n"
-        )
+        transcript.write_text(json.dumps(huge_assistant) + "\n" + json.dumps(normal_assistant) + "\n")
         entries = list(read_cc_session(transcript))
         assert len(entries) == 1
         assert entries[0].tool == "Bash"

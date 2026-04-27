@@ -133,6 +133,7 @@ Error routing:
 | `max_iterations` | `int` | `50` | Hard ceiling on loop cycles before forced stop |
 | `max_retries` | `int` | `2` | Cap on transient-error retries per tool call |
 | `retry_base_delay` | `float` | `1.0` | Seconds before first retry (doubles each attempt) |
+| `reflection_interval` | `int` | `0` | Inject a reflection checkpoint every N iterations. `0` disables reflection. Skips iteration 0; first fire is at `N`. |
 
 Validation: `max_iterations >= 1`, `max_retries >= 0`.
 
