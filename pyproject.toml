@@ -80,6 +80,9 @@ dev = [
     "mkdocs-redirects>=1.2",
     "mkdocs-glightbox>=0.4",
     "mkdocs-git-revision-date-localized-plugin>=1.2",
+    # Explicit floor to avoid GHSA-x2qx-6953-8485 and GHSA-rpm5-65cw-6hj4 (both patched in 3.1.47).
+    # mkdocs-git-revision-date-localized-plugin pulls in GitPython as a transitive dep.
+    "gitpython>=3.1.47",
     # Markdown & YAML
     "pymarkdownlnt>=0.9",
     "mdformat>=1.0",

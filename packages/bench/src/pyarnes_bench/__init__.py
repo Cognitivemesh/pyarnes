@@ -18,6 +18,14 @@ in-process loop or a Claude Code transcript):
 * **ToolUseCorrectnessScorer** — LCS against a reference tool sequence.
 * **TrajectoryLengthScorer** — penalise runs that over/undershoot.
 * **GuardrailComplianceScorer** — ratio of clean calls to sidecar violations.
+
+Token burn (lite port of getagentseal/codeburn):
+
+* **TokenUsage** / **Cost** / **SessionBurn** — provider-agnostic data records.
+* **Provider** / **JsonlProvider** — ABC hierarchy for session sources.
+* **BurnTracker** — orchestrates providers; surfaces token cost as an eval axis.
+* **CostCalculator** — protocol for pricing; **LiteLLMCostCalculator** default.
+* **ClaudeCodeProvider** — reads ``~/.claude/projects/`` JSONL sessions (v1).
 """
 
 from __future__ import annotations
@@ -51,12 +59,28 @@ from pyarnes_bench.scorers import (
     ToolUseCorrectnessScorer,
     TrajectoryLengthScorer,
 )
+from pyarnes_bench.burn import (
+    BurnTracker,
+    ClaudeCodeProvider,
+    Cost,
+    CostCalculator,
+    JsonlProvider,
+    LiteLLMCostCalculator,
+    Provider,
+    SessionBurn,
+    SessionMetadata,
+    TokenUsage,
+)
 from pyarnes_bench.swe_bench import SWEBenchScenario
 
 __all__ = [
     "AsyncScorer",
+    "BurnTracker",
     "CitationClaim",
+    "ClaudeCodeProvider",
     "CodeQualityScorer",
+    "Cost",
+    "CostCalculator",
     "EvalResult",
     "EvalSuite",
     "ExactMatchScorer",
@@ -64,7 +88,10 @@ __all__ = [
     "FactMetrics",
     "FactPrompts",
     "GuardrailComplianceScorer",
+    "JsonlProvider",
     "LLMJudgeScorer",
+    "LiteLLMCostCalculator",
+    "Provider",
     "RaceCriterion",
     "RaceDimension",
     "RaceEvaluator",
@@ -74,6 +101,9 @@ __all__ = [
     "RegressionReport",
     "SWEBenchScenario",
     "Scorer",
+    "SessionBurn",
+    "SessionMetadata",
+    "TokenUsage",
     "ToolUseCorrectnessScorer",
     "TrajectoryLengthScorer",
     "effective_citations_across",
