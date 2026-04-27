@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import io
 import json
 
@@ -69,3 +70,41 @@ class TestConfigureLogging:
         log.bind(marker="abc").info("keep")
         data = json.loads(buf.getvalue().strip())
         assert data["marker"] == "abc"
+
+    def test_concurrent_tasks_stream_isolation(self) -> None:
+        """ContextVar isolation: two concurrent tasks each see their own stream.
+
+        Each asyncio Task copies the context at creation time, so a
+        ``ContextVar.set()`` in one task must not bleed into the other.
+        An explicit ``asyncio.sleep(0)`` yield between set and log forces
+        genuine interleaving — proving isolation rather than sequential luck.
+        """
+
+        async def _run() -> None:
+            buf_a = io.StringIO()
+            buf_b = io.StringIO()
+
+            async def task_a() -> None:
+                configure_logging(level="DEBUG", json=True, stream=buf_a)
+                await asyncio.sleep(0)  # yield so task_b can run
+                get_logger("iso.a").info("from-a")
+
+            async def task_b() -> None:
+                configure_logging(level="DEBUG", json=True, stream=buf_b)
+                await asyncio.sleep(0)  # yield so task_a can run
+                get_logger("iso.b").info("from-b")
+
+            await asyncio.gather(task_a(), task_b())
+
+            lines_a = [json.loads(l) for l in buf_a.getvalue().splitlines() if l.strip()]
+            lines_b = [json.loads(l) for l in buf_b.getvalue().splitlines() if l.strip()]
+
+            events_a = {d["event"] for d in lines_a}
+            events_b = {d["event"] for d in lines_b}
+
+            assert "from-a" in events_a, "task_a stream did not capture its own log"
+            assert "from-b" not in events_a, "task_b log bled into task_a stream"
+            assert "from-b" in events_b, "task_b stream did not capture its own log"
+            assert "from-a" not in events_b, "task_a log bled into task_b stream"
+
+        asyncio.run(_run())

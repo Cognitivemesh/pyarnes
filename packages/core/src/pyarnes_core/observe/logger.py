@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Callable
+from contextvars import ContextVar
 from enum import Enum
 from typing import TYPE_CHECKING, Any, TextIO
 
@@ -57,23 +58,27 @@ def _json_serializer(message: Any) -> str:
         "event": record["message"],
         **record["extra"],
     }
-    if _active_scrub is not None:
-        payload = _active_scrub(payload)
+    scrub = _active_scrub.get()
+    if scrub is not None:
+        payload = scrub(payload)
     return dumps(payload)
 
 
 def _json_sink(message: Any) -> None:
     """Write a JSONL-formatted log line to the configured stream."""
     line = _json_serializer(message)
-    _active_stream.write(line + "\n")
-    _active_stream.flush()
+    stream = _active_stream.get()
+    stream.write(line + "\n")
+    stream.flush()
 
 
-# Module-level stream reference (defaults to stderr).
-_active_stream: TextIO = sys.stderr
+# Per-task stream reference — ContextVar gives async-safe isolation.
+_active_stream: ContextVar[TextIO] = ContextVar("_active_stream", default=sys.stderr)
 
-# Optional payload-scrubbing callable installed by configure_logging.
-_active_scrub: Callable[[dict[str, Any]], dict[str, Any]] | None = None
+# Per-task scrub callable — isolated per asyncio Task via ContextVar.
+_active_scrub: ContextVar[Callable[[dict[str, Any]], dict[str, Any]] | None] = ContextVar(
+    "_active_scrub", default=None
+)
 
 
 def configure_logging(  # noqa: PLR0913
@@ -106,9 +111,8 @@ def configure_logging(  # noqa: PLR0913
             Used to redact secrets (e.g. drop ``authorization`` keys).
             Only takes effect for JSON output.
     """
-    global _active_stream, _active_scrub  # noqa: PLW0603
-    _active_stream = stream
-    _active_scrub = scrub
+    _active_stream.set(stream)
+    _active_scrub.set(scrub)
 
     use_json = fmt == LogFormat.JSON if fmt is not None else json
 
