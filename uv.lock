@@ -1801,6 +1801,7 @@ source = { editable = "packages/bench" }
 dependencies = [
     { name = "more-itertools" },
     { name = "pyarnes-core" },
+    { name = "pyarnes-harness" },
     { name = "pydantic" },
 ]
 
@@ -1808,6 +1809,7 @@ dependencies = [
 requires-dist = [
     { name = "more-itertools", specifier = ">=10.5" },
     { name = "pyarnes-core", editable = "packages/core" },
+    { name = "pyarnes-harness", editable = "packages/harness" },
     { name = "pydantic", specifier = ">=2.6" },
 ]
 
