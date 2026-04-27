@@ -107,6 +107,8 @@ def _build_tasks() -> tuple[dict[str, list[str]], Path]:
         # Bench: drive a pyarnes-bench EvalSuite and read back the JSONL log.
         "bench:run": [py, "-m", "pyarnes_tasks.bench_run"],
         "bench:report": [py, "-m", "pyarnes_tasks.bench_report"],
+        # Burn: token cost report across AI coding sessions.
+        "burn:report": [py, "-m", "pyarnes_tasks.burn_report"],
     }
 
     if tests:
