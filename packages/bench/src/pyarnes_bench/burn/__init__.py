@@ -31,9 +31,7 @@ from pyarnes_bench.burn.compare import ModelComparison, ModelStats, compare_mode
 from pyarnes_bench.burn.costing import CostCalculator, LiteLLMCostCalculator
 from pyarnes_bench.burn.dedupe import dedupe
 from pyarnes_bench.burn.kpis import (
-    ProjectKpis,
     SessionKpis,
-    compute_project_kpis,
     compute_session_kpis,
 )
 from pyarnes_bench.burn.normalize import (
@@ -75,7 +73,6 @@ __all__ = [
     "ModelComparison",
     "ModelStats",
     "OptimizeReport",
-    "ProjectKpis",
     "Provider",
     "SessionBurn",
     "SessionInput",
@@ -88,7 +85,6 @@ __all__ = [
     "classify_window",
     "compare_models",
     "compute_grade",
-    "compute_project_kpis",
     "compute_session_kpis",
     "dedupe",
     "load_previous_report",

@@ -14,7 +14,6 @@ import sys
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from pyarnes_bench.burn import (
     ClaudeCodeProvider,
@@ -24,7 +23,8 @@ from pyarnes_bench.burn import (
 )
 from pyarnes_core.observability import log_warning
 from pyarnes_core.observe.logger import configure_logging, get_logger
-from pyarnes_tasks.burn_report import _short_name
+from pyarnes_harness.capture.tool_log import ToolCallEntry
+from pyarnes_tasks.burn_report import short_name
 
 __all__ = [
     "DiscoveredSession",
@@ -32,6 +32,7 @@ __all__ = [
     "filter_by_project",
     "filter_excludes",
     "load_sessions",
+    "to_session_inputs",
 ]
 
 
@@ -42,7 +43,7 @@ class DiscoveredSession:
     session_id: str
     project: str  # short slug, not the encoded directory name
     path: Path
-    entries: tuple[Any, ...]  # ToolCallEntry, but typed Any so this module stays light
+    entries: tuple[ToolCallEntry, ...]
 
 
 def configure_codeburn_logging() -> None:
@@ -81,7 +82,7 @@ def load_sessions(base: Path | None = None, *, dedup: bool = True) -> list[Disco
             continue
         if dedup:
             entries = list(dedupe(entries))
-        slug = _short_name(path.parent.name)
+        slug = short_name(path.parent.name)
         out.append(
             DiscoveredSession(
                 session_id=path.stem,

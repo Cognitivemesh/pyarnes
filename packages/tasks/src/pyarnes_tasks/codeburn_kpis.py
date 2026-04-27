@@ -15,17 +15,20 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Sequence
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 from pyarnes_bench.burn import (
+    Cost,
     LiteLLMCostCalculator,
     TokenUsage,
     compute_session_kpis,
 )
 from pyarnes_core.observability import log_event
 from pyarnes_core.observe.logger import get_logger
+from pyarnes_harness.capture.tool_log import ToolCallEntry
 from pyarnes_tasks._codeburn_common import (
     configure_codeburn_logging,
     filter_by_project,
@@ -48,7 +51,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _session_cost(entries: Any, calculator: LiteLLMCostCalculator) -> tuple[Decimal, str]:
+def _session_cost(entries: Sequence[ToolCallEntry], calculator: LiteLLMCostCalculator) -> tuple[Decimal, str]:
     inp = sum(e.token_in or 0 for e in entries)
     out = sum(e.token_out or 0 for e in entries)
     model = next((e.model for e in entries if e.model), "")
@@ -75,8 +78,6 @@ def main() -> int:
     grand_cost = Decimal(0)
     for s in sessions:
         amount, currency = _session_cost(s.entries, calculator)
-        from pyarnes_bench.burn.types import Cost  # noqa: PLC0415
-
         cost = Cost(amount=amount, currency=currency or args.currency)
         kpis = compute_session_kpis(
             list(s.entries),

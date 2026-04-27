@@ -89,7 +89,7 @@ _WORKSPACE_DIRS = frozenset(
 )
 
 
-def _short_name(project: str) -> str:
+def short_name(project: str) -> str:
     """Decode an encoded project directory name to a human-readable slug.
 
     Claude Code encodes ``/Users/x/GitHub/my-app`` as ``-Users-x-GitHub-my-app``.
@@ -143,9 +143,9 @@ def main() -> int:
 
     sessions_all = report.get(provider.tool_name, [])
     if args.project:
-        sessions_all = [s for s in sessions_all if _short_name(s.project) == args.project]
+        sessions_all = [s for s in sessions_all if short_name(s.project) == args.project]
     if args.exclude:
-        sessions_all = [s for s in sessions_all if not _matches_any(_short_name(s.project), args.exclude)]
+        sessions_all = [s for s in sessions_all if not _matches_any(short_name(s.project), args.exclude)]
 
     if not sessions_all:
         print("No sessions found.", file=sys.stderr)  # noqa: T201
@@ -155,7 +155,7 @@ def main() -> int:
 
     by_key: dict[tuple[str, ...], list[Any]] = {}
     for s in sessions_all:
-        slug = _short_name(s.project)
+        slug = short_name(s.project)
         key = (slug, s.metadata.model_family) if args.by_model else (slug,)
         by_key.setdefault(key, []).append(s)
 

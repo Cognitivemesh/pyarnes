@@ -36,13 +36,6 @@ from pyarnes_tasks._codeburn_common import (
     to_session_inputs,
 )
 
-_SEVERITY_ORDER = {
-    Severity.LOW: 0,
-    Severity.MEDIUM: 1,
-    Severity.HIGH: 2,
-    Severity.CRITICAL: 3,
-}
-
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -96,7 +89,7 @@ def main() -> int:
         )
 
     threshold = Severity(args.severity)
-    visible = [f for f in report.findings if _SEVERITY_ORDER[f.severity] >= _SEVERITY_ORDER[threshold]]
+    visible = [f for f in report.findings if f.severity.weight >= threshold.weight]
 
     snapshot_path = save_report(report)
     log_event(

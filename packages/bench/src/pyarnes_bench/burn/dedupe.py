@@ -4,18 +4,18 @@ Claude Code's resume flow occasionally re-emits already-seen messages.
 KPIs and cost roll-ups must dedupe these so a resumed session is not
 billed twice.
 
-Dedup key is ``(started_at, normalized_tool, canonical_arguments)`` —
+Dedup key is ``(started_at, normalized_tool, canonical_arguments)`` -
 two calls with identical timestamps and arguments are considered the
 same call. Output preserves the original order.
 """
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterable, Iterator
 from typing import Any
 
 from pyarnes_bench.burn.normalize import normalize_tool
-from pyarnes_core.observability import dumps
 from pyarnes_harness.capture.tool_log import ToolCallEntry
 
 __all__ = ["dedupe"]
@@ -24,16 +24,11 @@ __all__ = ["dedupe"]
 def _canon_args(args: dict[str, Any]) -> str:
     """Return a stable string key for *args*.
 
-    ``json.dumps(sort_keys=True)`` is good enough — argument values are
-    user-controlled JSON so unhashable types (``list``, ``dict``) are
-    common. Sorting keys means dict ordering does not matter.
+    ``sort_keys=True`` makes dict ordering irrelevant; ``default=str``
+    falls back to ``repr`` for any value that isn't JSON-native, so the
+    serialiser cannot raise.
     """
-    try:
-        import json  # noqa: PLC0415
-
-        return json.dumps(args, sort_keys=True, default=str, ensure_ascii=False)
-    except (TypeError, ValueError):
-        return dumps(args)
+    return json.dumps(args, sort_keys=True, default=str, ensure_ascii=False)
 
 
 def dedupe(entries: Iterable[ToolCallEntry]) -> Iterator[ToolCallEntry]:

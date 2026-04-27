@@ -405,13 +405,6 @@ def all_detectors() -> list[Any]:
 # ── grade ──────────────────────────────────────────────────────────────────
 
 
-_SEVERITY_WEIGHTS: dict[Severity, int] = {
-    Severity.LOW: 1,
-    Severity.MEDIUM: 3,
-    Severity.HIGH: 7,
-    Severity.CRITICAL: 12,
-}
-
 _GRADE_THRESHOLDS: list[tuple[int, HealthGrade]] = [
     (0, HealthGrade.A),
     (3, HealthGrade.B),
@@ -423,7 +416,8 @@ _GRADE_THRESHOLDS: list[tuple[int, HealthGrade]] = [
 def compute_grade(findings: Sequence[Finding]) -> HealthGrade:
     """Map a finding list to an A-F :class:`HealthGrade`.
 
-    Score = sum of severity weights. Thresholds (inclusive upper bound):
+    Score = sum of ``Severity.weight`` over findings. Thresholds
+    (inclusive upper bound):
 
     * 0       -> A
     * 1-3     -> B
@@ -431,7 +425,7 @@ def compute_grade(findings: Sequence[Finding]) -> HealthGrade:
     * 10-19   -> D
     * 20+     -> F
     """
-    score = sum(_SEVERITY_WEIGHTS.get(f.severity, 0) for f in findings)
+    score = sum(f.severity.weight for f in findings)
     for ceiling, grade in _GRADE_THRESHOLDS:
         if score <= ceiling:
             return grade
@@ -441,6 +435,9 @@ def compute_grade(findings: Sequence[Finding]) -> HealthGrade:
 # ── 48h trend ──────────────────────────────────────────────────────────────
 
 
+_SNAPSHOT_RETENTION_HOURS = 96  # twice the trend window so the diff still has data
+
+
 def snapshot_dir(home: Path | None = None) -> Path:
     """Return the directory used for 48 h snapshots."""
     base = home if home is not None else Path(os.environ.get("XDG_CACHE_HOME", str(Path.home() / ".cache")))
@@ -448,13 +445,28 @@ def snapshot_dir(home: Path | None = None) -> Path:
 
 
 def save_report(report: OptimizeReport, home: Path | None = None) -> Path:
-    """Write *report* atomically under :func:`snapshot_dir` and return the path."""
+    """Write *report* atomically under :func:`snapshot_dir` and return the path.
+
+    Also prunes snapshots older than :data:`_SNAPSHOT_RETENTION_HOURS`
+    so the cache directory stays bounded across many invocations.
+    """
     target_dir = snapshot_dir(home)
     target_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     iso_date = report.generated_at.replace(":", "-")
     path = target_dir / f"optimize-{iso_date}.json"
     write_private(path, dumps(to_jsonable(report.as_dict())) + "\n")
+    _prune_snapshots(target_dir)
     return path
+
+
+def _prune_snapshots(target_dir: Path) -> None:
+    cutoff = (datetime.now(tz=UTC) - timedelta(hours=_SNAPSHOT_RETENTION_HOURS)).timestamp()
+    for old in target_dir.glob("optimize-*.json"):
+        try:
+            if old.stat().st_mtime < cutoff:
+                old.unlink()
+        except OSError:
+            continue
 
 
 def load_previous_report(*, home: Path | None = None, max_age_hours: int = 48) -> OptimizeReport | None:
@@ -538,7 +550,7 @@ def run(
     findings: list[Finding] = []
     for detector in all_detectors():
         findings.extend(detector(sessions, claude_dir))
-    findings.sort(key=lambda f: _SEVERITY_WEIGHTS.get(f.severity, 0), reverse=True)
+    findings.sort(key=lambda f: f.severity.weight, reverse=True)
 
     grade = compute_grade(findings)
     previous = load_previous_report(home=home)

@@ -20,8 +20,9 @@ KPI definitions
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
@@ -31,9 +32,7 @@ from pyarnes_bench.burn.types import Cost, TokenUsage
 from pyarnes_harness.capture.tool_log import ToolCallEntry
 
 __all__ = [
-    "ProjectKpis",
     "SessionKpis",
-    "compute_project_kpis",
     "compute_session_kpis",
 ]
 
@@ -55,11 +54,15 @@ class SessionKpis:
     read_edit_ratio: float
     cost_total: Decimal
     currency: str
-    cost_by_bucket: dict[str, str]  # TaskKind.value -> "0.1234"
-    cost_by_tool: dict[str, str]    # canonical tool -> "0.1234"
+    cost_by_bucket: dict[str, Decimal]  # TaskKind.value -> Decimal
+    cost_by_tool: dict[str, Decimal]    # canonical tool   -> Decimal
 
     def as_dict(self) -> dict[str, Any]:
-        """Serialise to a plain dict (suitable for JSON output)."""
+        """Serialise to a plain dict (suitable for JSON output).
+
+        Decimal totals are stringified at the boundary so consumers
+        don't lose precision in JSON's float round-trip.
+        """
         return {
             "session_id": self.session_id,
             "project": self.project,
@@ -71,37 +74,8 @@ class SessionKpis:
             "read_edit_ratio": self.read_edit_ratio,
             "cost_total": str(self.cost_total),
             "currency": self.currency,
-            "cost_by_bucket": dict(self.cost_by_bucket),
-            "cost_by_tool": dict(self.cost_by_tool),
-        }
-
-
-@dataclass(frozen=True, slots=True)
-class ProjectKpis:
-    """Project-wide KPI aggregate over many sessions."""
-
-    project: str
-    sessions: int
-    total_calls: int
-    avg_one_shot_rate: float
-    total_retry_loops: int
-    avg_cache_hit_rate: float
-    cost_total: Decimal
-    currency: str
-    cost_by_bucket: dict[str, str] = field(default_factory=dict)
-
-    def as_dict(self) -> dict[str, Any]:
-        """Serialise to a plain dict."""
-        return {
-            "project": self.project,
-            "sessions": self.sessions,
-            "total_calls": self.total_calls,
-            "avg_one_shot_rate": self.avg_one_shot_rate,
-            "total_retry_loops": self.total_retry_loops,
-            "avg_cache_hit_rate": self.avg_cache_hit_rate,
-            "cost_total": str(self.cost_total),
-            "currency": self.currency,
-            "cost_by_bucket": dict(self.cost_by_bucket),
+            "cost_by_bucket": {k: f"{v:.6f}" for k, v in self.cost_by_bucket.items()},
+            "cost_by_tool": {k: f"{v:.6f}" for k, v in self.cost_by_tool.items()},
         }
 
 
@@ -133,8 +107,6 @@ def compute_session_kpis(
 
     total_amount = cost.amount if cost is not None else Decimal(0)
     currency = cost.currency if cost is not None else ""
-    cost_by_bucket = _split_cost(buckets, total_amount, key=lambda k: k.value)
-    cost_by_tool = _split_cost(canonical, total_amount, key=lambda k: k)
 
     return SessionKpis(
         session_id=session_id,
@@ -147,41 +119,8 @@ def compute_session_kpis(
         read_edit_ratio=re_ratio,
         cost_total=total_amount,
         currency=currency,
-        cost_by_bucket={k: f"{v:.6f}" for k, v in cost_by_bucket.items()},
-        cost_by_tool={k: f"{v:.6f}" for k, v in cost_by_tool.items()},
-    )
-
-
-def compute_project_kpis(sessions: Sequence[SessionKpis]) -> ProjectKpis:
-    """Aggregate per-session KPIs into a single project-level record."""
-    if not sessions:
-        return ProjectKpis(
-            project="",
-            sessions=0,
-            total_calls=0,
-            avg_one_shot_rate=0.0,
-            total_retry_loops=0,
-            avg_cache_hit_rate=0.0,
-            cost_total=Decimal(0),
-            currency="",
-        )
-    project = sessions[0].project
-    n = len(sessions)
-    total_cost = sum((s.cost_total for s in sessions), Decimal(0))
-    bucket_totals: dict[str, Decimal] = {}
-    for s in sessions:
-        for k, v in s.cost_by_bucket.items():
-            bucket_totals[k] = bucket_totals.get(k, Decimal(0)) + Decimal(v)
-    return ProjectKpis(
-        project=project,
-        sessions=n,
-        total_calls=sum(s.total_calls for s in sessions),
-        avg_one_shot_rate=sum(s.one_shot_rate for s in sessions) / n,
-        total_retry_loops=sum(s.retry_loops for s in sessions),
-        avg_cache_hit_rate=sum(s.cache_hit_rate for s in sessions) / n,
-        cost_total=total_cost,
-        currency=sessions[0].currency,
-        cost_by_bucket={k: f"{v:.6f}" for k, v in bucket_totals.items()},
+        cost_by_bucket=_split_cost([k.value for k in buckets], total_amount),
+        cost_by_tool=_split_cost(canonical, total_amount),
     )
 
 
@@ -271,23 +210,15 @@ def _aggregate_usage(entries: Sequence[ToolCallEntry]) -> TokenUsage:
     return TokenUsage(input_tokens=inp, output_tokens=out)
 
 
-def _split_cost(
-    keys: Sequence[Any],
-    total: Decimal,
-    *,
-    key: Any,
-) -> dict[str, Decimal]:
-    """Split *total* cost proportionally across the labels in *keys*.
+def _split_cost(labels: Sequence[str], total: Decimal) -> dict[str, Decimal]:
+    """Split *total* cost proportionally across each unique *label*.
 
     No call-level cost data exists, so we attribute cost by call count
     — every call in a session shares the session's per-call average.
     Sums to *total* up to the rounding chosen at format time.
     """
-    if not keys or total == 0:
+    if not labels or total == 0:
         return {}
-    counts: dict[str, int] = {}
-    for k in keys:
-        label = key(k)
-        counts[label] = counts.get(label, 0) + 1
+    counts = Counter(labels)
     n = sum(counts.values())
     return {label: total * Decimal(c) / Decimal(n) for label, c in counts.items()}

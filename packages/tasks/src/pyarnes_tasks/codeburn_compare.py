@@ -14,12 +14,14 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Sequence
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
 
 from pyarnes_bench.burn import (
+    Cost,
     LiteLLMCostCalculator,
+    ModelComparison,
     SessionKpis,
     TokenUsage,
     compare_models,
@@ -27,6 +29,7 @@ from pyarnes_bench.burn import (
 )
 from pyarnes_core.observability import log_event
 from pyarnes_core.observe.logger import get_logger
+from pyarnes_harness.capture.tool_log import ToolCallEntry
 from pyarnes_tasks._codeburn_common import (
     DiscoveredSession,
     configure_codeburn_logging,
@@ -51,7 +54,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def _dominant_model(entries: Any) -> str:
+def _dominant_model(entries: Sequence[ToolCallEntry]) -> str:
     """Return the model id used by most calls in a session."""
     counts: dict[str, int] = {}
     for e in entries:
@@ -62,14 +65,16 @@ def _dominant_model(entries: Any) -> str:
     return max(counts.items(), key=lambda kv: kv[1])[0]
 
 
-def _kpis_for_session(s: DiscoveredSession, currency: str) -> tuple[str, SessionKpis]:
-    calculator = LiteLLMCostCalculator(currency=currency)
+def _kpis_for_session(
+    s: DiscoveredSession,
+    *,
+    calculator: LiteLLMCostCalculator,
+    currency: str,
+) -> tuple[str, SessionKpis]:
     inp = sum(e.token_in or 0 for e in s.entries)
     out = sum(e.token_out or 0 for e in s.entries)
     model = _dominant_model(s.entries)
     cost = calculator.calculate(model, TokenUsage(input_tokens=inp, output_tokens=out))
-    from pyarnes_bench.burn.types import Cost  # noqa: PLC0415
-
     cost_obj = cost if cost is not None else Cost(amount=Decimal(0), currency=currency)
     kpis = compute_session_kpis(
         list(s.entries),
@@ -80,7 +85,7 @@ def _kpis_for_session(s: DiscoveredSession, currency: str) -> tuple[str, Session
     return model, kpis
 
 
-def _render_comparison(comp: Any, currency: str) -> None:
+def _render_comparison(comp: ModelComparison, currency: str) -> None:
     rows = [
         ("model",            comp.a.model,                          comp.b.model),
         ("sessions",         str(comp.a.sessions),                  str(comp.b.sessions)),
@@ -112,9 +117,10 @@ def main() -> int:
         print("No sessions found.", file=sys.stderr)  # noqa: T201
         return 0
 
+    calculator = LiteLLMCostCalculator(currency=args.currency)
     by_model: dict[str, list[SessionKpis]] = {}
     for s in sessions:
-        model, kpis = _kpis_for_session(s, args.currency)
+        model, kpis = _kpis_for_session(s, calculator=calculator, currency=args.currency)
         if not model:
             continue
         by_model.setdefault(model, []).append(kpis)

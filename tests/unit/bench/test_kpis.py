@@ -7,7 +7,7 @@ import json
 from decimal import Decimal
 from typing import Any
 
-from pyarnes_bench.burn.kpis import compute_project_kpis, compute_session_kpis
+from pyarnes_bench.burn.kpis import compute_session_kpis
 from pyarnes_bench.burn.types import Cost
 from pyarnes_core.observability import log_event
 from pyarnes_core.observe.logger import configure_logging, get_logger
@@ -78,9 +78,9 @@ class TestSessionKpis:
             project="p",
             cost=Cost(amount=Decimal("0.30"), currency="USD"),
         )
-        bucket_sum = sum(Decimal(v) for v in k.cost_by_bucket.values())
+        bucket_sum = sum(k.cost_by_bucket.values(), Decimal(0))
         assert abs(bucket_sum - Decimal("0.30")) < Decimal("0.000001")
-        tool_sum = sum(Decimal(v) for v in k.cost_by_tool.values())
+        tool_sum = sum(k.cost_by_tool.values(), Decimal(0))
         assert abs(tool_sum - Decimal("0.30")) < Decimal("0.000001")
 
     def test_cache_hit_rate_zero_when_no_tokens(self) -> None:
@@ -113,26 +113,3 @@ class TestSessionKpis:
         assert data["session_id"] == "abc"
 
 
-class TestProjectKpis:
-    def test_empty_returns_zero_record(self) -> None:
-        agg = compute_project_kpis([])
-        assert agg.sessions == 0
-        assert agg.cost_total == Decimal(0)
-
-    def test_aggregates_across_sessions(self) -> None:
-        s1 = compute_session_kpis(
-            [_e("Edit", {"file_path": "/a"})],
-            session_id="s1",
-            project="p",
-            cost=Cost(amount=Decimal("0.10"), currency="USD"),
-        )
-        s2 = compute_session_kpis(
-            [_e("Edit", {"file_path": "/b"})],
-            session_id="s2",
-            project="p",
-            cost=Cost(amount=Decimal("0.20"), currency="USD"),
-        )
-        agg = compute_project_kpis([s1, s2])
-        assert agg.sessions == 2
-        assert agg.cost_total == Decimal("0.30")
-        assert agg.currency == "USD"
