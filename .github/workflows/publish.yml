@@ -4,7 +4,6 @@ name: publish
   push:
     tags:
       - pyarnes-tasks-v*
-    branches: [main]
 
 permissions:
   contents: read
@@ -17,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
