@@ -59,6 +59,7 @@ class LiteLLMCostCalculator:
     """
 
     def __init__(self, currency: str = "USD") -> None:
+        """Initialise the calculator with an ISO 4217 currency code."""
         self._currency = currency
 
     def calculate(self, model_id: str, usage: TokenUsage) -> Cost | None:
@@ -72,7 +73,7 @@ class LiteLLMCostCalculator:
             A ``Cost``, or ``None`` if LiteLLM does not know the model.
         """
         try:
-            import litellm  # deferred: keeps litellm optional at module load time
+            import litellm  # deferred: keeps litellm optional at module load time  # noqa: PLC0415
 
             pricing = litellm.model_cost.get(model_id)
         except Exception:

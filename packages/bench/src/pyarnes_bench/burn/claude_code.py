@@ -38,20 +38,25 @@ class ClaudeCodeProvider(JsonlProvider):
 
     @property
     def tool_name(self) -> str:
+        """Return the CLI identifier used in session metadata."""
         return "claude-code"
 
     @property
     def ai_provider_name(self) -> str:
+        """Return the model provider name."""
         return "anthropic"
 
     @property
     def session_glob(self) -> str:
+        """Return the glob pattern that matches Claude Code session files."""
         return "*/*.jsonl"
 
     def is_model_turn(self, entry: dict[str, Any]) -> bool:
+        """Return True for assistant-turn entries that may carry usage data."""
         return entry.get("type") == "assistant"
 
     def extract_usage(self, entry: dict[str, Any]) -> TokenUsage | None:
+        """Extract token counts from a Claude Code assistant-turn entry."""
         raw = entry.get("message", {}).get("usage")
         if not isinstance(raw, dict):
             return None
@@ -63,11 +68,14 @@ class ClaudeCodeProvider(JsonlProvider):
         )
 
     def extract_model_id(self, entry: dict[str, Any]) -> str:
+        """Return the model identifier string from the entry."""
         return entry.get("message", {}).get("model", "")
 
     def extract_timestamp(self, entry: dict[str, Any]) -> str | None:
+        """Return the ISO 8601 timestamp string, or None if absent."""
         return entry.get("timestamp")
 
     def infer_model_family(self, model_id: str) -> str:
+        """Return the family prefix (e.g. 'claude') from a model ID string."""
         # "some-family-version" → "some"; empty string when model_id unknown
-        return model_id.split("-")[0] if model_id else ""
+        return model_id.split("-", maxsplit=1)[0] if model_id else ""

@@ -19,7 +19,6 @@ from pyarnes_bench.burn.provider import BurnTracker, JsonlProvider
 from pyarnes_bench.burn.types import Cost, SessionBurn, SessionMetadata, TokenUsage
 from pyarnes_bench.eval import EvalResult, EvalSuite
 
-
 # ── Stubs ──────────────────────────────────────────────────────────────────
 
 
@@ -58,7 +57,7 @@ class _StubJsonlProvider(JsonlProvider):
         return entry.get("ts")
 
     def infer_model_family(self, model_id: str) -> str:
-        return model_id.split("-")[0] if model_id else ""
+        return model_id.split("-", maxsplit=1)[0] if model_id else ""
 
     def burn_report(self, base: Path) -> list[SessionBurn]:
         # Override template method to return canned sessions (no disk I/O in tests)
@@ -148,7 +147,7 @@ class TestCost:
 
 class TestCostCalculator:
     def test_prices_known_model(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import litellm
+        import litellm  # noqa: PLC0415
 
         monkeypatch.setattr(
             litellm,
@@ -163,7 +162,7 @@ class TestCostCalculator:
         assert result.amount == Decimal("0.2")
 
     def test_returns_none_for_unknown_model(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        import litellm
+        import litellm  # noqa: PLC0415
 
         monkeypatch.setattr(litellm, "model_cost", {})
         calc = LiteLLMCostCalculator()
@@ -171,7 +170,7 @@ class TestCostCalculator:
 
     def test_cache_multipliers_applied(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Cache creation and read tokens use different multipliers."""
-        import litellm
+        import litellm  # noqa: PLC0415
 
         monkeypatch.setattr(
             litellm,
@@ -306,8 +305,8 @@ class TestBurnTracker:
         assert total.currency == "XXX"
 
     def test_total_cost_mixed_currencies_is_none(self) -> None:
-        s1 = _session(cost=Cost(Decimal("1"), "AAA"))
-        s2 = _session(cost=Cost(Decimal("1"), "BBB"))
+        s1 = _session(cost=Cost(Decimal(1), "AAA"))
+        s2 = _session(cost=Cost(Decimal(1), "BBB"))
         # No calculator — pre-set costs on the sessions are preserved as-is,
         # so total_cost must return None because currencies differ.
         tracker = BurnTracker(
@@ -370,8 +369,8 @@ class TestEvalSuiteTokenBurn:
 
     def test_cost_efficiency_none_mixed_currencies(self) -> None:
         suite = EvalSuite()
-        suite.add(self._result(cost=Cost(Decimal("1"), "AAA")))
-        suite.add(self._result(cost=Cost(Decimal("1"), "BBB")))
+        suite.add(self._result(cost=Cost(Decimal(1), "AAA")))
+        suite.add(self._result(cost=Cost(Decimal(1), "BBB")))
         assert suite.cost_efficiency is None
 
     def test_summary_includes_usage_when_present(self) -> None:

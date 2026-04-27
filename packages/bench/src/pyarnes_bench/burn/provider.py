@@ -128,9 +128,10 @@ class JsonlProvider(Provider, ABC):
     # ── Concrete — do not override in subclasses ──────────────────────
 
     def discover_sessions(self, base: Path) -> list[Path]:
+        """Return all session file paths under base matching session_glob."""
         return sorted(base.glob(self.session_glob))
 
-    def parse_session(self, path: Path) -> SessionBurn | None:  # noqa: C901
+    def parse_session(self, path: Path) -> SessionBurn | None:
         """Read ``path``, aggregate model turns into a ``SessionBurn``.
 
         Returns:
@@ -210,6 +211,7 @@ class BurnTracker:
         *providers: Provider,
         calculator: CostCalculator | None = None,
     ) -> None:
+        """Initialise with one or more providers and an optional cost calculator."""
         self._providers = providers
         self._calculator = calculator
         self._cache: dict[str, list[SessionBurn]] | None = None
@@ -283,7 +285,7 @@ class BurnTracker:
             # Mixed currencies: return None rather than silently combining
             return None
 
-        total = sum((c.amount for c in costs), Decimal("0"))
+        total = sum((c.amount for c in costs), Decimal(0))
         return Cost(amount=total, currency=costs[0].currency)
 
 

@@ -85,7 +85,7 @@ def _render_table(rows: list[dict[str, Any]], totals: dict[str, Any]) -> None:
     headers = list(totals.keys())
     all_rows = [*rows, totals]
     widths = [
-        max(len(h), max(len(str(r[h])) for r in all_rows))
+        max(len(h), *(len(str(r[h])) for r in all_rows))
         for h in headers
     ]
     sep = "  "
@@ -104,7 +104,7 @@ def main() -> int:
     args = _parse_args(sys.argv[1:])
 
     try:
-        from pyarnes_bench.burn import BurnTracker, ClaudeCodeProvider, LiteLLMCostCalculator
+        from pyarnes_bench.burn import BurnTracker, ClaudeCodeProvider, LiteLLMCostCalculator  # noqa: PLC0415
     except ImportError as exc:
         print(f"error: pyarnes-bench is not installed ({exc})", file=sys.stderr)  # noqa: T201
         return 1
@@ -123,7 +123,7 @@ def main() -> int:
         print("No sessions found.", file=sys.stderr)  # noqa: T201
         return 0
 
-    from pyarnes_bench.burn.types import TokenUsage
+    from pyarnes_bench.burn.types import TokenUsage  # noqa: PLC0415
 
     # Aggregate per project slug; accumulate totals in the same pass
     by_project: dict[str, list[Any]] = {}
@@ -133,12 +133,12 @@ def main() -> int:
 
     rows: list[dict[str, Any]] = []
     grand_usage = TokenUsage()
-    grand_cost = Decimal("0")
+    grand_cost = Decimal(0)
     for slug, sessions in sorted(by_project.items()):
         usage = reduce(lambda a, b: a + b.usage, sessions, TokenUsage())
         cost_total = sum(
             (s.cost.amount for s in sessions if s.cost is not None),
-            Decimal("0"),
+            Decimal(0),
         )
         grand_usage = grand_usage + usage
         grand_cost += cost_total

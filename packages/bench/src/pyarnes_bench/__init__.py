@@ -30,6 +30,18 @@ Token burn (lite port of getagentseal/codeburn):
 
 from __future__ import annotations
 
+from pyarnes_bench.burn import (
+    BurnTracker,
+    ClaudeCodeProvider,
+    Cost,
+    CostCalculator,
+    JsonlProvider,
+    LiteLLMCostCalculator,
+    Provider,
+    SessionBurn,
+    SessionMetadata,
+    TokenUsage,
+)
 from pyarnes_bench.eval import EvalResult, EvalSuite
 from pyarnes_bench.fact import (
     CitationClaim,
@@ -58,18 +70,6 @@ from pyarnes_bench.scorers import (
     GuardrailComplianceScorer,
     ToolUseCorrectnessScorer,
     TrajectoryLengthScorer,
-)
-from pyarnes_bench.burn import (
-    BurnTracker,
-    ClaudeCodeProvider,
-    Cost,
-    CostCalculator,
-    JsonlProvider,
-    LiteLLMCostCalculator,
-    Provider,
-    SessionBurn,
-    SessionMetadata,
-    TokenUsage,
 )
 from pyarnes_bench.swe_bench import SWEBenchScenario
 
