@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import json
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -202,6 +204,22 @@ class TestToolCallLogger:
         data = json.loads(log_file.read_text().strip())
         assert data["result"] == "hello"
 
+    def test_redactor_masks_sensitive_fields(self, tmp_path: Path) -> None:
+        log_file = tmp_path / "calls.jsonl"
+
+        def _redactor(payload: dict[str, Any]) -> dict[str, Any]:
+            redacted = dict(payload)
+            args = dict(redacted["arguments"])
+            args["password"] = "***"  # noqa: S105
+            redacted["arguments"] = args
+            return redacted
+
+        with ToolCallLogger(path=log_file, redactor=_redactor) as log:
+            log.log_call("login", {"username": "alice", "password": "secret"}, result="ok")
+
+        data = json.loads(log_file.read_text().strip())
+        assert data["arguments"]["password"] == "***"  # noqa: S105
+
 
 # ── Helpers for loop integration tests ────────────────────────────────────
 
@@ -262,3 +280,28 @@ class TestLoopWithToolCallLogger:
         assert "started_at" in data
         assert "finished_at" in data
         assert "duration_seconds" in data
+
+    @pytest.mark.asyncio()
+    async def test_tool_call_logger_write_does_not_block_event_loop(self) -> None:
+        class _SlowToolCallLogger:
+            def log_call(self, *args: object, **kwargs: object) -> None:
+                time.sleep(0.2)
+
+        model = _FakeModel(
+            actions=[
+                {"type": "tool_call", "tool": "echo", "id": "c1", "arguments": {"text": "hello"}},
+                {"type": "final_answer", "content": "done"},
+            ]
+        )
+        loop = AgentLoop(
+            tools={"echo": _EchoTool()},
+            model=model,
+            config=LoopConfig(max_iterations=10),
+            tool_call_logger=_SlowToolCallLogger(),  # type: ignore[arg-type]
+        )
+
+        run_task = asyncio.create_task(loop.run([]))
+        started = time.perf_counter()
+        await asyncio.sleep(0.01)
+        assert time.perf_counter() - started < 0.05
+        await run_task

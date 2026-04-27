@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import time
 import traceback
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -89,9 +90,20 @@ class OutputCapture:
             print(entry.as_dict())
     """
 
-    def __init__(self) -> None:
-        """Initialise an empty capture history."""
+    def __init__(
+        self,
+        *,
+        redactor: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
+    ) -> None:
+        """Initialise an empty capture history.
+
+        Args:
+            redactor: Optional callable that receives each capture payload
+                and returns the redacted payload before it is stored. The
+                returned payload must preserve the ``CapturedOutput`` schema.
+        """
         self._history: list[CapturedOutput] = []
+        self._redactor = redactor
 
     def record_success(  # noqa: PLR0913
         self,
@@ -116,14 +128,17 @@ class OutputCapture:
         Returns:
             The immutable ``CapturedOutput`` record.
         """
-        captured = CapturedOutput(
-            tool_name=tool_name,
-            arguments=arguments,
-            stdout=stdout,
-            stderr=stderr,
-            return_value=result,
-            duration_seconds=duration,
-        )
+        payload: dict[str, Any] = {
+            "tool_name": tool_name,
+            "arguments": arguments,
+            "stdout": stdout,
+            "stderr": stderr,
+            "return_value": result,
+            "duration_seconds": duration,
+        }
+        if self._redactor is not None:
+            payload = self._redactor(payload)
+        captured = CapturedOutput(**payload)
         self._history.append(captured)
         log_event(logger, "capture.success", tool=tool_name)
         return captured
@@ -151,15 +166,18 @@ class OutputCapture:
         Returns:
             The immutable ``CapturedOutput`` record.
         """
-        captured = CapturedOutput(
-            tool_name=tool_name,
-            arguments=arguments,
-            stdout=stdout,
-            stderr=stderr,
-            error=str(exc),
-            traceback_str="".join(traceback.format_exception(exc)),
-            duration_seconds=duration,
-        )
+        payload: dict[str, Any] = {
+            "tool_name": tool_name,
+            "arguments": arguments,
+            "stdout": stdout,
+            "stderr": stderr,
+            "error": str(exc),
+            "traceback_str": "".join(traceback.format_exception(exc)),
+            "duration_seconds": duration,
+        }
+        if self._redactor is not None:
+            payload = self._redactor(payload)
+        captured = CapturedOutput(**payload)
         self._history.append(captured)
         log_error(logger, "capture.failure", tool=tool_name, error=str(exc))
         return captured

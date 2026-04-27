@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pyarnes_harness.capture.output import CapturedOutput, OutputCapture
 
 
@@ -64,3 +66,20 @@ class TestOutputCapture:
         assert len(capture.history) == 2
         capture.clear()
         assert len(capture.history) == 0
+
+    def test_redactor_masks_sensitive_fields(self) -> None:
+        def _redactor(payload: dict[str, Any]) -> dict[str, Any]:
+            redacted = dict(payload)
+            args = dict(redacted["arguments"])
+            args["password"] = "***"  # noqa: S105
+            redacted["arguments"] = args
+            return redacted
+
+        capture = OutputCapture(redactor=_redactor)
+        record = capture.record_success(
+            "login",
+            {"username": "alice", "password": "secret"},
+            result="ok",
+        )
+
+        assert record.arguments["password"] == "***"  # noqa: S105
