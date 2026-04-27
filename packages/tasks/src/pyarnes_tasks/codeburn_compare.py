@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections import Counter
 from collections.abc import Sequence
 from decimal import Decimal
 from pathlib import Path
@@ -56,13 +57,8 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 
 def _dominant_model(entries: Sequence[ToolCallEntry]) -> str:
     """Return the model id used by most calls in a session."""
-    counts: dict[str, int] = {}
-    for e in entries:
-        if e.model:
-            counts[e.model] = counts.get(e.model, 0) + 1
-    if not counts:
-        return ""
-    return max(counts.items(), key=lambda kv: kv[1])[0]
+    counts = Counter(e.model for e in entries if e.model)
+    return counts.most_common(1)[0][0] if counts else ""
 
 
 def _kpis_for_session(

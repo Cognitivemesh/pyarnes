@@ -17,7 +17,6 @@ from pathlib import Path
 
 from pyarnes_bench.burn import (
     ClaudeCodeProvider,
-    SessionInput,
     dedupe,
     parse_session_calls,
 )
@@ -32,7 +31,6 @@ __all__ = [
     "filter_by_project",
     "filter_excludes",
     "load_sessions",
-    "to_session_inputs",
 ]
 
 
@@ -114,9 +112,3 @@ def filter_excludes(
     ]
 
 
-def to_session_inputs(sessions: Iterable[DiscoveredSession]) -> list[SessionInput]:
-    """Adapter: ``DiscoveredSession`` → ``SessionInput`` for the optimize layer."""
-    return [
-        SessionInput(session_id=s.session_id, project=s.project, entries=list(s.entries))
-        for s in sessions
-    ]
