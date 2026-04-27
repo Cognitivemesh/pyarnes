@@ -74,15 +74,8 @@ lc.start()  # ValueError: Invalid transition: completed → running
 
 ### Phase enum
 
-`INIT`, `RUNNING`, `PAUSED`, `COMPLETED`, `FAILED`
+::: pyarnes_core.lifecycle.Phase
 
 ### Lifecycle methods
 
-| Method | Effect |
-|---|---|
-| `start()` | → RUNNING |
-| `pause()` | → PAUSED |
-| `resume()` | → RUNNING (from PAUSED) |
-| `complete()` | → COMPLETED |
-| `fail()` | → FAILED |
-| `transition(target)` | Direct transition (validates) |
+::: pyarnes_core.lifecycle.Lifecycle

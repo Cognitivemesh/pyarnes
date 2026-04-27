@@ -72,6 +72,7 @@ dev = [
     "doq>=0.10",
     # Documentation site
     "mkdocs-material>=9.6",
+    "mkdocstrings[python]>=0.30",
     "mkdocs-monorepo-plugin>=1.1",
     "mkdocs-coverage>=1.1",
     "mkdocs-section-index>=0.3",

@@ -22,6 +22,8 @@ journey
       Ship: 5: you
 ```
 
+*Scores reflect perceived ease — higher is smoother.*
+
 <div class="grid cards" markdown>
 
 - :material-compass-outline:{ .lg .middle } **Evaluate**

@@ -79,7 +79,7 @@ Missing directories are dropped automatically — a freshly scaffolded project w
 
 ## The `update` task
 
-`uv run tasks update` wraps Copier so developers never need to remember its flags. It reads `.copier-answers.yml` (written automatically by `copier copy` when the template is fetched from a real git ref like `gh:Cognitivemesh/pyarnes`), finds the pinned pyarnes ref, and pulls template improvements into the project. Conflicts (if any) are surfaced interactively.
+`uv run tasks update` wraps Copier so you never need to remember its flags. It reads `.copier-answers.yml` (written automatically by `copier copy` when the template is fetched from a real git ref like `gh:Cognitivemesh/pyarnes`), finds the pinned pyarnes ref, and pulls template improvements into the project. Conflicts (if any) are surfaced interactively.
 
 ## Source
 
