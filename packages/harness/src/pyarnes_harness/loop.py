@@ -361,7 +361,7 @@ class AgentLoop:
             raise
         except LLMRecoverableError as exc:
             msg = self._recoverable_error_message(tool_call_id, exc)
-            self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
+            await self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
             return msg
         return None
 
