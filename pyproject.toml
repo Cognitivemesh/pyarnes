@@ -71,6 +71,7 @@ dev = [
     # Docstring generation
     "doq>=0.10",
     # Documentation site
+    "mike>=2.1",
     "mkdocs-material>=9.6",
     "mkdocstrings[python]>=0.30",
     "mkdocs-monorepo-plugin>=1.1",
@@ -78,6 +79,7 @@ dev = [
     "mkdocs-section-index>=0.3",
     "mkdocs-redirects>=1.2",
     "mkdocs-glightbox>=0.4",
+    "mkdocs-git-revision-date-localized-plugin>=1.2",
     # Markdown & YAML
     "pymarkdownlnt>=0.9",
     "mdformat>=1.0",

@@ -41,7 +41,19 @@ jobs:
       - name: Sync workspace
         run: uv sync --frozen
 
+      - name: Validate redirect targets
+        run: uv run python scripts/validate_redirects.py
+
       - name: Build docs (strict)
         # Strict mode fails on any broken internal link, missing nav target,
         # or unresolved redirect — catches bad PRs before merge.
         run: uv run mkdocs build --strict
+
+      - name: Install lychee
+        uses: taiki-e/install-action@v2
+        with:
+          tool: lychee
+
+      - name: Link-check rendered site
+        # Fail on any broken links in the rendered static site output.
+        run: lychee --base . --verbose ./site

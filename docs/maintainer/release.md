@@ -39,6 +39,10 @@ flowchart LR
    pyarnes_ref: vX.Y.Z
    ```
    then running `uv run tasks update` (wraps `uvx copier update`) followed by `uv sync` to resolve the new git URLs.
+6. Publish versioned docs (starting with the next release cut):
+   ```bash
+   mike deploy vX.Y.Z latest -u
+   ```
 
 ## Releasing a pinned template version
 
