@@ -1,0 +1,36 @@
+name: publish
+
+"on":
+  push:
+    tags:
+      - pyarnes-tasks-v*
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: build and publish pyarnes-tasks
+    if: startsWith(github.ref, 'refs/tags/pyarnes-tasks-v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Sync workspace
+        run: uv sync --frozen
+
+      - name: Build pyarnes-tasks
+        run: uv build --package pyarnes-tasks
+
+      - name: Publish to PyPI
+        run: uv publish --package pyarnes-tasks
