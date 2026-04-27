@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from pyarnes_core.atomic_write import append_private, write_private
 from pyarnes_core.budget import Budget
+from pyarnes_core.error_registry import ErrorHandlerRegistry
 from pyarnes_core.errors import (
     HarnessError,
     LLMRecoverableError,
@@ -28,6 +29,7 @@ from pyarnes_core.types import JudgeClient, ModelClient, ToolHandler
 
 __all__ = [
     "Budget",
+    "ErrorHandlerRegistry",
     "HarnessError",
     "JudgeClient",
     "LLMRecoverableError",

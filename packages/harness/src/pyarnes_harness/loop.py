@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from pyarnes_core.dispatch import (
     ActionKind,
@@ -33,6 +33,7 @@ from pyarnes_core.dispatch import (
     merge_retry_caps,
     next_delay,
 )
+from pyarnes_core.error_registry import ErrorHandlerRegistry
 from pyarnes_core.errors import (
     HarnessError,
     LLMRecoverableError,
@@ -139,6 +140,9 @@ class AgentLoop:
             tool execution. ``None`` skips all guardrail checks.
         agent_context: Optional domain-specific guidance injected into the
             system message before the first iteration.
+        error_registry: Optional registry of custom async recovery handlers.
+            When set, the registry is consulted in the ``HarnessError``
+            catch-all branch before falling through to ``UnexpectedError``.
     """
 
     tools: dict[str, ToolHandler]
@@ -147,6 +151,7 @@ class AgentLoop:
     tool_call_logger: ToolCallLogger | None = None
     guardrail_chain: GuardrailChain | None = None
     agent_context: AgentContext | None = None
+    error_registry: ErrorHandlerRegistry | None = None
 
     async def run(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Execute the agent loop until completion or limit.
@@ -307,6 +312,14 @@ class AgentLoop:
                 raise
 
             except HarnessError as exc:
+                if self.error_registry is not None:
+                    custom_result = await self.error_registry.dispatch(exc)
+                    if custom_result is not None:
+                        msg = cast(ToolMessage, custom_result)
+                        await self._log_tool_call(
+                            name, arguments, msg, started_at=started_at, start_mono=start_mono
+                        )
+                        return msg
                 raise UnexpectedError(
                     message=f"Unexpected harness error in tool '{name}': {exc}",
                     original=exc,

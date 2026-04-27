@@ -9,14 +9,16 @@ from typing import Any
 import pytest
 
 from pyarnes_core import Lifecycle, Phase
+from pyarnes_core.error_registry import ErrorHandlerRegistry
 from pyarnes_core.errors import (
+    HarnessError,
     LLMRecoverableError,
     TransientError,
     UnexpectedError,
     UserFixableError,
 )
 from pyarnes_core.types import ModelClient, ToolHandler
-from pyarnes_harness.loop import AgentLoop, LoopConfig
+from pyarnes_harness.loop import AgentLoop, LoopConfig, ToolMessage
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -485,3 +487,74 @@ class TestReflectionInterval:
         )
         await loop.run([])
         assert reflections == []
+
+
+# ── ErrorHandlerRegistry integration ──────────────────────────────────────
+
+
+@dataclass(frozen=True, slots=True)
+class _CustomHarnessError(HarnessError):
+    """Custom HarnessError subtype used in ErrorHandlerRegistry integration tests."""
+
+
+class TestErrorRegistryIntegration:
+    """AgentLoop consults ErrorHandlerRegistry in the HarnessError catch-all branch."""
+
+    @pytest.mark.asyncio()
+    async def test_registered_handler_short_circuits_unexpected_error(self) -> None:
+        """A handler that returns a ToolMessage prevents UnexpectedError from raising."""
+        replacement = ToolMessage(tool_call_id="c1", content="recovered", is_error=True)
+
+        async def handler(exc: HarnessError) -> ToolMessage:
+            return replacement
+
+        registry = ErrorHandlerRegistry()
+        registry.register(_CustomHarnessError, handler)
+
+        tool = FailingTool(exc=_CustomHarnessError(message="custom"))
+        model = FakeModel(
+            actions=[
+                {"type": "tool_call", "tool": "t", "id": "c1", "arguments": {}},
+                {"type": "final_answer", "content": "done"},
+            ]
+        )
+        loop = AgentLoop(tools={"t": tool}, model=model, error_registry=registry)
+        result = await loop.run([])
+        tool_msgs = [m for m in result if m.get("role") == "tool"]
+        assert tool_msgs[0]["content"] == "recovered"
+        assert tool_msgs[0]["is_error"] is True
+
+    @pytest.mark.asyncio()
+    async def test_handler_returning_none_falls_through_to_unexpected_error(self) -> None:
+        """When the handler returns None, UnexpectedError is still raised."""
+
+        async def none_handler(exc: HarnessError) -> None:
+            return None
+
+        registry = ErrorHandlerRegistry()
+        registry.register(_CustomHarnessError, none_handler)
+
+        tool = FailingTool(exc=_CustomHarnessError(message="still unexpected"))
+        model = FakeModel(
+            actions=[
+                {"type": "tool_call", "tool": "t", "id": "c2", "arguments": {}},
+            ]
+        )
+        loop = AgentLoop(tools={"t": tool}, model=model, error_registry=registry)
+        with pytest.raises(UnexpectedError):
+            await loop.run([])
+
+    @pytest.mark.asyncio()
+    async def test_unregistered_harness_error_raises_unexpected(self) -> None:
+        """HarnessError subtypes with no registered handler still raise UnexpectedError."""
+        registry = ErrorHandlerRegistry()  # empty — no handlers
+
+        tool = FailingTool(exc=_CustomHarnessError(message="unhandled"))
+        model = FakeModel(
+            actions=[
+                {"type": "tool_call", "tool": "t", "id": "c3", "arguments": {}},
+            ]
+        )
+        loop = AgentLoop(tools={"t": tool}, model=model, error_registry=registry)
+        with pytest.raises(UnexpectedError):
+            await loop.run([])
