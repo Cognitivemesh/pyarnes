@@ -164,6 +164,7 @@ nav:
   - Adopter:
       - adopter/index.md
       - Evaluate:
+          - When to use pyarnes: adopter/evaluate/when-to-use.md
           - Core concepts: adopter/evaluate/concepts.md
           - Distribution model: adopter/evaluate/distribution.md
           - Error taxonomy: adopter/evaluate/errors.md
@@ -176,7 +177,9 @@ nav:
           - Install & verify: adopter/bootstrap/install.md
           - First steps: adopter/bootstrap/first-steps.md
       - Build:
+          - LLM integration: adopter/build/llm-integration.md
           - Quick start: adopter/build/quickstart.md
+          - Troubleshooting: adopter/build/troubleshooting.md
           - Packages overview: adopter/build/packages.md
           - Task runner: adopter/build/tasks.md
           - Skills: adopter/build/skills.md
