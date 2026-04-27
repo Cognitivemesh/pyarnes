@@ -197,10 +197,10 @@ class TestRaceScoreAlignment:
 
 class TestHypothesisInvariants:
     @given(
-        target_score=st.floats(min_value=0.0, max_value=1.0),
-        ref_score=st.floats(min_value=0.0, max_value=1.0),
+        target_score=st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
+        ref_score=st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
     )
-    @settings(max_examples=20, deadline=None)
+    @settings(max_examples=500, deadline=None)
     @pytest.mark.asyncio
     async def test_final_score_always_bounded(self, target_score: float, ref_score: float) -> None:
         def scorer(prompt: str) -> float:
@@ -214,3 +214,47 @@ class TestHypothesisInvariants:
             reference_report="baseline body",
         )
         assert 0.0 <= score.final_score <= 1.0
+
+    @given(
+        ref_score=st.floats(min_value=0.0, max_value=0.99, allow_nan=False),
+    )
+    @settings(max_examples=200, deadline=None)
+    @pytest.mark.asyncio
+    async def test_perfect_target_always_beats_reference(self, ref_score: float) -> None:
+        """When target scores 1.0 and reference < 1.0, final_score must be > 0.5."""
+
+        def scorer(prompt: str) -> float:
+            return 1.0 if "TGT_MARK" in prompt else ref_score
+
+        judge = ScriptedJudge(score_fn=scorer)
+        evaluator = RaceEvaluator(client=judge, trials=1)
+        score = await evaluator.evaluate(
+            task_prompt="t",
+            target_report="TGT_MARK body",
+            reference_report="baseline body",
+        )
+        assert score.final_score > 0.5
+
+    @given(
+        score_a=st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
+        score_b=st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
+    )
+    @settings(max_examples=300, deadline=None)
+    @pytest.mark.asyncio
+    async def test_equal_scores_always_yield_half(
+        self, score_a: float, score_b: float
+    ) -> None:
+        """When both target and reference are judged identically, final_score == 0.5."""
+        same = score_a  # noqa: F841 — both sides use the same score value
+
+        def scorer(prompt: str) -> float:
+            return score_a  # same for both
+
+        judge = ScriptedJudge(score_fn=scorer)
+        evaluator = RaceEvaluator(client=judge, trials=1)
+        score = await evaluator.evaluate(
+            task_prompt="t",
+            target_report="TGT body",
+            reference_report="REF body",
+        )
+        assert score.final_score == pytest.approx(0.5)

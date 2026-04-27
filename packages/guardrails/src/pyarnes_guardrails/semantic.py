@@ -60,7 +60,9 @@ class SemanticGuardrail(AsyncGuardrail):
                 message=f"Semantic guardrail judge failed: {exc}",
             ) from exc
 
-        if score < self.threshold:
+        # `not (score >= threshold)` blocks both sub-threshold scores and NaN,
+        # which float comparisons would otherwise silently pass.
+        if not (score >= self.threshold):
             log_warning(
                 logger,
                 "guardrail.semantic_blocked",
