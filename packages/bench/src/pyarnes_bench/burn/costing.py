@@ -10,9 +10,11 @@ maintenance burden every time a model is added or repriced.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from decimal import Decimal
 from typing import Protocol
 
+from pyarnes_bench.burn.normalize import ModelAlias, resolve_model
 from pyarnes_bench.burn.types import Cost, TokenUsage
 
 __all__ = [
@@ -58,9 +60,22 @@ class LiteLLMCostCalculator:
                 eur = Cost(raw.amount * Decimal("0.92"), "EUR")
     """
 
-    def __init__(self, currency: str = "USD") -> None:
-        """Initialise the calculator with an ISO 4217 currency code."""
+    def __init__(
+        self,
+        currency: str = "USD",
+        *,
+        aliases: Mapping[str, ModelAlias] | None = None,
+    ) -> None:
+        """Initialise the calculator with an ISO 4217 currency code.
+
+        Args:
+            currency: ISO 4217 code stored on returned :class:`Cost` objects.
+            aliases: Optional model-alias map. Proxy names like
+                ``my-proxy-opus`` are resolved to their canonical model
+                id before LiteLLM lookup.
+        """
         self._currency = currency
+        self._aliases = aliases
 
     def calculate(self, model_id: str, usage: TokenUsage) -> Cost | None:
         """Look up model pricing via LiteLLM and compute total cost.
@@ -72,10 +87,11 @@ class LiteLLMCostCalculator:
         Returns:
             A ``Cost``, or ``None`` if LiteLLM does not know the model.
         """
+        canonical_id = resolve_model(model_id, self._aliases)
         try:
             import litellm  # deferred: keeps litellm optional at module load time  # noqa: PLC0415
 
-            pricing = litellm.model_cost.get(model_id)
+            pricing = litellm.model_cost.get(canonical_id)
         except ImportError:
             return None
 

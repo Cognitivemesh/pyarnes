@@ -15,13 +15,17 @@ Usage::
     uv run tasks burn:report -- --project pyarnes
     uv run tasks burn:report -- --base /custom/.claude/projects
     uv run tasks burn:report -- --format json
+    uv run tasks burn:report -- --by-model
+    uv run tasks burn:report -- --exclude internal-* --exclude scratch
 """
 
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import json
 import sys
+from collections.abc import Sequence
 from decimal import Decimal
 from functools import reduce
 from pathlib import Path
@@ -43,6 +47,17 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         "--project",
         default=None,
         help="Filter output to a single project directory name.",
+    )
+    parser.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        help="Glob patterns to drop from the output (repeatable).",
+    )
+    parser.add_argument(
+        "--by-model",
+        action="store_true",
+        help="Group rows by (project, model_family) instead of project alone.",
     )
     parser.add_argument(
         "--currency",
@@ -91,6 +106,10 @@ def _short_name(project: str) -> str:
     return parts[-1] if parts else project
 
 
+def _matches_any(slug: str, patterns: Sequence[str]) -> bool:
+    return any(fnmatch.fnmatchcase(slug, pat) for pat in patterns)
+
+
 def _render_table(rows: list[dict[str, Any]], totals: dict[str, Any]) -> None:
     headers = list(totals.keys())
     all_rows = [*rows, totals]
@@ -125,6 +144,8 @@ def main() -> int:
     sessions_all = report.get(provider.tool_name, [])
     if args.project:
         sessions_all = [s for s in sessions_all if _short_name(s.project) == args.project]
+    if args.exclude:
+        sessions_all = [s for s in sessions_all if not _matches_any(_short_name(s.project), args.exclude)]
 
     if not sessions_all:
         print("No sessions found.", file=sys.stderr)  # noqa: T201
@@ -132,16 +153,16 @@ def main() -> int:
 
     from pyarnes_bench.burn.types import TokenUsage  # noqa: PLC0415
 
-    # Aggregate per project slug; accumulate totals in the same pass
-    by_project: dict[str, list[Any]] = {}
+    by_key: dict[tuple[str, ...], list[Any]] = {}
     for s in sessions_all:
         slug = _short_name(s.project)
-        by_project.setdefault(slug, []).append(s)
+        key = (slug, s.metadata.model_family) if args.by_model else (slug,)
+        by_key.setdefault(key, []).append(s)
 
     rows: list[dict[str, Any]] = []
     grand_usage = TokenUsage()
     grand_cost = Decimal(0)
-    for slug, sessions in sorted(by_project.items()):
+    for key, sessions in sorted(by_key.items()):
         usage = reduce(lambda a, b: a + b.usage, sessions, TokenUsage())
         cost_total = sum(
             (s.cost.amount for s in sessions if s.cost is not None),
@@ -149,9 +170,11 @@ def main() -> int:
         )
         grand_usage = grand_usage + usage
         grand_cost += cost_total
-        rows.append(
+        row: dict[str, Any] = {"project": key[0]}
+        if args.by_model:
+            row["model_family"] = key[1] or "(unknown)"
+        row.update(
             {
-                "project": slug,
                 "sessions": len(sessions),
                 "input": f"{usage.input_tokens:,}",
                 "output": f"{usage.output_tokens:,}",
@@ -160,16 +183,19 @@ def main() -> int:
                 "cost": f"{cost_total:.4f} {args.currency}",
             }
         )
+        rows.append(row)
 
-    totals = {
-        "project": "TOTAL",
+    totals: dict[str, Any] = {"project": "TOTAL"}
+    if args.by_model:
+        totals["model_family"] = ""
+    totals.update({
         "sessions": str(len(sessions_all)),
         "input": f"{grand_usage.input_tokens:,}",
         "output": f"{grand_usage.output_tokens:,}",
         "cache-create": f"{grand_usage.cache_creation_tokens:,}",
         "cache-read": f"{grand_usage.cache_read_tokens:,}",
         "cost": f"{grand_cost:.4f} {args.currency}",
-    }
+    })
 
     if args.format == "json":
         payload = {

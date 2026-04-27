@@ -109,6 +109,10 @@ def _build_tasks() -> tuple[dict[str, list[str]], Path]:
         "bench:report": [py, "-m", "pyarnes_tasks.bench_report"],
         # Burn: token cost report across AI coding sessions.
         "burn:report": [py, "-m", "pyarnes_tasks.burn_report"],
+        # Codeburn: KPIs, model comparison, and waste-detection scan.
+        "codeburn:kpis":     [py, "-m", "pyarnes_tasks.codeburn_kpis"],
+        "codeburn:compare":  [py, "-m", "pyarnes_tasks.codeburn_compare"],
+        "codeburn:optimize": [py, "-m", "pyarnes_tasks.codeburn_optimize"],
     }
 
     if tests:

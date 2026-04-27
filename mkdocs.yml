@@ -198,6 +198,7 @@ nav:
           - Task runner: adopter/build/tasks.md
           - Skills: adopter/build/skills.md
           - Benchmarking: adopter/build/benchmarking.md
+          - AI spend (codeburn): adopter/build/codeburn.md
           - Production guide: adopter/build/production.md
   - Maintainer:
       - maintainer/index.md
