@@ -48,7 +48,7 @@ tests = ["tests"]
 [dependency-groups]
 dev = [
     # Type checking
-    "ty>=0.0.1",
+    "ty>=0.0.32",
     # Testing
     "pytest>=8.0",
     "pytest-bdd>=8.0",
@@ -56,7 +56,7 @@ dev = [
     "pytest-watch>=4.2",
     "pytest-asyncio>=0.25",
     "pytest-sugar>=1.0",
-    "hypothesis>=6.119",
+    "hypothesis>=6.152.2",
     # Linting & formatting
     "ruff>=0.11",
     "pylint>=3.0",
@@ -92,7 +92,7 @@ dev = [
 # Kept separate from `dev` — pulls heavy native deps (tree-sitter, Whisper).
 graph = [
     "code-review-graph>=2.3.2",
-    "graphifyy>=0.1",  # PyPI name has two y's; CLI is `graphify`
+    "graphifyy>=0.5.0",  # PyPI name has two y's; CLI is `graphify`
 ]
 
 # ---------------------------------------------------------------------------
