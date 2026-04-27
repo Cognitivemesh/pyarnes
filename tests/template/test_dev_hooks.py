@@ -77,15 +77,19 @@ def test_pre_tool_hook_allows_safe_call(hooks_project: Path) -> None:
 
 
 def test_post_tool_hook_appends_jsonl(hooks_project: Path) -> None:
-    """The post-tool hook writes one JSONL record with the expected fields."""
+    """The post-tool hook writes one JSONL record with the expected fields.
+
+    CC's PostToolUse payload does NOT carry ``started_at`` / ``finished_at``
+    today, so the hook does not compute a duration — the assertion here
+    matches what the real event surface delivers.
+    """
     script = hooks_project / ".claude" / "hooks" / "pyarnes_post_tool.py"
     event = {
+        "session_id": "sess01",
         "tool_name": "Edit",
         "tool_input": {"file_path": "foo.py"},
         "tool_response": "ok",
         "is_error": False,
-        "started_at": 1.0,
-        "finished_at": 1.5,
     }
     result = _run_hook(script, event, cwd=hooks_project)
     assert result.returncode == 0, result.stderr
@@ -95,4 +99,10 @@ def test_post_tool_hook_appends_jsonl(hooks_project: Path) -> None:
     record = json.loads(log_file.read_text().strip().splitlines()[-1])
     assert record["tool"] == "Edit"
     assert record["is_error"] is False
-    assert record["duration_seconds"] == pytest.approx(0.5)
+    assert record["result"] == "ok"
+
+    # The hook also drops a flat Budget counter keyed by session_id.
+    budget_file = hooks_project / ".claude" / "pyarnes" / "budget-sess01.json"
+    assert budget_file.is_file()
+    budget = json.loads(budget_file.read_text())
+    assert budget["calls"] == 1

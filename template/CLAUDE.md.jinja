@@ -1,135 +1,31 @@
-# {{ project_name }} — Project Instructions
+# {{ project_name }} — Claude Code Instructions
 
-## What is this?
+**This file defers to [`AGENTS.md`](./AGENTS.md)** — the shared source
+of truth for every AI coding CLI used with this project (Claude Code,
+Codex, Cursor, Gemini, Aider). Any rule that belongs to all CLIs lives
+there, not here.
 
-{{ project_description }}
+## Claude Code specifics
 
-Built on top of the [pyarnes](https://github.com/Cognitivemesh/pyarnes) agentic harness, which provides verification loops, safety guardrails, and lifecycle management that AI coding tools miss.
+The rest of this file is reserved for Claude-Code-only guidance (for
+example, custom slash commands or Claude-Code MCP servers). Today there
+is nothing Claude-specific beyond what `AGENTS.md` already covers.
 
-## Agent Behavioral Guidelines
+{% if enable_dev_hooks -%}
+### Hooks
 
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
+Claude Code hooks are wired from `.claude/settings.json`:
 
-**Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
+- `PreToolUse` → `.claude/hooks/pyarnes_pre_tool.py` (guardrail chain
+  including `SecretLeakGuardrail`, `NetworkEgressGuardrail`,
+  `RateLimitGuardrail`).
+- `PostToolUse` → `.claude/hooks/pyarnes_post_tool.py` (output secret
+  scan + tool-call audit trail + budget tick).
+- `Stop` → `.claude/hooks/pyarnes_stop.py` (terminal budget check).
+- `SessionStart` / `SessionEnd` → `.claude/hooks/pyarnes_session_*.py`
+  (Lifecycle checkpoint load/dump).
 
-## 1. Think Before Coding
-
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
-
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
-
-## 2. Simplicity First
-
-**Minimum code that solves the problem. Nothing speculative.**
-
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
-
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
-
-## 3. Surgical Changes
-
-**Touch only what you must. Clean up only your own mess.**
-
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
-
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
-
-The test: Every changed line should trace directly to the user's request.
-
-## 4. Goal-Driven Execution
-
-**Define success criteria. Loop until verified.**
-
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-
-For multi-step tasks, state a brief plan:
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
-
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
-
----
-
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
-
-## Quick commands
-
-```bash
-uv run tasks help        # list all tasks
-uv run tasks test        # run tests
-uv run tasks check       # lint + typecheck + test
-uv run tasks watch       # TDD watch mode
-uv run tasks format      # auto-format
-uv run tasks lint        # ruff lint
-uv run tasks security    # bandit security scan
-uv run tasks update      # pull latest pyarnes template improvements (wraps copier)
-```
-
-## Error taxonomy (from pyarnes)
-
-| Type | Behaviour |
-|---|---|
-| `TransientError` | Retry with exponential backoff (cap: 2) |
-| `LLMRecoverableError` | Return as ToolMessage so the model adjusts |
-| `UserFixableError` | Interrupt for human input |
-| `UnexpectedError` | Bubble up for debugging |
-
-All four types live in `pyarnes_core.errors`.
-
-## Project layout
-
-- `src/{{ project_module }}/pipeline.py` — the `AgentLoop` builder (registry + chain + loop)
-- `src/{{ project_module }}/cli.py` — Typer CLI; entry point `{{ project_module }}`
-- `src/{{ project_module }}/tools/` — project-specific `ToolHandler` subclasses
-- `src/{{ project_module }}/guardrails.py` — project-specific `Guardrail` subclasses
-- `tests/` — your tests (start empty; the python-test skill scaffolds as needed)
-- `docs/` — MkDocs Material documentation source
-
-**Adopter shape:** `{{ adopter_shape }}`{% if adopter_shape != "blank" %} — starter stubs under `tools/` and `guardrails.py` reflect this shape. Extend them with real integrations.{% endif %}
-
-## pyarnes dependencies (installed via git URLs)
-
-| Package | What it provides |
-|---|---|
-| `pyarnes_core` | Types (`ToolHandler`, `ModelClient`), error taxonomy, lifecycle FSM, JSONL logging |
-| `pyarnes_harness` | `AgentLoop`, `ToolRegistry`, output capture, tool-call logger |
-| `pyarnes_guardrails` | `PathGuardrail`, `CommandGuardrail`, `GuardrailChain` |
-| `pyarnes_bench` | Evaluation scoring framework |
-| `pyarnes_tasks` | The `tasks` CLI that `uv run tasks …` invokes |
-
-## Conventions
-
-- All code is **async-first** (asyncio) to avoid GIL contention.
-- Logging goes to **stderr** as JSONL via **loguru**; stdout is reserved for tool results.
-- Docstrings follow **PEP 257** conventions (Google style).
-- Use Red → Green → Refactor TDD workflow when adding behaviour.
-- Types are enforced via `ruff` + `ty`.
-
-## Functional utilities (included, use them)
-
-| Library | When to use |
-|---|---|
-| `returns` | Explicit error paths — wrap risky operations in `Result`/`Maybe` instead of bare `try/except` |
-| `toolz` | Data transformation pipelines — `pipe(data, step1, step2)`, `compose`, `curry` |
-| `funcy` | Collection helpers — `lmap`, `lfilter`, `chunks`, `take`, `distinct` on tool result lists |
-| `more-itertools` | Advanced iteration — `batched`, `windowed`, `flatten` for streaming tool outputs |
+Runtime state persists to `.claude/pyarnes/` (gitignored). Violation
+records go to `.claude/pyarnes/violations.jsonl` and are consumed by
+`pyarnes_bench.GuardrailComplianceScorer`.
+{% endif %}

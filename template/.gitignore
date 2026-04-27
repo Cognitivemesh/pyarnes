@@ -198,6 +198,10 @@ cython_debug/
 *.jsonl
 logs/
 
+# pyarnes hook runtime state (budget, checkpoint, rate-limit, violations)
+.claude/pyarnes/
+.pyarnes/
+
 # PyPI configuration file
 .pypirc
 

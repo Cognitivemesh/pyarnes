@@ -16,6 +16,7 @@ import pytest
 STABLE_SURFACE: dict[str, frozenset[str]] = {
     "pyarnes_core": frozenset(
         {
+            "Budget",
             "HarnessError",
             "LLMRecoverableError",
             "Lifecycle",
@@ -27,8 +28,11 @@ STABLE_SURFACE: dict[str, frozenset[str]] = {
             "TransientError",
             "UnexpectedError",
             "UserFixableError",
+            "append_private",
             "configure_logging",
             "get_logger",
+            "safe_session_id",
+            "write_private",
         }
     ),
     "pyarnes_harness": frozenset(
@@ -46,6 +50,8 @@ STABLE_SURFACE: dict[str, frozenset[str]] = {
             "ToolCallLogger",
             "ToolMessage",
             "ToolRegistry",
+            "read_cc_session",
+            "resolve_cc_session_path",
         }
     ),
     "pyarnes_guardrails": frozenset(
@@ -53,8 +59,14 @@ STABLE_SURFACE: dict[str, frozenset[str]] = {
             "CommandGuardrail",
             "Guardrail",
             "GuardrailChain",
+            "NetworkEgressGuardrail",
             "PathGuardrail",
+            "RateLimitGuardrail",
+            "SecretLeakGuardrail",
             "ToolAllowlistGuardrail",
+            "Violation",
+            "append_violation",
+            "default_violation_log_path",
         }
     ),
     "pyarnes_bench": frozenset(
@@ -66,6 +78,7 @@ STABLE_SURFACE: dict[str, frozenset[str]] = {
             "FactEvaluator",
             "FactMetrics",
             "FactPrompts",
+            "GuardrailComplianceScorer",
             "RaceCriterion",
             "RaceDimension",
             "RaceEvaluator",
@@ -73,6 +86,8 @@ STABLE_SURFACE: dict[str, frozenset[str]] = {
             "RaceScore",
             "RaceWeights",
             "Scorer",
+            "ToolUseCorrectnessScorer",
+            "TrajectoryLengthScorer",
             "effective_citations_across",
         }
     ),

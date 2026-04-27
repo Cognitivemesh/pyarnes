@@ -1,5 +1,22 @@
 # harness-loop-budget-hooks
 
+**Status:** Implemented (library primitives + Claude Code hook wiring).
+Last refreshed 2026-04-22.
+
+- `Budget` lives at `pyarnes_core.budget:Budget` and is re-exported via
+  `pyarnes_core.__init__`.
+- `Lifecycle` grew `.budget` + `.dump(path)` + `.load(path)` so a
+  Claude Code `SessionEnd` hook can snapshot state and `SessionStart`
+  can restore it.
+- The Claude Code `Stop` hook (`template/.claude/hooks/pyarnes_stop.py`)
+  reads the checkpoint and emits
+  `{"continue": false, "stopReason": …}` when a cap is hit — the only
+  CC-documented mechanism for ending a session mid-flight.
+- Token accounting is best-effort: current CC transcripts carry
+  `message.usage.input_tokens` / `output_tokens` but the JSONL schema
+  is not a public contract, so call-count and wall-time caps are the
+  reliable enforcement path.
+
 Contract for three opt-in `LoopConfig` hooks — `budget`, `guardrails`,
 `lifecycle` — plus a `LoopBudget` type in `pyarnes_core.types` and the
 async-scorer migration that these hooks enable.

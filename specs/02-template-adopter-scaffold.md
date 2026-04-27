@@ -1,5 +1,13 @@
 # 02 — Copier template for adopter scaffolding
 
+**Status:** Implemented — verified by `tests/template/test_scaffold.py`.
+Last refreshed 2026-04-22 to document `template/AGENTS.md.jinja` as the
+cross-CLI source of truth and the five Claude Code hook entrypoints
+(`pyarnes_pre_tool.py`, `pyarnes_post_tool.py`, `pyarnes_stop.py`,
+`pyarnes_session_start.py`, `pyarnes_session_end.py`) that
+`template/.claude/settings.json.jinja` wires when `enable_dev_hooks`
+is set.
+
 ## Context
 
 The plan's distribution recommendation is **library-first, adopter owns the CLI, `pyarnes-tasks` is dev-only**. For this to work in practice, `uvx copier copy gh:Cognitivemesh/pyarnes <dest>` must produce a project that already pulls pyarnes packages as git deps (pinned to `pyarnes_ref`), already has `[tool.pyarnes-tasks]` configured, and already contains a starter `pipeline.py` + `cli.py` that demonstrate the three-part contract (register tools → compose guardrails → run the loop).

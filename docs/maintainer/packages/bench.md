@@ -34,6 +34,7 @@ graph TB
 | `scorer.py` | `Scorer` ABC with `score(expected, actual) -> float` + `ExactMatchScorer` built-in. |
 | `race.py` | `RaceEvaluator` (post-hoc LLM-as-judge, 4 dimensions, reference-normalized) + Pydantic result models (`RaceScore`, `RaceWeights`, `RaceCriterion`, `RacePrompts`, `RaceDimension`). |
 | `fact.py` | `FactEvaluator` (citation accuracy + effective citations, adopter-supplied sources) + Pydantic result models (`FactMetrics`, `CitationClaim`, `FactPrompts`) and `effective_citations_across` helper. |
+| `scorers.py` | Trajectory scorers — `ToolUseCorrectnessScorer`, `TrajectoryLengthScorer`, `GuardrailComplianceScorer`. Consume `Iterable[ToolCallEntry]` so one scorer grades in-process `AgentLoop` runs and Claude Code transcripts alike. |
 | `_judge.py` | Private — `judge_json(client, prompt, PydanticModel)` helper with single retry + `LLMRecoverableError` on persistent failure. |
 | `_citations.py` | Private — `strip_markers` + `URL_RE` utilities shared by report evaluators. |
 
@@ -43,7 +44,8 @@ Repo-wide rules live in [Architecture § Cross-cutting design principles](../ext
 
 - **Adopter evaluation, not library benchmarks.** This package exists so adopters can measure whether their agent pipeline actually works — not for benchmarking pyarnes itself.
 - **Scorer is pluggable.** Exact-match is the 80 % case; fuzzy scorers, LLM-judge scorers, and domain-specific scorers are all adopter responsibilities. The ABC keeps them swap-in.
-- **Zero dep surface.** Only depends on `pyarnes-core`. No test framework, no HTTP, no reporters — stays a library, not a framework.
+- **Cross-CLI trajectory scoring.** The three `scorers.py` entries all consume `ToolCallEntry` iterables, so one scorer grades a run from `ToolCallLogger`, from `read_cc_session` (Claude Code), or from any other CLI whose hooks persist `ToolCallEntry` records — no per-CLI adapter.
+- **Zero runtime CLI coupling.** Depends on `pyarnes-core` + `pyarnes-harness` for the `ToolCallEntry` shape. No test framework, no HTTP, no reporters — stays a library, not a framework.
 
 ## Key flows
 

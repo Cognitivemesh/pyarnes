@@ -17,7 +17,11 @@ Inter-package deps live in [Architecture § Package graph](../extend/architectur
 | `PathGuardrail` | Blocks paths outside allowed roots. |
 | `CommandGuardrail` | Blocks shell commands matching dangerous regex patterns. |
 | `ToolAllowlistGuardrail` | Blocks tools not in an allowlist. |
+| `SecretLeakGuardrail` | Blocks tool calls (or tool responses) containing common secret shapes (AWS, GH, Anthropic, Google, Slack, PEM). |
+| `NetworkEgressGuardrail` | Blocks URLs whose host is not on the allowlist — wires ahead of `Bash` / `WebFetch`. |
+| `RateLimitGuardrail` | Denies calls that exceed a per-tool sliding window; state persisted to disk so it survives short-lived hook processes. |
 | `GuardrailChain` | Runs a list of guardrails in order; first violation short-circuits. |
+| `Violation` + `append_violation` | Sidecar JSONL writer for detected blocks; consumed by `pyarnes_bench.GuardrailComplianceScorer`. |
 
 ## Why this package exists
 
@@ -132,6 +136,46 @@ g = ToolAllowlistGuardrail(allowed_tools=frozenset({"echo", "read_file"}))
 g.check("echo", {})         # OK
 g.check("delete_all", {})   # raises UserFixableError
 ```
+
+### SecretLeakGuardrail
+
+Scans every string reachable in the tool arguments (or in the tool response, when wired into a PostToolUse hook via `{"output": tool_response}`) against a set of well-known secret patterns.
+
+| Field | Default | Description |
+|---|---|---|
+| `extra_patterns` | `()` | Additional regex patterns on top of the built-in set |
+| `scan_keys` | `()` | When non-empty, restrict scanning to these top-level keys |
+
+```python
+g = SecretLeakGuardrail()
+g.check("Bash", {"command": "aws s3 cp s3://b AKIAABCDEFGHIJKLMNOP"})  # raises UserFixableError
+```
+
+PostToolUse hooks cannot redact the tool response — detection there is
+detect-and-halt. Blocks are recorded via `append_violation` so the
+bench `GuardrailComplianceScorer` can grade the session.
+
+### NetworkEgressGuardrail
+
+Lexical URL scanner with an allowlist / denylist. Suitable for `Bash`
+(URLs in `curl`/`wget` commands) and `WebFetch` tool arguments.
+
+| Field | Default | Description |
+|---|---|---|
+| `allowed_hosts` | `()` | Hosts permitted — subdomains match automatically (`"example.com"` allows `"api.example.com"`). Empty tuple = deny-only mode. |
+| `denied_hosts` | `()` | Hosts always blocked, even when also allowed |
+
+### RateLimitGuardrail
+
+Per-tool sliding window persisted to disk (default:
+`$CLAUDE_PROJECT_DIR/.claude/pyarnes/rate_limit.json`) so state
+survives a short-lived PreToolUse hook process.
+
+| Field | Default | Description |
+|---|---|---|
+| `max_calls` | `60` | Upper bound on calls inside the window |
+| `window_seconds` | `60.0` | Window width |
+| `state_path` | `None` | Override for the on-disk file |
 
 ### GuardrailChain
 

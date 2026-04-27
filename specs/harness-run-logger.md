@@ -1,5 +1,17 @@
 # harness-run-logger
 
+**Status:** Implemented. Last refreshed 2026-04-22.
+
+## Sources
+
+Two trajectory sources land in the same `ToolCallEntry` shape, so
+downstream bench scorers don't care which one produced a run:
+
+| Source | Writer | Adapter |
+|---|---|---|
+| In-process `AgentLoop` | `pyarnes_harness.ToolCallLogger` (JSONL) | `ToolCallLogger` writes `ToolCallEntry` directly. |
+| Claude Code session | Claude Code writes `~/.claude/projects/<escaped-cwd>/<session>.jsonl` (schema undocumented). | `pyarnes_harness.read_cc_session(path)` / `resolve_cc_session_path(cwd, session_id)` map the transcript into `ToolCallEntry` iterables, locked to the captured fixture at `tests/unit/fixtures/cc_session_sample.jsonl`. |
+
 Contract for per-run persistence of evaluation artefacts in
 `pyarnes-harness`, with an optional async **Turso** (libSQL) sink
 alongside the default JSONL writer. Stdlib `sqlite3` is **forbidden**.

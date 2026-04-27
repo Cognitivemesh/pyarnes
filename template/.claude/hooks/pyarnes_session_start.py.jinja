@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+"""Claude Code SessionStart hook — rehydrate Lifecycle checkpoint if present.
+
+Reads the checkpoint written by the matching ``SessionEnd`` hook (keyed
+by ``session_id``). When a checkpoint exists, transitions are not
+replayed — only the snapshotted ``phase`` + ``metadata`` + ``budget``
+are restored and surfaced via ``additionalContext`` so the model knows
+the session is resuming.
+
+A missing or corrupt checkpoint is treated as "fresh start" — we do
+NOT want a malformed file to block session startup.
+"""
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+from pyarnes_core import Lifecycle, safe_session_id
+
+_STATE_DIR = Path(".claude/pyarnes")
+
+
+def _checkpoint_path(session_id: str) -> Path:
+    return _STATE_DIR / f"checkpoint-{session_id}.json"
+
+
+def main() -> int:
+    """Entry point; emits additionalContext when a checkpoint is found."""
+    event = json.load(sys.stdin)
+    session_id = safe_session_id(event.get("session_id"))
+    path = _checkpoint_path(session_id)
+    if not path.is_file():
+        return 0
+
+    try:
+        lifecycle = Lifecycle.load(path)
+    except ValueError:
+        # Corrupt checkpoint — do not block session startup. The
+        # post-tool hook's fail-closed budget check is the security
+        # boundary; this one is a convenience.
+        return 0
+    summary = {
+        "phase": lifecycle.phase.value,
+        "budget": lifecycle.budget.as_dict() if lifecycle.budget else None,
+        "metadata": lifecycle.metadata,
+    }
+    print(json.dumps({
+        "hookSpecificOutput": {
+            "additionalContext": f"pyarnes checkpoint restored: {summary}",
+        },
+    }))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

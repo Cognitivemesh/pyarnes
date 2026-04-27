@@ -26,7 +26,8 @@ graph TB
 |---|---|
 | `types.py` | Two ABCs: `ToolHandler` (async `execute`) and `ModelClient` (async `next_action`). The contract every adopter implements. |
 | `errors.py` | `HarnessError` frozen-dataclass base + `TransientError`, `LLMRecoverableError`, `UserFixableError`, `UnexpectedError` plus `Severity` enum. |
-| `lifecycle.py` | `Phase` enum + `Lifecycle` FSM with history, terminal detection, and transition logging. |
+| `lifecycle.py` | `Phase` enum + `Lifecycle` FSM with history, terminal detection, transition logging, and `.dump(path)` / `.load(path)` for Claude Code `SessionStart` / `SessionEnd` hooks. |
+| `budget.py` | `Budget` — immutable counter + call/time/token caps. Consumed by the Claude Code `Stop` hook, which emits `{"continue": false}` when a cap is hit (the only CC mechanism to force session end). |
 | `observe/logger.py` | `configure_logging(fmt, level, stream)` + `get_logger(name)` + `LogFormat` enum. Loguru is bound once here. |
 
 ## Why this package exists

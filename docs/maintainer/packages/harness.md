@@ -30,6 +30,7 @@ graph TB
 | `tools/registry.py` | `ToolRegistry` — validated name → `ToolHandler` mapping. Rejects non-`ToolHandler` registrations at bind time. |
 | `capture/output.py` | `OutputCapture` — in-memory list of `CapturedOutput` records with stdout/stderr/return/error/traceback/duration/timestamp. |
 | `capture/tool_log.py` | `ToolCallLogger` — append-only JSONL writer plumbed into `AgentLoop` via the `tool_call_logger` field. |
+| `capture/cc_session.py` | `read_cc_session(path)` + `resolve_cc_session_path(cwd, session_id)` — parse a Claude Code session transcript into the same `ToolCallEntry` shape. ⚠️ **Schema caveat:** CC does not publish the JSONL format; the parser is locked to the captured fixture at `tests/unit/fixtures/cc_session_sample.jsonl` and may need to evolve with CC releases. |
 | `guardrails.py` | Thin re-export layer so `from pyarnes_harness import GuardrailChain` keeps working. |
 
 ## Why this package exists
