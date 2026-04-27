@@ -360,6 +360,10 @@ class AgentLoop:
         except UserFixableError:
             raise
         except LLMRecoverableError as exc:
+            # Guardrail blocks the call; surface the error to the model via the
+            # standard recoverable-error ToolMessage rather than raising, so the
+            # model can adjust and retry.  _log_tool_call is async, so await is
+            # required — omitting it silently discards the audit-log coroutine.
             msg = self._recoverable_error_message(tool_call_id, exc)
             await self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
             return msg
