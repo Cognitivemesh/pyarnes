@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import Any
 
 import pytest
 
+from pyarnes_core import Lifecycle, Phase
 from pyarnes_core.errors import (
     LLMRecoverableError,
     TransientError,
@@ -254,6 +256,157 @@ class TestAgentLoop:
         # Should have exactly max_iter iterations worth of tool results
         tool_results = [m for m in result if m.get("role") == "tool"]
         assert len(tool_results) == max_iter
+
+
+class TestRetryDelayPrecision:
+    """Exact retry delay values emitted by the loop under monkeypatched sleep."""
+
+    @pytest.mark.asyncio()
+    async def test_config_base_delay_wins_when_greater_than_error_default(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Config base delay of 1.5 beats the TransientError default of 1.0."""
+        sleeps: list[float] = []
+
+        async def fake_sleep(delay: float) -> None:
+            sleeps.append(delay)
+
+        monkeypatch.setattr("asyncio.sleep", fake_sleep)
+
+        # TransientError default retry_delay_seconds=1.0; config=1.5 → merged=1.5.
+        tool = FailingTool(exc=TransientError(message="blip"))
+        model = FakeModel(
+            actions=[
+                {"type": "tool_call", "tool": "t", "id": "d1", "arguments": {}},
+                {"type": "final_answer", "content": "done"},
+            ]
+        )
+        loop = AgentLoop(
+            tools={"t": tool},
+            model=model,
+            config=LoopConfig(max_retries=1, retry_base_delay=1.5),
+        )
+        await loop.run([])
+        # attempt=0 → 1.5 * 2^0 = 1.5
+        assert sleeps and sleeps[0] == pytest.approx(1.5)
+
+    @pytest.mark.asyncio()
+    async def test_second_retry_delay_is_doubled(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        sleeps: list[float] = []
+
+        async def fake_sleep(delay: float) -> None:
+            sleeps.append(delay)
+
+        monkeypatch.setattr("asyncio.sleep", fake_sleep)
+
+        calls = {"n": 0}
+
+        class AlwaysTransient(ToolHandler):
+            async def execute(self, arguments: dict[str, Any]) -> Any:
+                del arguments
+                calls["n"] += 1
+                # Explicit delay=1.5 beats the default 1.0 and the config 1.0.
+                raise TransientError(message="always fails", retry_delay_seconds=1.5)
+
+        model = FakeModel(
+            actions=[
+                {"type": "tool_call", "tool": "t", "id": "d2", "arguments": {}},
+                {"type": "final_answer", "content": "done"},
+            ]
+        )
+        loop = AgentLoop(
+            tools={"t": AlwaysTransient()},
+            model=model,
+            config=LoopConfig(max_retries=2, retry_base_delay=1.0),
+        )
+        await loop.run([])
+        # merged base = max(1.0, 1.5) = 1.5; attempt=0 → 1.5; attempt=1 → 3.0
+        assert len(sleeps) == 2
+        assert sleeps[0] == pytest.approx(1.5)
+        assert sleeps[1] == pytest.approx(3.0)
+
+    @pytest.mark.asyncio()
+    async def test_loop_does_not_execute_iteration_n_plus_one(self) -> None:
+        """The loop must stop at exactly max_iterations, not max_iterations+1."""
+        max_iter = 4
+        call_count = {"n": 0}
+
+        class CountingEcho(ToolHandler):
+            async def execute(self, arguments: dict[str, Any]) -> Any:
+                del arguments
+                call_count["n"] += 1
+                return "echo"
+
+        actions = [
+            {"type": "tool_call", "tool": "echo", "id": f"e{i}", "arguments": {}}
+            for i in range(max_iter + 5)
+        ]
+        model = FakeModel(actions=actions)
+        loop = AgentLoop(
+            tools={"echo": CountingEcho()},
+            model=model,
+            config=LoopConfig(max_iterations=max_iter),
+        )
+        await loop.run([])
+        assert call_count["n"] == max_iter
+
+
+class TestConcurrentLoopIsolation:
+    """Two AgentLoop instances running concurrently must not share state."""
+
+    @pytest.mark.asyncio()
+    async def test_two_loops_separate_tool_registries(self) -> None:
+        results_a: list[Any] = []
+        results_b: list[Any] = []
+
+        class RecordingTool(ToolHandler):
+            def __init__(self, store: list[Any]) -> None:
+                self._store = store
+
+            async def execute(self, arguments: dict[str, Any]) -> Any:
+                self._store.append(arguments.get("tag"))
+                return arguments.get("tag", "?")
+
+        tool_a = RecordingTool(results_a)
+        tool_b = RecordingTool(results_b)
+
+        model_a = FakeModel(
+            actions=[
+                {"type": "tool_call", "tool": "tool", "id": "a1", "arguments": {"tag": "A"}},
+                {"type": "final_answer", "content": "done"},
+            ]
+        )
+        model_b = FakeModel(
+            actions=[
+                {"type": "tool_call", "tool": "tool", "id": "b1", "arguments": {"tag": "B"}},
+                {"type": "final_answer", "content": "done"},
+            ]
+        )
+
+        loop_a = AgentLoop(tools={"tool": tool_a}, model=model_a)
+        loop_b = AgentLoop(tools={"tool": tool_b}, model=model_b)
+
+        await asyncio.gather(loop_a.run([]), loop_b.run([]))
+
+        # Each tool saw only its own tags.
+        assert results_a == ["A"]
+        assert results_b == ["B"]
+
+    @pytest.mark.asyncio()
+    async def test_lifecycle_instances_do_not_share_history(self) -> None:
+        lc_a = Lifecycle(phase=Phase.INIT)
+        lc_b = Lifecycle(phase=Phase.INIT)
+
+        lc_a.transition(Phase.RUNNING)
+        lc_a.transition(Phase.PAUSED)
+
+        # lc_b must not see lc_a's transitions.
+        assert lc_b.phase == Phase.INIT
+        assert len(lc_b.history) == 0
 
 
 class TestReflectionInterval:
