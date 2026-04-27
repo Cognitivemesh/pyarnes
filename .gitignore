@@ -1,6 +1,9 @@
 # Claude Code local memory (root only — template/.claude/ is versioned)
 /.claude/
 
+# Git worktrees (local development isolation)
+.worktrees/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
