@@ -96,8 +96,8 @@ class TestConfigureLogging:
 
             await asyncio.gather(task_a(), task_b())
 
-            lines_a = [json.loads(l) for l in buf_a.getvalue().splitlines() if l.strip()]
-            lines_b = [json.loads(l) for l in buf_b.getvalue().splitlines() if l.strip()]
+            lines_a = [json.loads(line) for line in buf_a.getvalue().splitlines() if line.strip()]
+            lines_b = [json.loads(line) for line in buf_b.getvalue().splitlines() if line.strip()]
 
             events_a = {d["event"] for d in lines_a}
             events_b = {d["event"] for d in lines_b}
