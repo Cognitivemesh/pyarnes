@@ -14,7 +14,8 @@ into the module-level :data:`_global` registry.  Call
 
 from __future__ import annotations
 
-from typing import TypeVar
+from dataclasses import dataclass
+from typing import Any, TypeVar
 
 from pyarnes_core.observability import log_event
 from pyarnes_core.observe.logger import get_logger
@@ -22,9 +23,19 @@ from pyarnes_core.types import ToolHandler
 
 __all__ = [
     "ToolRegistry",
+    "ToolSchema",
     "global_registry",
     "tool",
 ]
+
+
+@dataclass(frozen=True)
+class ToolSchema:
+    """Provider-agnostic tool schema for schema conversion in transport adapters."""
+
+    name: str
+    description: str
+    parameters: dict[str, Any]
 
 _T = TypeVar("_T")
 
@@ -48,6 +59,7 @@ class ToolRegistry:
     def __init__(self) -> None:
         """Initialise an empty tool registry."""
         self._tools: dict[str, ToolHandler] = {}
+        self._schemas: dict[str, ToolSchema] = {}
 
     def register(self, name: str, handler: ToolHandler) -> None:
         """Register a tool handler under the given name.
@@ -94,6 +106,25 @@ class ToolRegistry:
     def names(self) -> list[str]:
         """Return sorted list of registered tool names."""
         return sorted(self._tools)
+
+    def register_schema(self, name: str, schema: ToolSchema) -> None:
+        """Store a JSON-Schema definition for a tool.
+
+        Args:
+            name: Tool name (does not need a matching handler entry).
+            schema: Provider-agnostic :class:`ToolSchema`.
+
+        Raises:
+            ValueError: If a schema for *name* is already registered.
+        """
+        if name in self._schemas:
+            msg = f"Schema for '{name}' is already registered"
+            raise ValueError(msg)
+        self._schemas[name] = schema
+
+    def schemas(self) -> list[ToolSchema]:
+        """Return all registered schemas in insertion order."""
+        return list(self._schemas.values())
 
     def as_dict(self) -> dict[str, ToolHandler]:
         """Return a shallow copy of the internal mapping."""

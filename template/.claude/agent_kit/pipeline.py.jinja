@@ -20,8 +20,16 @@ from pyarnes_harness import (
     ToolRegistry,
 )
 
-from {{ project_module }}.guardrails import custom_guardrails
-from {{ project_module }}.tools import register_tools
+import sys
+from pathlib import Path
+
+# Add this agent_kit directory to sys.path so we can import local tools and guardrails
+_kit_dir = Path(__file__).parent.resolve()
+if str(_kit_dir) not in sys.path:
+    sys.path.insert(0, str(_kit_dir))
+
+from guardrails import custom_guardrails
+from tools import register_tools
 
 if TYPE_CHECKING:
     from pyarnes_core.types import ModelClient

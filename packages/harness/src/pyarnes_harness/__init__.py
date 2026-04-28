@@ -30,16 +30,27 @@ from pyarnes_harness.guardrails import (
 )
 from pyarnes_harness.hooks import HookChain, PostToolHook, PreToolHook
 from pyarnes_harness.loop import AgentLoop, LoopConfig, ToolMessage
+from pyarnes_harness.repair import repair_json_args
 from pyarnes_harness.runtime import AgentRuntime
 from pyarnes_harness.steering import SteeringQueue
-from pyarnes_harness.tools.registry import ToolRegistry, global_registry, tool
+from pyarnes_harness.tools.registry import ToolRegistry, ToolSchema, global_registry, tool
 from pyarnes_harness.transform import MessageTransformer, TransformChain
+from pyarnes_harness.transport import (
+    AnthropicTransport,
+    LiteLLMTransport,
+    NormalizedResponse,
+    NormalizedToolCall,
+    OpenAITransport,
+    ProviderTransport,
+    TransportModelClient,
+)
 from pyarnes_harness.verification import VerificationLoop, VerificationResult
 
 __all__ = [
     "AgentContext",
     "AgentLoop",
     "AgentRuntime",
+    "AnthropicTransport",
     "AsyncGuardrail",
     "CapturedOutput",
     "ClassifiedError",
@@ -52,12 +63,17 @@ __all__ = [
     "HookChain",
     "InjectionGuardrail",
     "IterationBudget",
+    "LiteLLMTransport",
     "LoopConfig",
     "MessageTransformer",
+    "NormalizedResponse",
+    "NormalizedToolCall",
+    "OpenAITransport",
     "OutputCapture",
     "PathGuardrail",
     "PostToolHook",
     "PreToolHook",
+    "ProviderTransport",
     "SemanticGuardrail",
     "SteeringQueue",
     "ToolAllowlistGuardrail",
@@ -65,13 +81,16 @@ __all__ = [
     "ToolCallLogger",
     "ToolMessage",
     "ToolRegistry",
+    "ToolSchema",
     "TransformChain",
+    "TransportModelClient",
     "VerificationLoop",
     "VerificationResult",
     "classify_error",
     "compact",
     "global_registry",
     "read_cc_session",
+    "repair_json_args",
     "resolve_cc_session_path",
     "tool",
 ]

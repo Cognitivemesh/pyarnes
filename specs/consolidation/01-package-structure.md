@@ -1,0 +1,228 @@
+# pyarnes_swarm — Package Structure
+
+## Flat layout (18 top-level files + bench/ subpackage)
+
+```
+packages/swarm/
+├── pyproject.toml
+└── src/
+    └── pyarnes_swarm/
+        │
+        │  ── CONTRACTS (no imports from other layers) ─────────
+        ├── ports.py          # ALL Protocols in one file
+        ├── errors.py         # All error types + Severity
+        │
+        │  ── DOMAIN (orchestration — imports only from contracts) ─
+        ├── swarm.py          # Swarm, AgentSpec, TaskMeta
+        ├── routing.py        # RuleBasedRouter, LLMCostRouter, RoutingRule, ModelTier
+        ├── agent.py          # AgentLoop, AgentRuntime, LoopConfig, LiteLLMModelClient
+        │                     #   inlines: ClassifiedError, ActionKind, RetryPolicy
+        ├── budget.py         # Budget (immutable) + IterationBudget (mutable async)
+        ├── context.py        # AgentContext, Lifecycle, Phase FSM
+        ├── tools.py          # ToolRegistry + @tool decorator
+        ├── verification.py   # VerificationLoop, VerificationResult
+        │
+        │  ── ADAPTERS (concrete infra — imports domain + contracts) ─
+        ├── bus.py            # TursoMessageBus [DEFAULT, BETA] + InMemoryBus
+        ├── bus_nats.py       # NatsJetStreamBus (only importable with [nats] extra)
+        ├── guardrails.py     # Guardrail ABC + GuardrailChain + all guardrail classes
+        │
+        │  ── INFRASTRUCTURE (I/O helpers — no domain logic) ────
+        ├── safety.py         # paths, injection, redact, sanitize, command_scan,
+        │                     #   arg_walker, semantic_judge
+        ├── observability/    # 4 files replacing 6+ across observe/ + observability/
+        │   ├── __init__.py
+        │   ├── transport.py  # loguru setup, configure_logging, get_logger, ContextVar
+        │   ├── atoms.py      # iso_now, start_timer, monotonic_duration, dumps, to_jsonable
+        │   ├── events.py     # log_event, log_warning, log_error,
+        │   │                 #   log_lifecycle_transition, log_tool_call,
+        │   │                 #   log_guardrail_violation
+        │   └── telemetry.py  # configure_tracing, session_span ([otel] extra)
+        ├── capture.py        # CapturedOutput, ToolCallLogger, cc_session
+        ├── atomic_write.py   # write_private, append_private (0o600)
+        ├── secrets.py        # SecretStore, KeyringSecretStore, EnvSecretStore,
+        │                     #   ChainedSecretStore, ProviderConfig
+        │
+        │  ── ENTRY POINT ──────────────────────────────────────
+        ├── __init__.py       # ~10 public symbols
+        │
+        │  ── OPTIONAL EXTRA ([bench]) ───────────────────────
+        └── bench/
+            ├── __init__.py
+            ├── eval.py
+            ├── scorers.py    # ScoreResult + ALL scorer classes (merged scorer.py + scorers.py)
+            ├── fact.py
+            ├── race.py
+            ├── regression.py
+            └── burn/
+                ├── __init__.py
+                ├── types.py
+                ├── provider.py
+                ├── costing.py
+                ├── claude_code.py
+                ├── classify.py
+                ├── dedupe.py
+                ├── normalize.py
+                ├── kpis.py
+                ├── optimize.py
+                └── compare.py
+```
+
+## Layer rules
+
+Each layer may only import from layers above it in the list. Import from a lower layer is a bug.
+
+| Layer | May import from |
+|---|---|
+| contracts (`ports.py`, `errors.py`) | stdlib only |
+| domain | contracts |
+| adapters | contracts, domain |
+| infrastructure | contracts |
+| `__init__.py` | all |
+| `bench/` | contracts, domain, infrastructure |
+
+## Public API (`__init__.py`) — 14 symbols
+
+```python
+from pyarnes_swarm.swarm      import Swarm, AgentSpec
+from pyarnes_swarm.agent      import AgentRuntime, LoopConfig, LiteLLMModelClient
+from pyarnes_swarm.ports      import MessageBus, ModelClient, ModelRouter, ToolHandler
+from pyarnes_swarm.routing    import RuleBasedRouter, LLMCostRouter, ModelTier
+from pyarnes_swarm.bus        import InMemoryBus, TursoMessageBus
+from pyarnes_swarm.guardrails import GuardrailChain
+
+__all__ = [
+    "Swarm", "AgentSpec",
+    "AgentRuntime", "LoopConfig",
+    "ModelRouter", "MessageBus", "ModelClient", "ToolHandler",
+    "RuleBasedRouter", "LLMCostRouter", "ModelTier",
+    "LiteLLMModelClient",
+    "InMemoryBus", "TursoMessageBus",
+    "GuardrailChain",
+]
+```
+
+Everything else is importable by path (`from pyarnes_swarm.budget import Budget`) but not part of the guaranteed public surface.
+
+## `ports.py` — all Protocols in one file
+
+```python
+class ToolHandler(Protocol):
+    async def execute(self, arguments: dict[str, Any]) -> Any: ...
+
+class ModelClient(Protocol):
+    async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]: ...
+
+class JudgeClient(Protocol):
+    async def judge(self, prompt: str) -> str: ...
+
+class MessageBus(Protocol):
+    async def publish(self, topic: str, payload: bytes) -> None: ...
+    async def subscribe(self, topic: str) -> AsyncIterator[bytes]: ...
+    async def resume_from(self, topic: str, offset: int) -> AsyncIterator[bytes]: ...
+
+class ModelRouter(Protocol):
+    def route(self, spec: AgentSpec, meta: TaskMeta) -> str: ...
+
+class SandboxHook(Protocol):
+    async def run(self, code: str, timeout: float) -> str: ...
+
+class GuardrailPort(Protocol):
+    def check(self, tool_name: str, arguments: dict[str, Any]) -> None: ...
+
+class LoggerPort(Protocol):
+    def bind(self, **kwargs: Any) -> LoggerPort: ...
+    def info(self, event: str) -> None: ...
+
+class SecretStore(Protocol):
+    def get(self, key: str) -> str: ...
+    def get_optional(self, key: str) -> str | None: ...
+
+class MessageTransformer(Protocol):
+    async def __call__(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]: ...
+```
+
+`MessageTransformer` moves here from `harness/transform.py` (its only consumer is `compaction.py`, but the Protocol belongs with contracts). `TransformChain` stays in `agent.py` — it is an implementation, not a contract.
+
+## `errors.py` — complete error taxonomy
+
+```python
+class TransientError(Exception):
+    """Retry with exponential backoff (cap: 2)."""
+
+class LLMRecoverableError(Exception):
+    """Return as ToolMessage so the model adjusts."""
+
+class UserFixableError(Exception):
+    """Interrupt for human input."""
+
+class UnexpectedError(Exception):
+    """Bubble up for debugging."""
+
+class Severity(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+```
+
+`Severity` is kept in `errors.py` but removed from `__all__` — internal use only.
+
+## Dependencies (`pyproject.toml`)
+
+```toml
+[project]
+name = "pyarnes-swarm"
+dependencies = [
+    "pyturso>=0.1",     # TursoMessageBus (default MessageBus)
+    "litellm>=1.0",     # LiteLLMModelClient + LLMCostRouter
+    "keyring>=25.0",    # KeyringSecretStore (OS keychain)
+    "loguru>=0.7",
+    "libcst>=1.0",
+]
+
+[project.optional-dependencies]
+nats  = ["nats-py>=2.6"]
+otel  = ["opentelemetry-sdk>=1.20", "opentelemetry-exporter-otlp>=1.20"]
+bench = ["pyarnes-swarm[otel]", "pydantic>=2.0"]
+```
+
+## What moved where
+
+| Source (monorepo) | Destination |
+|---|---|
+| `core/dispatch/ports.py` + `core/types.py` | `ports.py` |
+| `core/errors.py` | `errors.py` |
+| `harness/loop.py` + `harness/runtime.py` | `agent.py` |
+| `harness/classifier.py` | inlined into `agent.py` |
+| `harness/transform.py` Protocol | `ports.py`; `TransformChain` → `agent.py` |
+| `harness/compaction.py` + `harness/compressor.py` | `agent.py` (`MessageCompactor`) |
+| `dispatch/action_kind.py` + `dispatch/retry_policy.py` | inlined into `agent.py` |
+| `core/budget.py` + `harness/budget.py` | `budget.py` |
+| `core/lifecycle.py` + context types | `context.py` |
+| `harness/tools/` + `@tool` decorator | `tools.py` |
+| `harness/verification.py` | `verification.py` |
+| `guardrails/guardrails.py` | `guardrails.py` |
+| `core/safety/` (all 7 modules) | `safety.py` |
+| `core/observe/` + `core/observability/` | `observability/` (4 files) |
+| `harness/capture/` | `capture.py` |
+| `core/atomic_write.py` | `atomic_write.py` |
+| `harness/routing.py` (new) | `routing.py` |
+| `harness/bus.py` (new) | `bus.py` |
+| `harness/bus_nats.py` (new) | `bus_nats.py` |
+| `harness/secrets.py` (new) | `secrets.py` |
+| `bench/` | `bench/` (mostly verbatim, scorers merged) |
+
+## What was deleted
+
+| Deleted | Reason |
+|---|---|
+| `core/sandbox.py::SeccompSandbox` | Linux-only, zero callers |
+| `bench/swe_bench.py::SWEBenchScenario` | Pure stub, never implemented |
+| `guardrails/benchmark_gate.py::_HasScore` | Vulture-confirmed unused |
+| `core/observe/logger.py::CONSOLE` | Vulture-confirmed unused |
+| `core/safety/semantic_judge.py::METADATA_DEPENDENCIES` | Vulture-confirmed unused |
+| `harness/guardrails.py` | Pure re-export shim |
+| `core/packaging/` | `version_of()` replaced by `__version__ = "0.1.0"` |
+| `core/dispatch/ports.py` shim | Merged into `ports.py` |
+| `core/types.py` shim | Merged into `ports.py` |

@@ -83,7 +83,6 @@ uv run tasks security    # bandit security scan
 uv run tasks radon:cc    # cyclomatic complexity
 uv run tasks vulture     # dead code detection
 uv run tasks complexity  # radon:cc + radon:mi
-uv run tasks docs:serve  # local docs site
 ```
 
 ## Error taxonomy
@@ -104,7 +103,8 @@ uv run tasks docs:serve  # local docs site
 - `packages/tasks/` — **pyarnes-tasks**: cross-platform task runner (the `tasks` CLI)
 - `tests/unit/` — unit tests
 - `tests/features/` — BDD feature files (pytest-bdd / Gherkin)
-- `docs/` — MkDocs Material documentation source
+- `specs/consolidation/` — canonical specs for `pyarnes_swarm` (replaces docs/)
+- `specs/archive/` — implemented specs from the monorepo era
 - `template/` + `copier.yml` — Copier template used by `uvx copier copy gh:Cognitivemesh/pyarnes <dest>`
   to scaffold new projects that depend on pyarnes packages via git URLs.
 

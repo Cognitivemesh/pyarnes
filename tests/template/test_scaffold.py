@@ -76,6 +76,18 @@ def test_scaffold_generates(shape: str, run_copy, tmp_path: Path) -> None:
     assert "[project.scripts]" in pyproject
     assert f"scaffold_{shape.replace('-', '_')}.cli:app" in pyproject
 
+    # The agent_kit pipeline must be importable without throwing a ModuleNotFoundError
+    # for the shape-specific guardrails and tools.
+    import sys
+    import importlib.util
+    pipeline_path = agent_kit / "pipeline.py"
+    spec = importlib.util.spec_from_file_location("pipeline", pipeline_path)
+    pipeline_mod = importlib.util.module_from_spec(spec)
+    # The pipeline script modifies sys.path, so we execute it in-place
+    sys.modules["pipeline"] = pipeline_mod
+    spec.loader.exec_module(pipeline_mod)
+    assert hasattr(pipeline_mod, "run_pipeline")
+
 
 @pytest.mark.parametrize(
     ("shape", "script_path", "inline_dep"),

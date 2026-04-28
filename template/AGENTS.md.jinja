@@ -84,10 +84,10 @@ uv run tasks update      # pull latest pyarnes template improvements
 
 ## Project layout
 
-- `src/{{ project_module }}/pipeline.py` — the `AgentLoop` builder
 - `src/{{ project_module }}/cli.py` — Typer CLI; entry point `{{ project_module }}`
-- `src/{{ project_module }}/tools/` — project-specific `ToolHandler` subclasses
-- `src/{{ project_module }}/guardrails.py` — project-specific `Guardrail` subclasses
+- `.claude/agent_kit/pipeline.py` — the `AgentLoop` builder
+- `.claude/agent_kit/tools/` — project-specific `ToolHandler` subclasses
+- `.claude/agent_kit/guardrails.py` — project-specific `Guardrail` subclasses
 - `tests/` — your tests
 - `docs/` — MkDocs Material documentation source
 {%- if enable_dev_hooks %}
