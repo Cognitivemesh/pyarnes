@@ -195,4 +195,10 @@ To securely switch between model providers (OpenAI, Anthropic, Gemini), the `Mod
 | **Anthropic** | `anthropic/` | `anthropic/claude-3-5-sonnet-20240620` | `litellm.model_cost["claude-3-5-sonnet-20241022"]` |
 | **OpenAI** | `openai/` | `openai/gpt-4o` | `litellm.model_cost["gpt-4o"]` |
 
+## Open questions or deferred items
+
+- **Rate-limit / 429 recovery.** No specified behaviour when a provider returns HTTP 429 or equivalent. Should the router fall back to a lower-cost tier, retry with backoff, or surface as `TransientError`? Different providers warrant different policies.
+- **Provider-specific timeout tuning.** Provider latency profiles vary (Anthropic Direct vs HuggingFace Inference vs NIM). One global timeout is suboptimal; per-provider overrides are not yet specified.
+- **Failover policy.** When a primary provider is unavailable, should the router transparently route to a secondary, surface as an error, or block until the primary recovers?
+
 By indexing parameters uniformly in the routing abstractions, the framework guarantees reliable Token Budgeting measurements and threshold checks for diverse backends.

@@ -199,3 +199,9 @@ uv run tasks check   # lint + typecheck + test
 uv run tasks vulture # no dead code
 uv run tasks security # bandit clean
 ```
+
+## Open questions or deferred items
+
+- **Integration test strategy.** This spec covers unit tests + per-module TDD. Multi-agent flows (Swarm + bus + guardrails together) and end-to-end runs (`AgentRuntime.start()` through to `RunReport`) have no specified test discipline today.
+- **Performance test harness.** `MessageCompactor` efficiency on large histories and large-swarm message-bus throughput should have measurable targets and a regression suite. Currently absent.
+- **Flakiness budget.** No explicit target for acceptable flake rate; no policy for quarantining vs deleting flaky tests. (Detailed conventions for *detecting* flakes belong in `09-test-map.md`; the *budget* and *policy* live here.)

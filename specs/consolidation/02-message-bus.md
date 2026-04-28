@@ -193,3 +193,9 @@ This keeps the bus generic while preserving human-readability.
 
 To provide resilient crash-recovery across sessions, the Message Bus implements monotonic offset checkpointing via a `resume_from(topic, offset)` semantic. 
 Each message in a topic receives a strictly monotonic integer ID over the session stream. If the sub-agent or `AgentLoop` terminates abruptly, it seamlessly checkpoints the last successfully processed offset into the local database. Upon restart, it re-connects using `resume_from` to replay any unacknowledged events rather than losing state. This provides event-sourcing with effectively exactly-once execution semantics.
+
+## Open questions or deferred items
+
+- **Subscriber failure recovery.** What happens when a subscriber crashes mid-message? Today the offset is recorded only after successful processing, but the contract for *partial* processing (e.g. side effect committed, ack failed) is undefined. Decide whether subscribers must be idempotent or whether the bus tracks in-flight messages.
+- **NATS connection lifecycle.** The `MessageBus` Protocol does not expose `connect()` / `close()` methods, but the NATS implementation needs both. Decide whether to add lifecycle methods to the Protocol (breaking) or keep them as implementation-private and rely on context managers.
+- **Replay semantics for late subscribers.** When a subscriber starts after messages have already been published, is the default behaviour "from earliest" or "from now"? Currently implementation-dependent.

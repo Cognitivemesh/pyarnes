@@ -522,3 +522,10 @@ Behaviour:
 - Returns a fully-configured `AgentRuntime` ready to `run()`.
 
 Adopters who need bespoke transform pipelines can construct `AgentRuntime(...)` directly and pass their own `compressor=`; `with_compressor()` is a convenience, not the only path.
+
+## Open questions or deferred items
+
+- **Output-token heuristic calibration post-deployment.** The spec ships fixed multipliers (`1.4×` for chat, `5×` for code-gen — see `## Output Token Heuristics Table`). After enough production runs, P95-derived heuristics should replace the bootstrap values. The cutover process and the calibration cadence are not yet specified.
+- **Confidence intervals on output estimates.** Today the heuristics produce point estimates. Adding ±% bounds would let routers reason about worst-case context usage, especially for tasks near the model's context window.
+- **Token-counting latency budget.** `litellm.token_counter()` is in the hot loop; how much overhead is acceptable per call has no documented target.
+- **TALE graduation decision.** [`## TALE Self-Estimation Technique`](#tale-self-estimation-technique) currently carries a `> DEFERRED` banner. Decide: ship behind a flag, replace heuristics entirely, or remove from the spec.
