@@ -29,7 +29,9 @@ from pyarnes_core.types import ModelClient, ToolHandler
 from pyarnes_guardrails.guardrails import GuardrailChain
 from pyarnes_harness.capture.tool_log import ToolCallLogger
 from pyarnes_harness.context import AgentContext
+from pyarnes_harness.hooks import HookChain
 from pyarnes_harness.loop import AgentLoop, LoopConfig
+from pyarnes_harness.steering import SteeringQueue
 from pyarnes_harness.tools.registry import global_registry
 
 __all__ = ["AgentRuntime"]
@@ -64,6 +66,8 @@ class AgentRuntime:
     agent_context: AgentContext | None = None
     tool_call_logger: ToolCallLogger | None = None
     error_registry: ErrorHandlerRegistry | None = None
+    hook_chain: HookChain | None = None
+    steering: SteeringQueue | None = None
     session_id: str | None = None
     trace_id: str | None = None
     log_level: str = "INFO"
@@ -132,6 +136,8 @@ class AgentRuntime:
             agent_context=self.agent_context,
             tool_call_logger=self.tool_call_logger,
             error_registry=self.error_registry,
+            hook_chain=self.hook_chain,
+            steering=self.steering,
         )
 
         with session_span("agent-session", session_id=self.session_id, trace_id=self.trace_id):

@@ -56,6 +56,8 @@ from pyarnes_guardrails.guardrails import GuardrailChain
 from pyarnes_harness.budget import IterationBudget
 from pyarnes_harness.capture.tool_log import ToolCallLogger
 from pyarnes_harness.context import AgentContext
+from pyarnes_harness.hooks import HookChain
+from pyarnes_harness.steering import SteeringQueue
 
 __all__ = [
     "AgentLoop",
@@ -152,6 +154,11 @@ class AgentLoop:
         sandbox: Optional sandbox hook called around each tool execution.
             ``enter()`` is awaited before the tool runs; ``exit(exc)`` is
             awaited after, receiving the exception or ``None`` on success.
+        hook_chain: Optional chain of pre/post middleware hooks. Pre-hooks
+            run before guardrails and may mutate arguments; post-hooks
+            transform the result after successful execution.
+        steering: Optional queue of mid-execution user notes. Notes are
+            drained and prepended to messages at the start of each iteration.
     """
 
     tools: dict[str, ToolHandler]
@@ -162,6 +169,8 @@ class AgentLoop:
     agent_context: AgentContext | None = None
     error_registry: ErrorHandlerRegistry | None = None
     sandbox: SandboxHook | None = None
+    hook_chain: HookChain | None = None
+    steering: SteeringQueue | None = None
 
     async def run(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Execute the agent loop until completion or limit.
@@ -185,6 +194,10 @@ class AgentLoop:
 
         for iteration in range(self.config.max_iterations):
             log_event(logger, "loop.iteration", iteration=iteration)
+
+            if self.steering is not None:
+                notes = await self.steering.drain()
+                messages.extend(notes)
 
             if self.config.budget is not None:  # noqa: SIM102
                 if not await self.config.budget.consume():
@@ -236,7 +249,7 @@ class AgentLoop:
         )
         return messages
 
-    async def _call_tool(  # noqa: C901, PLR0912, PLR0915
+    async def _call_tool(  # noqa: C901, PLR0911, PLR0912, PLR0915
         self,
         name: str,
         tool_call_id: str,
@@ -265,6 +278,14 @@ class AgentLoop:
                 start_mono=start_mono,
             )
             return msg
+
+        if self.hook_chain is not None:
+            try:
+                arguments = await self.hook_chain.run_pre(name, arguments)
+            except LLMRecoverableError as exc:
+                msg = self._recoverable_error_message(tool_call_id, exc)
+                await self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
+                return msg
 
         guard_result = await self._check_guardrails(name, tool_call_id, arguments, started_at, start_mono)
         if guard_result is not None:
@@ -371,6 +392,8 @@ class AgentLoop:
 
             else:
                 log_event(logger, "tool.success", tool=name, attempt=attempt)
+                if self.hook_chain is not None:
+                    result = await self.hook_chain.run_post(name, arguments, result, is_error=False)
                 terminate = isinstance(result, dict) and bool(result.get("terminate"))
                 content = redact(str(result.get("content", result) if isinstance(result, dict) and terminate else result))  # noqa: E501
                 msg = ToolMessage(
