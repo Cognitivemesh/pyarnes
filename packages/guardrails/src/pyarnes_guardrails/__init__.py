@@ -25,6 +25,7 @@ Cross-CLI additions (reachable from the Claude Code hook surface):
 
 from __future__ import annotations
 
+from pyarnes_guardrails.benchmark_gate import BenchmarkGateGuardrail
 from pyarnes_guardrails.guardrails import (
     ASTGuardrail,
     AsyncGuardrail,
@@ -47,6 +48,7 @@ from pyarnes_guardrails.violation_log import (
 __all__ = [
     "ASTGuardrail",
     "AsyncGuardrail",
+    "BenchmarkGateGuardrail",
     "CommandGuardrail",
     "Guardrail",
     "GuardrailChain",
