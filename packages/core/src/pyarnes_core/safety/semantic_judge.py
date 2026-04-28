@@ -14,11 +14,15 @@ Usage::
 
     # Molecule-style: raises LLMRecoverableError on any finding
     scan_code_arguments(arguments, keys=("code", "source"), tool_name="execute_code")
+
+    # Deep mode adds network-call detection via libcst (if installed)
+    findings = analyse_code(source, deep=True)
 """
 
 from __future__ import annotations
 
 import ast
+import functools
 from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -51,6 +55,33 @@ BANNED_CALLS: frozenset[str] = frozenset(
     }
 )
 
+# Additional patterns detected only in deep mode (requires libcst).
+DEEP_BANNED_CALLS: frozenset[str] = frozenset(
+    {
+        "socket.socket",
+        "socket.create_connection",
+        "urllib.request.urlopen",
+        "urllib.request.Request",
+        "httpx.get",
+        "httpx.post",
+        "httpx.put",
+        "httpx.delete",
+        "httpx.patch",
+        "httpx.head",
+        "httpx.request",
+        "httpx.Client",
+        "httpx.AsyncClient",
+    }
+)
+
+DEEP_BANNED_IMPORTS: frozenset[str] = frozenset(
+    {
+        "socket",
+        "urllib",
+        "httpx",
+    }
+)
+
 
 @dataclass(frozen=True, slots=True)
 class Finding:
@@ -74,6 +105,7 @@ def analyse_code(
     *,
     banned_imports: frozenset[str] = BANNED_IMPORTS,
     banned_calls: frozenset[str] = BANNED_CALLS,
+    deep: bool = False,
 ) -> list[Finding]:
     """Parse *source* as Python and return all dangerous-pattern findings.
 
@@ -85,6 +117,9 @@ def analyse_code(
         source: Python source code to analyse.
         banned_imports: Root module names whose import is a finding.
         banned_calls: Call names (bare or dotted) whose use is a finding.
+        deep: When ``True``, run an additional libcst-based pass that detects
+            network calls (``socket``, ``urllib``, ``httpx``) and more. Falls
+            back to the standard analysis when libcst is not installed.
 
     Returns:
         A list of :class:`Finding` instances, possibly empty.
@@ -96,16 +131,26 @@ def analyse_code(
 
     visitor = _Visitor(banned_imports=banned_imports, banned_calls=banned_calls)
     visitor.visit(tree)
-    return visitor.findings
+    findings = visitor.findings
+
+    if deep:
+        findings = findings + _analyse_code_deep(
+            source,
+            extra_banned_calls=DEEP_BANNED_CALLS,
+            extra_banned_imports=DEEP_BANNED_IMPORTS,
+        )
+
+    return findings
 
 
-def scan_code_arguments(
+def scan_code_arguments(  # noqa: PLR0913
     arguments: dict[str, Any],
     *,
     keys: Iterable[str],
     tool_name: str,
     banned_imports: frozenset[str] = BANNED_IMPORTS,
     banned_calls: frozenset[str] = BANNED_CALLS,
+    deep: bool = False,
 ) -> None:
     """Raise ``LLMRecoverableError`` when any code argument contains dangerous patterns.
 
@@ -119,6 +164,7 @@ def scan_code_arguments(
         tool_name: Used in the error message.
         banned_imports: Forwarded to :func:`analyse_code`.
         banned_calls: Forwarded to :func:`analyse_code`.
+        deep: When ``True``, also run deep (libcst) analysis.
 
     Raises:
         LLMRecoverableError: On the first dangerous pattern found.
@@ -129,6 +175,7 @@ def scan_code_arguments(
                 candidate,
                 banned_imports=banned_imports,
                 banned_calls=banned_calls,
+                deep=deep,
             )
             if findings:
                 f = findings[0]
@@ -185,3 +232,103 @@ def _dotted_name(node: ast.expr) -> str:
         prefix = _dotted_name(node.value)
         return f"{prefix}.{node.attr}" if prefix else node.attr
     return ""
+
+
+# ── libcst deep analysis ─────────────────────────────────────────────────────
+
+
+@functools.lru_cache(maxsize=256)
+def _try_parse_cst(source: str) -> Any:
+    """Parse *source* with libcst and return the module; returns ``None`` on failure.
+
+    The result is cached by source string so repeated analysis of the
+    same snippet pays the parse cost only once.
+    """
+    try:
+        import libcst as cst  # noqa: PLC0415
+
+        return cst.parse_module(source)
+    except Exception:
+        return None
+
+
+def _libcst_dotted_name(node: Any) -> str:
+    """Reconstruct a dotted name from a libcst Name or Attribute node."""
+    try:
+        import libcst as cst  # noqa: PLC0415
+
+        if isinstance(node, cst.Name):
+            return node.value
+        if isinstance(node, cst.Attribute):
+            prefix = _libcst_dotted_name(node.value)
+            return f"{prefix}.{node.attr.value}" if prefix else node.attr.value
+    except ImportError:
+        pass
+    return ""
+
+
+def _analyse_code_deep(  # noqa: C901
+    source: str,
+    extra_banned_calls: frozenset[str],
+    extra_banned_imports: frozenset[str],
+) -> list[Finding]:
+    """Deep analysis via libcst; returns ``[]`` when libcst is not installed."""
+    try:
+        import libcst as cst  # noqa: PLC0415
+        from libcst.metadata import MetadataWrapper, PositionProvider  # noqa: PLC0415
+    except ImportError:
+        return []
+
+    module = _try_parse_cst(source)
+    if module is None:
+        return []
+
+    try:
+        wrapper = MetadataWrapper(module)
+    except Exception:
+        return []
+
+    findings: list[Finding] = []
+
+    class _LibCSTVisitor(cst.CSTVisitor):
+        METADATA_DEPENDENCIES = (PositionProvider,)
+
+        def visit_Import(self, node: cst.Import) -> None:  # noqa: N802  # type: ignore[override]
+            if isinstance(node.names, cst.ImportStar):
+                return
+            for alias in node.names:
+                name = _libcst_dotted_name(alias.name)
+                if _root_module(name) in extra_banned_imports:
+                    try:
+                        pos = self.get_metadata(PositionProvider, node)
+                        lineno, col = pos.start.line, pos.start.column
+                    except Exception:
+                        lineno, col = 0, 0
+                    findings.append(Finding("import", name, lineno, col))
+
+        def visit_ImportFrom(self, node: cst.ImportFrom) -> None:  # noqa: N802  # type: ignore[override]
+            if node.module is not None:
+                name = _libcst_dotted_name(node.module)
+                if _root_module(name) in extra_banned_imports:
+                    try:
+                        pos = self.get_metadata(PositionProvider, node)
+                        lineno, col = pos.start.line, pos.start.column
+                    except Exception:
+                        lineno, col = 0, 0
+                    findings.append(Finding("import", name, lineno, col))
+
+        def visit_Call(self, node: cst.Call) -> None:  # noqa: N802  # type: ignore[override]
+            name = _libcst_dotted_name(node.func)
+            if name in extra_banned_calls:
+                try:
+                    pos = self.get_metadata(PositionProvider, node)
+                    lineno, col = pos.start.line, pos.start.column
+                except Exception:
+                    lineno, col = 0, 0
+                findings.append(Finding("call", name, lineno, col))
+
+    try:
+        wrapper.visit(_LibCSTVisitor())
+    except Exception:
+        return []
+    return findings

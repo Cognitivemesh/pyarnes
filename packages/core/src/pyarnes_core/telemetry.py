@@ -22,9 +22,7 @@ backend can correlate log events with distributed traces.
 
 from __future__ import annotations
 
-import contextlib
 import os
-from collections.abc import Generator
 from typing import Any
 
 __all__ = [
@@ -118,13 +116,7 @@ def get_tracer(name: str) -> Any:
         return _noop_tracer
 
 
-@contextlib.contextmanager
-def session_span(
-    service_name: str,
-    *,
-    session_id: str,
-    trace_id: str,
-) -> Generator[Any]:
+class session_span:  # noqa: N801
     """Context manager that wraps a session in an OTEL span.
 
     Attributes added to the span match the fields emitted by
@@ -132,19 +124,36 @@ def session_span(
 
     When OTEL is not configured this is a zero-cost no-op.
 
+    Uses a class-based context manager (not ``@contextmanager``) so that
+    exceptions raised inside the ``with`` block are not propagated through a
+    generator — this avoids CPython's traceback-manipulation path, which fails
+    for ``frozen=True, slots=True`` dataclass exception subclasses.
+
     Args:
         service_name: Human-readable label for the span (e.g. ``"agent-session"``).
         session_id: The agent session identifier.
         trace_id: The distributed trace identifier.
-
-    Yields:
-        The current span (real or no-op).
     """
-    tracer = get_tracer(__name__)
-    with tracer.start_as_current_span(service_name) as span:
-        span.set_attribute("session_id", session_id)
-        span.set_attribute("trace_id", trace_id)
-        yield span
+
+    def __init__(self, service_name: str, *, session_id: str, trace_id: str) -> None:  # noqa: D107
+        self._service_name = service_name
+        self._session_id = session_id
+        self._trace_id = trace_id
+        self._inner_cm: Any = None
+
+    def __enter__(self) -> Any:  # noqa: D105
+        tracer = get_tracer(__name__)
+        self._inner_cm = tracer.start_as_current_span(self._service_name)
+        span = self._inner_cm.__enter__()
+        span.set_attribute("session_id", self._session_id)
+        span.set_attribute("trace_id", self._trace_id)
+        return span
+
+    def __exit__(self, *exc_info: Any) -> bool:  # noqa: D105
+        if self._inner_cm is not None:
+            result = self._inner_cm.__exit__(*exc_info)
+            return bool(result)
+        return False
 
 
 def tracing_endpoint_from_env() -> str | None:

@@ -25,6 +25,7 @@ otel = [
     "opentelemetry-sdk>=1.0",
     "opentelemetry-exporter-otlp>=1.0",
 ]
+ast = ["libcst>=1.0"]
 
 [build-system]
 requires = ["hatchling"]

@@ -20,12 +20,14 @@ from pyarnes_core.observe.logger import get_logger
 from pyarnes_core.safety import (
     assert_within_roots,
     has_traversal,
+    scan_code_arguments,
     scan_for_patterns,
     walk_strings,
     walk_values_for_keys,
 )
 
 __all__ = [
+    "ASTGuardrail",
     "AsyncGuardrail",
     "CommandGuardrail",
     "Guardrail",
@@ -209,6 +211,33 @@ class ToolAllowlistGuardrail(Guardrail):
                 message=f"Tool '{tool_name}' is not in the allowlist",
                 prompt_hint=f"Add '{tool_name}' to the allowed tools?",
             )
+
+
+@dataclass(frozen=True, slots=True)
+class ASTGuardrail(Guardrail):
+    """Block tool calls whose code arguments contain dangerous AST patterns.
+
+    Runs :func:`pyarnes_core.safety.scan_code_arguments` on the arguments
+    specified in *code_keys*. When *deep* is ``True`` (the default) and
+    ``libcst`` is installed (soft dep: ``pip install libcst>=1.0``), the
+    analysis also detects ``socket``, ``urllib``, and ``httpx`` network calls.
+    Degrades to the standard ast-based analysis when libcst is absent.
+
+    Attributes:
+        deep: Enable libcst-powered deep analysis. Default ``True``.
+        code_keys: Argument keys expected to contain Python source code.
+    """
+
+    deep: bool = True
+    code_keys: tuple[str, ...] = ("code", "script", "source")
+
+    def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
+        """Raise ``LLMRecoverableError`` when a code argument contains a banned pattern."""
+        try:
+            scan_code_arguments(arguments, keys=self.code_keys, tool_name=tool_name, deep=self.deep)
+        except Exception:
+            log_warning(logger, "guardrail.ast_blocked", tool=tool_name)
+            raise
 
 
 # ── Chain ──────────────────────────────────────────────────────────────────
