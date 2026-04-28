@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import dataclasses
+
 import pytest
 
 from pyarnes_core.errors import LLMRecoverableError, UserFixableError
@@ -64,8 +66,6 @@ class TestVerificationResult:
         assert r.score == 0.5
 
     def test_immutable(self) -> None:
-        import dataclasses
-
         r = VerificationResult(output="x", passed=True, fix_attempts=0, score=0.0)
         with pytest.raises(dataclasses.FrozenInstanceError):
             r.output = "y"  # type: ignore[misc]

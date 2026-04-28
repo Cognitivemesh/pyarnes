@@ -24,12 +24,14 @@ from pyarnes_harness.guardrails import (
     ToolAllowlistGuardrail,
 )
 from pyarnes_harness.loop import AgentLoop, LoopConfig, ToolMessage
+from pyarnes_harness.runtime import AgentRuntime
 from pyarnes_harness.tools.registry import ToolRegistry
 from pyarnes_harness.verification import VerificationLoop, VerificationResult
 
 __all__ = [
     "AgentContext",
     "AgentLoop",
+    "AgentRuntime",
     "AsyncGuardrail",
     "CapturedOutput",
     "CommandGuardrail",
