@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import asyncio
+import builtins
 import sys
 from dataclasses import dataclass
 from typing import Any
-from unittest.mock import AsyncMock
 
 import pytest
 
+from pyarnes_core.dispatch.ports import ModelClient, ToolHandler
+from pyarnes_core.errors import LLMRecoverableError
 from pyarnes_core.sandbox import RestrictedPythonSandbox, SandboxHook, SeccompSandbox
-
+from pyarnes_harness.loop import AgentLoop
 
 # ── Protocol conformance ──────────────────────────────────────────────────────
 
@@ -49,9 +52,6 @@ class TestSandboxHookProtocol:
 
 class TestRestrictedPythonSandbox:
     def test_raises_import_error_when_package_absent(self, monkeypatch) -> None:
-        import builtins
-        import importlib
-
         original_import = builtins.__import__
 
         def _block(name, *args, **kwargs):
@@ -74,8 +74,6 @@ class TestRestrictedPythonSandbox:
         monkeypatch.setattr(
             "pyarnes_core.sandbox.RestrictedPythonSandbox.__post_init__", lambda self: None
         )
-        import asyncio
-
         sb = RestrictedPythonSandbox()
         asyncio.run(sb.enter())
         asyncio.run(sb.exit(None))
@@ -92,8 +90,6 @@ class TestSeccompSandbox:
 
     def test_raises_import_error_on_linux_when_seccomp_absent(self, monkeypatch) -> None:
         monkeypatch.setattr(sys, "platform", "linux")
-        import builtins
-
         original_import = builtins.__import__
 
         def _block(name, *args, **kwargs):
@@ -113,15 +109,11 @@ class TestSeccompSandbox:
 
     def test_enter_noop_on_non_linux(self, monkeypatch) -> None:
         monkeypatch.setattr(sys, "platform", "darwin")
-        import asyncio
-
         sb = SeccompSandbox()
         asyncio.run(sb.enter())
 
     def test_exit_noop(self, monkeypatch) -> None:
         monkeypatch.setattr(sys, "platform", "darwin")
-        import asyncio
-
         sb = SeccompSandbox()
         asyncio.run(sb.exit(None))
         asyncio.run(sb.exit(ValueError("oops")))
@@ -135,9 +127,6 @@ class TestAgentLoopSandbox:
     """Sandbox enter/exit called around tool execution."""
 
     def _make_loop(self, tool_fn, sandbox=None):
-        from pyarnes_core.dispatch.ports import ModelClient, ToolHandler
-        from pyarnes_harness.loop import AgentLoop
-
         class _Tool(ToolHandler):
             async def execute(self, arguments: dict[str, Any]) -> Any:
                 return await tool_fn(arguments)
@@ -174,8 +163,6 @@ class TestAgentLoopSandbox:
         assert "exit:None" in calls
 
     async def test_exit_called_with_exception(self) -> None:
-        from pyarnes_core.errors import LLMRecoverableError
-
         captured_exc: list[BaseException | None] = []
 
         @dataclass

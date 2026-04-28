@@ -7,7 +7,6 @@ import pytest
 from pyarnes_core.errors import UserFixableError
 from pyarnes_guardrails.benchmark_gate import BenchmarkGateGuardrail
 
-
 # ── Fake suite ────────────────────────────────────────────────────────────────
 
 
@@ -42,7 +41,7 @@ class TestBenchmarkGateGuardrail:
 
     async def test_raises_when_score_below_threshold(self) -> None:
         g = BenchmarkGateGuardrail(suite_factory=_factory(0.5), threshold=0.8)
-        with pytest.raises(UserFixableError, match="0.500"):
+        with pytest.raises(UserFixableError, match=r"0\.500"):
             await g.check("mytool", {})
 
     async def test_error_message_contains_tool_name(self) -> None:

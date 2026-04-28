@@ -48,9 +48,12 @@ from pyarnes_core.observability import (
     start_timer,
 )
 from pyarnes_core.observe.logger import get_logger
+from pyarnes_core.safety.redact import redact
+from pyarnes_core.safety.sanitize import sanitize_messages
 from pyarnes_core.sandbox import SandboxHook
 from pyarnes_core.types import ModelClient, ToolHandler
 from pyarnes_guardrails.guardrails import GuardrailChain
+from pyarnes_harness.budget import IterationBudget
 from pyarnes_harness.capture.tool_log import ToolCallLogger
 from pyarnes_harness.context import AgentContext
 
@@ -83,6 +86,7 @@ class ToolMessage:
     content: str
     is_error: bool = False
     raw_result: Any = None
+    terminate: bool = False
 
 
 @dataclass(slots=True)
@@ -105,6 +109,7 @@ class LoopConfig:
     max_retries: int = 2
     retry_base_delay: float = 1.0
     reflection_interval: int = 0
+    budget: IterationBudget | None = None
 
     def __post_init__(self) -> None:
         """Validate configuration values."""
@@ -181,6 +186,11 @@ class AgentLoop:
         for iteration in range(self.config.max_iterations):
             log_event(logger, "loop.iteration", iteration=iteration)
 
+            if self.config.budget is not None:  # noqa: SIM102
+                if not await self.config.budget.consume():
+                    log_warning(logger, "loop.budget_exhausted", iteration=iteration)
+                    return messages
+
             if (
                 self.config.reflection_interval > 0
                 and iteration > 0
@@ -189,7 +199,7 @@ class AgentLoop:
                 reflection = await self._request_reflection(messages)
                 messages.append(reflection)
 
-            action = await self.model.next_action(messages)
+            action = await self.model.next_action(sanitize_messages(messages))
             kind = classify(action)
 
             if kind is ActionKind.FINAL_ANSWER:
@@ -214,6 +224,10 @@ class AgentLoop:
             result = await self._call_tool(tool_name, tool_call_id, arguments)
             messages.append(action)
             messages.append(self._as_tool_entry(result))
+
+            if result.terminate:
+                log_event(logger, "loop.tool_terminated", tool=tool_name, iteration=iteration)
+                return messages
 
         log_warning(
             logger,
@@ -357,10 +371,13 @@ class AgentLoop:
 
             else:
                 log_event(logger, "tool.success", tool=name, attempt=attempt)
+                terminate = isinstance(result, dict) and bool(result.get("terminate"))
+                content = redact(str(result.get("content", result) if isinstance(result, dict) and terminate else result))  # noqa: E501
                 msg = ToolMessage(
                     tool_call_id=tool_call_id,
-                    content=str(result),
+                    content=content,
                     raw_result=result,
+                    terminate=terminate,
                 )
                 await self._log_tool_call(
                     name,

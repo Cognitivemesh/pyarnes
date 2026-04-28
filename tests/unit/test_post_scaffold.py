@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pyarnes_tasks.post_scaffold as ps_module
 from pyarnes_tasks.post_scaffold import main
 
