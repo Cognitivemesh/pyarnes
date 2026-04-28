@@ -161,6 +161,18 @@ async def test_agent_runs():
 - `EvalSuite.cost_efficiency` is `average_score / total_cost * 100`
 - `EvalSuite.run()` with `ExactMatchScorer` returns `usage=None` (no scorer tokens)
 
+## Phase 1 pitfalls
+
+These mistakes appear repeatedly when starting Phase 1. Avoid them:
+
+1. **`acount_tokens()` inside the hot loop** — it's a network call to the provider and adds ~100ms latency per iteration. Use it once at startup for the overhead baseline. Use `token_counter()` (local, microseconds) inside the loop.
+
+2. **`LLMCostRouter` tests without mocking `litellm.model_cost`** — the pricing table updates when LiteLLM releases a new version. Tests that read live pricing are flaky by design. Pin `litellm.model_cost` to a fixed dict in test fixtures.
+
+3. **Merging `Budget` and `IterationBudget`** — they look similar but are fundamentally different: `Budget` is an immutable value type (`frozen=True`) that returns a new instance on `consume()`; `IterationBudget` is a mutable shared counter with `asyncio.Lock` and `refund()`. Merging them produces a class that is simultaneously immutable and a shared mutable counter — a type contradiction.
+
+4. **Forgetting to delete old tests after Refactor** — two test suites for the same module create ambiguity, not safety. When one passes and the other fails, you don't know which is correct. Delete immediately after Refactor step; don't let them accumulate.
+
 ## After Phase 2 is complete
 
 All old tests under `tests/unit/`, `tests/features/`, and `tests/template/` are deleted. Only `tests/swarm/` remains.

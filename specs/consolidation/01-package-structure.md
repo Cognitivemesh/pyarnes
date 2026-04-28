@@ -107,6 +107,48 @@ from pyarnes_swarm.routing    import RuleBasedRouter, LLMCostRouter, ModelTier
 from pyarnes_swarm.bus        import InMemoryBus, TursoMessageBus
 from pyarnes_swarm.guardrails import GuardrailChain
 
+## Key concepts
+
+### Ports & Adapters (Hexagonal Architecture)
+
+**What**: Separate core business logic (domain) from infrastructure (databases, APIs, queues) by defining Protocols (ports) that the infrastructure must satisfy. Domain code only knows the Protocol — any implementation that satisfies the interface works.
+
+**Why Used Here**: `AgentLoop` needs to work with any LLM provider, any message bus, and any secret store. If it directly called `litellm.completion()`, swapping providers would require editing the loop. With `ModelClientPort`, the loop only knows `async def next_action(messages) -> dict` — the provider is pluggable.
+
+**When to Use**: When you anticipate swapping infrastructure without changing business logic. When you want to inject fakes in tests without patching.
+
+**Trade-offs**:
+- Pros: testable without real infrastructure; implementations are pluggable
+- Cons: one extra indirection layer; Protocol violations only caught at type-check time, not runtime
+
+**Alternatives**:
+- Direct coupling: simpler, but locks you to one provider
+- Abstract factory: heavier; adds factory classes that `Protocol` doesn't need
+
+**Learning**: [Hexagonal Architecture (original paper)](https://alistair.cockburn.us/hexagonal-architecture/) by Alistair Cockburn (2005); [Hexagonal Architecture in Python](https://www.youtube.com/watch?v=C7MRkqP5N10) (~45 min walkthrough)
+
+---
+
+### Structural Typing (Protocol)
+
+**What**: Python's `typing.Protocol` defines an interface by structure, not inheritance. Any class with the right method signatures satisfies the Protocol — no `class MyBus(MessageBus)` required.
+
+**Why Used Here**: Lets implementers satisfy a contract without importing from `pyarnes_swarm`. A `MessageBus` adapter in a separate codebase doesn't need to depend on this package to be compatible.
+
+**When to Use**: When you want duck typing with type-checker enforcement. When the implementer is in a different codebase and inheritance would create a dependency.
+
+**Example**:
+```python
+class MessageBus(Protocol):
+    async def publish(self, topic: str, payload: bytes) -> None: ...
+
+class MyRedisAdapter:  # no inheritance — satisfies MessageBus structurally
+    async def publish(self, topic: str, payload: bytes) -> None:
+        await redis.publish(topic, payload)
+```
+
+**Learning**: [PEP 544](https://peps.python.org/pep-0544/) — the proposal that added `Protocol` to Python; explains why it's safer than plain duck typing
+
 __all__ = [
     "Swarm", "AgentSpec",
     "AgentRuntime", "LoopConfig",

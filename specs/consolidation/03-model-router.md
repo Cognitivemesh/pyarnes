@@ -197,3 +197,26 @@ swarm = Swarm(
 ```
 
 The `summariser` gets a cheap model (complexity 0.2 → tier 1); the `analyst` gets a more capable model (complexity 0.8 → tier 2 or 3). The routing decision is logged as a structured event for auditability.
+
+## Key concepts
+
+### Cost-Aware Routing
+
+**What**: Choosing the cheapest model that can handle a task's complexity, rather than always using the most capable model.
+
+**Why Used Here**: In a multi-agent swarm running hundreds of iterations, model cost is the dominant operational expense. A task with `complexity_score=0.2` does not benefit from an Opus-class model — the quality improvement is negligible; the cost difference is 10–20×. Routing makes the swarm economically viable at scale.
+
+**The three-step selection** (LLMCostRouter):
+1. **Context window filter** — exclude models where `max_tokens < required_context_tokens`. A task needing 150K tokens cannot go to a 100K model.
+2. **Complexity filter** — select the tier whose `max_complexity >= task.complexity_score`.
+3. **Cost sort** — within the matching tier, pick the cheapest model by `litellm.model_cost`.
+
+Without step 1, the router might pick a cheap model and the request would fail silently (truncated context) or with an opaque API error. Explicit pre-flight filtering makes the failure mode `UserFixableError("No model fits context")` — actionable.
+
+**Learning**: [Simon Willison on token costs](https://simonwillison.net/2023/May/18/the-architecture-of-todays-llm-applications/) — practical context for why routing and compaction matter
+
+---
+
+### Bayesian Updating (observe pattern)
+
+`LLMCostRouter.observe()` is a lightweight Bayesian update — prior routing weights updated by new evidence (eval results). When a cheap model consistently scores well on a task type, its complexity ceiling is raised; when it underperforms, it is demoted. No ML framework required: it is a weighted moving average over `cost_efficiency` observations per (model, task_type) pair.
