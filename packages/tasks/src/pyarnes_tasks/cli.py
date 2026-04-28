@@ -116,6 +116,8 @@ def _build_tasks() -> tuple[dict[str, list[str]], Path]:
         # Observer: stream and filter structured JSONL logs.
         "observer:tail": [py, "-m", "pyarnes_tasks.observer_tail"],
         "observer:filter": [py, "-m", "pyarnes_tasks.observer_filter"],
+        # Scaffold: run after `uvx copier copy` to finish project setup.
+        "post_scaffold": [py, "-m", "pyarnes_tasks.post_scaffold"],
     }
 
     if tests:

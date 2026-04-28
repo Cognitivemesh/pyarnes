@@ -97,3 +97,9 @@ current_year:
   type: str
   when: false
   default: "{{ '%Y' | strftime }}"
+
+# ---------------------------------------------------------------------------
+# Post-scaffold hook
+# ---------------------------------------------------------------------------
+_tasks:
+  - uv run --no-sync python -m pyarnes_tasks post_scaffold
