@@ -68,6 +68,8 @@ pyarnes_graph/
 
 ## Storage layer
 
+> **Diagram:** [Graph schema (ER)](diagrams/23-graph-er.html).
+
 Three SQLModel tables, one schema module:
 
 - **`GraphNode`** — `id` (`"{relative_path}::{qualname}"`), `kind: NodeKind`, `name`, `file_path`, `sha256`, `confidence: Confidence`, `extra: dict` (JSON column).
@@ -81,6 +83,8 @@ Enums (`NodeKind = MODULE|CLASS|FUNCTION|METHOD|WHY_COMMENT`, `EdgeKind = DEFINE
 The repository helpers (`upsert_nodes`, `upsert_edges`, `upsert_index_meta`, `neighbors`, `get_node`) use `session.merge(...)` for upsert. Storage failures map to the standard taxonomy: lock contention raises `TransientError` (retried with exponential backoff), missing libsql raises `UserFixableError`, corrupt DB raises `UnexpectedError`.
 
 ## Extraction and indexing
+
+> **Diagram:** [Indexer pipeline (flowchart)](diagrams/23-graph-pipeline.html).
 
 Two builders implement the abstract `CodeGraphBuilder` (`async def build(path) -> tuple[list[GraphNode], list[GraphEdge]]`):
 

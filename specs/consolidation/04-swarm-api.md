@@ -219,6 +219,12 @@ result = await runtime.run([{"role": "user", "content": "..."}])
 
 `Swarm.run_agent()` creates an `AgentRuntime` internally. Use `AgentRuntime` directly for single-agent setups or testing.
 
+### Lifecycle FSM
+
+> **Diagram:** [Lifecycle state machine](diagrams/04-lifecycle-fsm.html).
+
+`AgentRuntime` tracks the run lifecycle through six states with the transitions shown in the diagram: `created`, `running`, `paused`, `done`, `failed`, `interrupted`. The terminal states (`done`, `failed`, `interrupted`) are mutually exclusive — exactly one is reached per run. The `running ↔ paused` edge is driven by the steering queue, which drains on `resume()`. The transition triggers (which method call / event causes which transition) are partially captured as edge labels; full tabulation is tracked under `## Open questions or deferred items` below.
+
 ## Error handling
 
 The four error types behave differently at the process boundary:

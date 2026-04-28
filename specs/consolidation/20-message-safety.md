@@ -18,6 +18,8 @@
 
 ## Design Rationale
 
+> **Diagram:** [Sanitize → guardrail pipeline](diagrams/20-sanitize-guardrail.html).
+
 **Why sanitize on a copy, not the stored history?** The stored conversation history must be replayable without sanitization artifacts. If `sanitize_messages()` mutated the history in place, replaying the session from the stored JSONL would produce different model inputs than the original run — defeating audit and debugging. Operating on the copy passed to `model.next_action()` keeps the raw messages intact in storage while ensuring only sanitized content reaches the model.
 
 **Why does `InjectionGuardrail` raise `LLMRecoverableError` and not `UserFixableError`?** Prompt injection is typically a model-generated artifact (the model is about to call a tool with injected instructions). Returning the error as a `ToolMessage` lets the model recognise it made a bad call and self-correct on the next iteration — no human needs to be interrupted. `UserFixableError` is reserved for situations where human judgement is required; a model that produced an injected prompt argument can fix it without help.

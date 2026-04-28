@@ -43,6 +43,8 @@ On top of that, several files are **always** in context and never change: `CLAUD
 
 ## Three control layers
 
+> **Diagram:** [Three-layer token budget stack](diagrams/12-budget-layers.html).
+
 | Layer | What it controls | Mechanism |
 |---|---|---|
 | **System overhead baseline** | Fixed tokens always present | Measure once at startup; subtract from available budget |

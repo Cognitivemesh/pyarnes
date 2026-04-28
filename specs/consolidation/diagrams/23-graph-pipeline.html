@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Indexer pipeline (flowchart) — pyarnes_swarm graph package</title>
+<style>
+  :root {
+    --paper: #faf7f2;
+    --ink: #1c1917;
+    --muted: #6b6b6b;
+    --accent: #b5523a;
+    --hairline: #d4d0c8;
+    --tint: #f1ece2;
+  }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    padding: 32px;
+  }
+  .frame {
+    max-width: 1100px;
+    margin: 0 auto;
+    border: 1px solid var(--hairline);
+    background: var(--paper);
+    padding: 28px 28px 16px 28px;
+  }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px 0; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 24px 0; font-size: 13px; }
+  svg { display: block; margin: 0 auto; }
+  .stage { fill: var(--tint); stroke: var(--ink); stroke-width: 1.2; }
+  .decision { fill: var(--paper); stroke: var(--ink); stroke-width: 1.2; }
+  .terminator { fill: var(--paper); stroke: var(--ink); stroke-width: 1.2; }
+  .builder-fork-bg { fill: var(--paper); stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+  .stage-label { font-size: 13px; font-weight: 600; fill: var(--ink); }
+  .stage-sub { font-size: 11px; fill: var(--muted); }
+  .stage-mono { font-size: 11px; font-family: ui-monospace, "JetBrains Mono", monospace; fill: var(--ink); }
+  .edge { stroke: var(--ink); stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
+  .edge-skip { stroke: var(--muted); stroke-width: 1.2; fill: none; marker-end: url(#arrow-muted); stroke-dasharray: 5 3; }
+  .edge-label { font-size: 11.5px; fill: var(--ink); }
+  .edge-label-skip { font-size: 11.5px; fill: var(--muted); }
+  .label-bg { fill: var(--paper); }
+  .callout-box { fill: var(--paper); stroke: var(--accent); stroke-width: 1.2; }
+  .callout-tag { fill: var(--accent); }
+  .callout-tag-text { fill: var(--paper); font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .callout-text { font-size: 12px; fill: var(--ink); }
+  .pill { fill: var(--accent); }
+  .pill-text { fill: var(--paper); font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+<section class="frame">
+  <h1>Indexer pipeline — filesystem → graph → analysis</h1>
+  <p class="sub">Owning spec: <code>23-graph-package.md § Extraction and indexing</code>. Six stages; the parse step forks into two parallel builders whose outputs union into the same node and edge tables. Hash check makes the pipeline incremental.</p>
+
+  <svg viewBox="0 0 1080 700" width="1080" height="700" role="img" aria-label="Indexer pipeline flowchart">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#1c1917"/>
+      </marker>
+      <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b6b6b"/>
+      </marker>
+    </defs>
+
+    <!-- 1. Filesystem walk -->
+    <rect class="terminator" x="40" y="60" width="190" height="68" rx="34"/>
+    <rect class="pill" x="50" y="68" width="62" height="16"/>
+    <text class="pill-text" x="56" y="80">STAGE 1</text>
+    <text class="stage-label" x="60" y="110">Filesystem walk</text>
+    <text class="stage-sub" x="60" y="124">Indexer.walk(root_path)</text>
+
+    <!-- arrow 1→2 -->
+    <line class="edge" x1="232" y1="94" x2="298" y2="94"/>
+
+    <!-- 2. Hash check (decision diamond approximated as rotated rect for simplicity) -->
+    <polygon class="decision" points="380,40 480,94 380,148 280,94"/>
+    <rect class="pill" x="332" y="64" width="62" height="16"/>
+    <text class="pill-text" x="338" y="76">STAGE 2</text>
+    <text class="stage-label" x="380" y="100" text-anchor="middle">Hash check</text>
+    <text class="stage-sub" x="380" y="116" text-anchor="middle">SHA-256 vs IndexMeta.sha256</text>
+
+    <!-- arrow 2→3 (changed) -->
+    <line class="edge" x1="482" y1="94" x2="548" y2="94"/>
+    <rect class="label-bg" x="488" y="78" width="64" height="14"/>
+    <text class="edge-label" x="520" y="89" text-anchor="middle">changed</text>
+
+    <!-- arrow 2→skip -->
+    <path class="edge-skip" d="M 380 148 C 380 200, 380 220, 380 240"/>
+    <rect class="label-bg" x="350" y="180" width="60" height="14"/>
+    <text class="edge-label-skip" x="380" y="191" text-anchor="middle">unchanged</text>
+    <rect class="terminator" x="280" y="240" width="200" height="42" rx="6" style="stroke-dasharray: 4 3; stroke: var(--muted);"/>
+    <text class="stage-label" x="380" y="266" text-anchor="middle" style="fill: var(--muted);">skip — no work</text>
+
+    <!-- 3. Parse fork -->
+    <rect class="builder-fork-bg" x="540" y="40" width="240" height="180" rx="6"/>
+    <rect class="pill" x="552" y="48" width="62" height="16"/>
+    <text class="pill-text" x="558" y="60">STAGE 3</text>
+    <text class="stage-label" x="660" y="78" text-anchor="middle">Parse (parallel)</text>
+
+    <rect class="stage" x="552" y="92" width="216" height="50" rx="4"/>
+    <text class="stage-label" x="660" y="112" text-anchor="middle">TreeSitterBuilder</text>
+    <text class="stage-sub" x="660" y="128" text-anchor="middle">two-pass: declarations then call resolution</text>
+
+    <rect class="stage" x="552" y="156" width="216" height="50" rx="4"/>
+    <text class="stage-label" x="660" y="176" text-anchor="middle">WhyCommentBuilder</text>
+    <text class="stage-sub" x="660" y="192" text-anchor="middle">regex: # WHY: # HACK: # NOTE: # TODO:</text>
+
+    <!-- arrow 3→4 -->
+    <line class="edge" x1="780" y1="130" x2="848" y2="130"/>
+
+    <!-- 4. Upsert -->
+    <rect class="terminator" x="850" y="60" width="200" height="120" rx="8"/>
+    <rect class="pill" x="860" y="68" width="62" height="16"/>
+    <text class="pill-text" x="866" y="80">STAGE 4</text>
+    <text class="stage-label" x="950" y="110" text-anchor="middle">Upsert</text>
+    <text class="stage-sub" x="950" y="128" text-anchor="middle">repository.upsert_nodes</text>
+    <text class="stage-sub" x="950" y="142" text-anchor="middle">repository.upsert_edges</text>
+    <text class="stage-sub" x="950" y="156" text-anchor="middle">repository.upsert_index_meta</text>
+    <text class="stage-sub" x="950" y="170" text-anchor="middle">via session.merge()</text>
+
+    <!-- arrow 4→5 (down) -->
+    <line class="edge" x1="950" y1="180" x2="950" y2="304"/>
+
+    <!-- 5. Log -->
+    <rect class="terminator" x="850" y="306" width="200" height="64" rx="8"/>
+    <rect class="pill" x="860" y="314" width="62" height="16"/>
+    <text class="pill-text" x="866" y="326">STAGE 5</text>
+    <text class="stage-label" x="950" y="354" text-anchor="middle">Log (JSONL)</text>
+
+    <!-- arrow 5→6 (left to centre) -->
+    <line class="edge" x1="848" y1="338" x2="668" y2="338"/>
+
+    <!-- 6. Analyze -->
+    <rect class="terminator" x="380" y="306" width="288" height="64" rx="8"/>
+    <rect class="pill" x="392" y="314" width="62" height="16"/>
+    <text class="pill-text" x="398" y="326">STAGE 6</text>
+    <text class="stage-label" x="524" y="346" text-anchor="middle">Analyze (downstream consumers)</text>
+    <text class="stage-sub" x="524" y="362" text-anchor="middle">graph_view.build_nx() → blast-radius / centrality / Leiden</text>
+
+    <!-- callouts -->
+    <g>
+      <rect class="callout-box" x="40" y="420" width="500" height="92" rx="3"/>
+      <rect class="callout-tag" x="40" y="420" width="190" height="20"/>
+      <text class="callout-tag-text" x="48" y="434">INCREMENTAL — HASH GATE</text>
+      <text class="callout-text" x="52" y="458">Re-parses only on hash mismatch. Bumping <tspan style="font-family: ui-monospace, monospace;">parser_version</tspan></text>
+      <text class="callout-text" x="52" y="476">in <tspan style="font-family: ui-monospace, monospace;">IndexMeta</tspan> invalidates the cache and forces a full re-parse</text>
+      <text class="callout-text" x="52" y="494">on the next pass.</text>
+    </g>
+
+    <g>
+      <rect class="callout-box" x="560" y="420" width="500" height="92" rx="3"/>
+      <rect class="callout-tag" x="560" y="420" width="190" height="20"/>
+      <text class="callout-tag-text" x="568" y="434">PARALLEL BUILDER FORK</text>
+      <text class="callout-text" x="572" y="458">Both builders run on the same file in parallel. Their outputs</text>
+      <text class="callout-text" x="572" y="476">union into the same <tspan style="font-family: ui-monospace, monospace;">GraphNode</tspan> / <tspan style="font-family: ui-monospace, monospace;">GraphEdge</tspan> tables — no</text>
+      <text class="callout-text" x="572" y="494">deduplication needed because <tspan style="font-family: ui-monospace, monospace;">node.id</tspan> is content-addressed.</text>
+    </g>
+
+    <g>
+      <rect class="callout-box" x="40" y="528" width="1020" height="76" rx="3" style="stroke: var(--muted);"/>
+      <rect class="callout-tag" x="40" y="528" width="170" height="20" style="fill: var(--muted);"/>
+      <text class="callout-tag-text" x="48" y="542">FAILURE MODES → STANDARD TAXONOMY</text>
+      <text class="callout-text" x="52" y="566"><tspan style="font-family: ui-monospace, monospace; font-weight: 600;">TransientError</tspan>: lock contention on the DB file (retry with backoff).</text>
+      <text class="callout-text" x="52" y="584"><tspan style="font-family: ui-monospace, monospace; font-weight: 600;">UserFixableError</tspan>: missing libsql / tree-sitter grammar (install instructions surfaced).</text>
+      <text class="callout-text" x="52" y="602"><tspan style="font-family: ui-monospace, monospace; font-weight: 600;">UnexpectedError</tspan>: corrupt DB or grammar — bubbles up; rebuild from source.</text>
+    </g>
+
+    <!-- file scope note -->
+    <text class="stage-sub" x="40" y="640">File scope: <tspan style="font-family: ui-monospace, monospace;">src/</tspan>, <tspan style="font-family: ui-monospace, monospace;">tests/</tspan>, <tspan style="font-family: ui-monospace, monospace;">packages/*/src/</tspan>. Extension filter: <tspan style="font-family: ui-monospace, monospace;">.py</tspan>.</text>
+    <text class="stage-sub" x="40" y="658">Schema for the rows produced and consumed: see <tspan style="font-family: ui-monospace, monospace;">23-graph-er.html</tspan>.</text>
+  </svg>
+</section>
+</body>
+</html>
