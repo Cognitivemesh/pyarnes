@@ -128,6 +128,26 @@ Two complementary controls:
 
 Both use `litellm.token_counter()` as the measurement primitive.
 
+## Key design decisions (why this way)
+
+Each decision below has a rationale — read these before implementing to avoid re-discovering the constraints that produced them.
+
+| Decision | Why |
+|---|---|
+| Single `ports.py` for all Protocols | One file to read when implementing a custom backend; no scattered interface definitions |
+| `ModelClientPort` (Protocol) not `ModelClient` (ABC) | Model implementations live in different codebases; inheritance would create a cross-package dep |
+| Separate OS processes for agents | GIL prevents true parallelism; process isolation prevents cross-agent memory corruption |
+| TursoMessageBus with MVCC | Standard SQLite WAL serialises writers; MVCC allows concurrent multi-process writes |
+| `Budget` (immutable) ≠ `IterationBudget` (mutable) | One is a value snapshot; the other is a live shared counter — merging them is a type contradiction |
+| `get()` raises `KeyError`, not returns `None` | Missing secrets should fail at `store.get()` not at the API call 1000 tokens later |
+| `token_counter()` in the loop, `acount_tokens()` at startup | Hot-loop counting must be microseconds; startup baseline can afford a network call |
+| Heuristics for output token estimation | No library can predict output tokens; heuristics are calibrated estimates, P95 replaces them after warm-up |
+| Delete old tests after Refactor | Two test suites for the same module are conflicting specs, not extra safety |
+
+## Deeper reading
+
+`deep-dive/pyarnes-swarm-consolidation-specs-2026-04-28.md` — explains every decision above in depth, with concept explanations (MVCC, Ports & Adapters, O(n²) token cost, structural typing) and learning resources.
+
 ## Consolidation sequence (do in order)
 
 Each phase must complete before the next begins. Do not run phases in parallel.

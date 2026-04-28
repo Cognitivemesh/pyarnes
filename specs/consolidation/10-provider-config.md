@@ -1,5 +1,13 @@
 # pyarnes_swarm — Provider Configuration
 
+## Design Rationale
+
+**Why `ProviderConfig` instead of hardcoding provider logic in `ModelClient`?** `ModelClient` uses LiteLLM's unified API — the provider prefix in the model ID (`openrouter/anthropic/claude-3-haiku`) already tells LiteLLM where to send the request. `ProviderConfig` adds only the secret resolution step: which key in the `SecretStore` holds the API key for this provider. Keeping these separate means adding a new provider requires zero code changes to `ModelClient` — only a new `ProviderConfig`.
+
+**Why does `LLMCostRouter` compare costs across providers, not just across models?** The same model may be cheaper via OpenRouter than via Anthropic Direct (OpenRouter adds a small markup but may offer better rate limits or more models per key). The router queries `litellm.model_cost` for both the bare model ID and the `openrouter/` prefixed version and picks the cheaper one. Without cross-provider comparison, you'd need to manually benchmark prices and update configurations when they change.
+
+**Why does `ModelClient` call `store.get()` (raises `KeyError`) rather than `store.get_optional()` (returns `None`)?** A missing API key should fail immediately and loudly at the first model call, not silently produce a `None` that gets passed to LiteLLM and comes back as an opaque `401 Unauthorized`. `KeyError` at `store.get()` tells you exactly what's missing.
+
 ## Supported providers
 
 `ModelClient` routes calls to any model supported by LiteLLM's unified API. The caller specifies a provider-prefixed model ID; LiteLLM handles authentication and request shaping transparently.

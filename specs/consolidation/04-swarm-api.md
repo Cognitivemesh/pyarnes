@@ -1,5 +1,15 @@
 # pyarnes_swarm — Swarm API
 
+## Design Rationale
+
+**Why five steps in the Hello World?** The five objects (`ToolHandler`, `ToolRegistry`, `GuardrailChain`, `Swarm`/`AgentSpec`) represent five genuinely different concerns: what tools do, where tools are registered, what safety rules apply, and how the swarm is composed. Collapsing them into fewer objects would mean either magic (auto-discovery) or a bloated constructor that accepts everything. The five steps are the minimum explicit wiring.
+
+**Why does `run_parallel()` return `list[list[dict] | Exception]` instead of raising on failure?** In parallel workloads, partial failure is the common case — one agent failing should not cancel the others. Returning `Exception` objects in the result list means callers can inspect which tasks failed, retry only those, and keep successful results. An exception-based API would force callers to implement their own partial-failure logic, or lose all results when one fails.
+
+**Why is `router=None` a `ValueError` if `AgentSpec.model` is also `None`?** Silent configuration errors are worse than loud ones. If you forget to specify a model and there's no router to pick one, the failure should happen at swarm construction time (before any tokens are spent), not mid-run with a cryptic `KeyError`.
+
+**Why does `MessageCompactor` use `litellm.token_counter()` (local) in the loop and `acount_tokens()` (API) only at startup?** `acount_tokens()` makes a network call to the provider and takes ~100ms. Calling it on every loop iteration would add 100ms latency to every model call. `token_counter()` is a local computation taking microseconds. The tradeoff: slightly less accurate counts in the loop, but exact baseline measurement at startup where latency doesn't matter.
+
 ## Hello World (5-step minimum)
 
 ```python

@@ -9,6 +9,16 @@ Use cases:
 - Sub-agent reports intermediate progress back to an orchestrator
 - Agent crash recovery: replay from a durable offset after restart
 
+## Design Rationale
+
+**Why separate OS processes instead of async tasks?** Python's GIL prevents true CPU parallelism in threads. Two agents sharing a process also share memory — a crash, a rogue `sys.exit()`, or an OOM in one agent can corrupt the other's state. Separate processes isolate failures.
+
+**Why MVCC in TursoMessageBus instead of WAL SQLite?** Standard SQLite WAL mode allows concurrent readers but still serialises writers — one writer at a time. In a swarm where 4 agents publish results simultaneously, that serialisation creates a bottleneck. Turso/Limbo uses Multi-Version Concurrency Control (MVCC), the same technique PostgreSQL uses: writers create new row versions instead of locking rows, so multiple agents write without blocking each other.
+
+**Why `resume_from(topic, offset)` in the Protocol?** Agents crash. Without replay, a crash means lost work. `offset` is a monotonic message ID — the agent records the last offset it processed, and on restart, replays from there. This is the event sourcing pattern applied to agent coordination.
+
+**Why three implementations instead of one configurable one?** Each implementation answers a different question: InMemoryBus answers "how do I test?", TursoMessageBus answers "how do I run locally without infra?", NatsJetStreamBus answers "how do I scale?". Trying to make one implementation answer all three questions produces a complex class that does none of them well.
+
 ## Protocol (`ports.py`)
 
 ```python

@@ -72,6 +72,18 @@ packages/swarm/
                 └── compare.py
 ```
 
+## Design Rationale
+
+**Why a single `ports.py` for all Protocols?** When you need to implement a custom backend (model, bus, router), you read one file to understand every contract in the system. Spreading Protocols across files forces readers to hunt — and creates the temptation to define slightly incompatible versions of the same interface in different places.
+
+**Why `ModelClientPort` (Protocol) and `Guardrail` (ABC) instead of one or the other?**
+- `ModelClientPort` uses structural typing (`Protocol`) because model implementations often live in different codebases and inheritance would create a cross-package dependency.
+- `Guardrail` uses an ABC because it provides useful default behaviour (violation logging) that inheritors get for free. A Protocol can't provide defaults.
+
+**Why 18 flat files instead of deep subpackage nesting?** Each file has one clear purpose. If you want to understand routing, read `routing.py` — you don't need to navigate `core/routing/impl/strategies/llm_cost.py`. Flat layouts also mean shorter import paths, which are harder to accidentally break.
+
+**Why is a layer violation a bug, not a style issue?** If `agent.py` imports from `bus.py` (an adapter), then changing the bus implementation requires reading and potentially changing the agent. The whole point of the layer boundary is that domain logic should not know about infra choices. A linter or import checker should catch these violations in CI.
+
 ## Layer rules
 
 Each layer may only import from layers above it in the list. Import from a lower layer is a bug.

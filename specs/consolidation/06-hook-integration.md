@@ -1,5 +1,13 @@
 # pyarnes_swarm — Claude Code Hook Integration
 
+## Design Rationale
+
+**Why the "meta-use" pattern?** Most libraries are used in one direction: your code imports the library. Here, `pyarnes_swarm` is imported *twice* — by the agent under construction AND by the Claude Code hooks that govern that agent. This is unusual but intentional: the same safety primitives (guardrails, budgets) that protect the agent's own tool calls should also protect the coding agent building those tools. One library, one set of primitives, two integration points.
+
+**Why `consume()` returns `False` instead of raising `BudgetExhaustedError`?** An exception unwinds the stack. If the agent is mid-tool-execution when the budget is exhausted, an exception would lose the in-progress result. A `False` return lets the agent finish its current action cleanly, store the result, and then stop at the top of the loop. Cooperative termination preserves work; exception-based termination loses it.
+
+**Why does the `Stop` hook use `Budget.allows()` instead of `IterationBudget`?** The `Stop` hook runs at session end — it's checking cumulative spend over the whole session, not the remaining iteration count. `Budget` is the right tool: it's an immutable record of what was spent, checked against a cap. `IterationBudget` tracks remaining steps for an active loop — it has no meaning at session end.
+
 ## Overview
 
 Claude Code fires hooks at specific lifecycle events. `pyarnes_swarm` provides two primitives that map directly onto the two most useful hook points:

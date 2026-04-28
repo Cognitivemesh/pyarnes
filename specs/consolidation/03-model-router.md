@@ -6,6 +6,16 @@ Running every agent task on the most capable (most expensive) model wastes money
 
 The efficiency feedback loop closes this cycle: `EvalSuite.run()` reports quality + cost per model, and `LLMCostRouter.observe()` updates routing weights so cheap models that perform well get promoted.
 
+## Design Rationale
+
+**Why route at all instead of always using the best model?** In a multi-agent swarm running hundreds of iterations, model cost is the dominant operational expense. A task with `complexity_score=0.2` does not benefit from an Opus-class model — the quality improvement is negligible; the cost difference is 10–20×. Routing makes the swarm economically viable at scale.
+
+**Why two routers (`RuleBasedRouter` and `LLMCostRouter`)?** Rules and costs serve different purposes. Rules are predictable and auditable — you can read a `RoutingRule` list and reason about what model will handle what task. Cost-aware routing is self-calibrating — LiteLLM updates its pricing table and the router adapts automatically. Use rules when you want explicit control; use cost routing when you want the system to optimise for you.
+
+**Why does `LLMCostRouter` apply a context window filter first?** Without it, the router might select a cheap model and the request would fail silently (truncated context) or with an opaque API error. Making the filter explicit — and raising `UserFixableError` when no model fits — makes the failure mode actionable: "no model in your tiers has a large enough context; either compact the history or add a larger-context model to your tiers."
+
+**Why does `LLMCostRouter.observe()` exist?** Routing decisions improve over time. A model that costs more per token but consistently achieves higher `cost_efficiency` (score / cost) on a task type should be promoted. `observe()` is the feedback mechanism that connects evaluation results to future routing decisions. Without it, routing is static — you'd have to manually tune tiers based on observation.
+
 ## Protocol (`ports.py`)
 
 ```python

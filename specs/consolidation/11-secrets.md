@@ -1,5 +1,15 @@
 # pyarnes_swarm — Secrets Management
 
+## Design Rationale
+
+**Why OS keychain over a bespoke encrypted file?** Rolling your own encryption means rolling your own key management. Where does the decryption key live? Usually in another file, hardcoded in source, or derived from a password the developer types — each of which reintroduces the original problem. `keyring` delegates key management to the OS, which uses hardware-backed key stores on modern hardware (Secure Enclave on Apple Silicon, TPM on Windows). The OS has spent decades solving this problem; we inherit that solution for free.
+
+**Why `keyring` specifically, and not another secrets library?** `keyring` is used by `pip`, `twine`, and `Jupyter` — three of the most widely audited Python tools. If it had a leak vector it would have been found. ~250M downloads/month. It is also OS-agnostic by design, which means the same code path works on macOS, Windows, and Linux without conditional logic.
+
+**Why `ChainedSecretStore` as the recommended default?** Local dev uses the OS keychain (no daemon available in CI). CI uses environment variables (no keychain daemon available on headless runners). `ChainedSecretStore` tries keychain first, falls back to env vars — the same code runs in both environments. Without it, you'd need environment-specific configuration or two code paths.
+
+**Why `get()` raises `KeyError` instead of returning `None`?** A missing secret should fail immediately and explicitly. A `None` API key passed to LiteLLM produces a cryptic `401 Unauthorized` hours or thousands of tokens later. `KeyError` at `store.get()` tells you exactly which key is missing before any API call is made.
+
 ## The problem with `.env` files
 
 `.env` files are plaintext on disk. Common failure modes:

@@ -1,5 +1,13 @@
 # pyarnes_swarm — Test Strategy
 
+## Design Rationale
+
+**Why delete old tests immediately after Refactor instead of keeping them as extra coverage?** Two test suites for the same module are not "extra safety" — they're conflicting specifications. When one passes and the other fails, you don't know which is correct. When both pass, you're paying maintenance cost for redundant tests. Deleting old tests after the new suite is green eliminates the ambiguity and forces the new tests to be complete rather than relying on the old ones as a safety net.
+
+**Why confirm 100% RED before writing implementation?** If a test passes without implementation, it's testing nothing (the implementation it's supposed to test doesn't exist yet). A test that starts green proves it's not actually checking the target behaviour. `ImportError` or `AssertionError` on every new test is the required starting state.
+
+**Why three review rounds (GREEN, Round 1, Round 2) before Refactor?** Tests written in the RED phase cover expected behaviour. Round 1 review catches happy-path gaps (the behaviour that will be called most often, but that you forgot to test because you were focused on the contract). Round 2 catches error paths (what happens when the model returns an unexpected format, when the budget is exhausted mid-call, when the bus is unreachable). Refactor only begins once both are covered — otherwise refactoring breaks untested behaviour.
+
 ## The rule
 
 **No implementation step starts until new tests for that module are written and confirmed RED.**

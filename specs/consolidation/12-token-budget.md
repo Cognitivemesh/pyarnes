@@ -1,5 +1,17 @@
 # pyarnes_swarm — Token Budget Management
 
+## Design Rationale
+
+**Why measure tokens at all if the provider just returns a 400 when context is exceeded?** A 400 error mid-loop loses all in-progress work. The model has been called, tool results accumulated, and partial state built up. Measuring tokens *before* the call lets you compact proactively and continue, rather than fail reactively and restart.
+
+**Why measure system overhead once at startup instead of on every call?** `CLAUDE.md`, MCP server configs, and tool schemas don't change mid-session. Measuring them via `acount_tokens()` (a network call) on every iteration would add ~100ms latency to every model call. Measuring once at startup is exact, free of runtime cost, and the result is stable for the entire session.
+
+**Why two different counting functions (`token_counter` vs `acount_tokens`)?** Different tradeoffs: `token_counter` is local (microseconds, approximate). `acount_tokens` is an API call (milliseconds, exact — accounts for Anthropic's internal token additions for tool formatting etc.). Use exact counting where accuracy matters (startup baseline) and fast counting where latency matters (hot loop).
+
+**Why heuristics for output token estimation instead of a library?** No library can predict output tokens before a call — the output depends on the model's reasoning, which hasn't happened yet. The heuristics (1.4× for JSON, 5× for chain-of-thought) are calibrated from empirical observation. They are deliberately conservative — overestimating output reserve is safe (triggers compaction slightly early); underestimating it causes context overflow.
+
+**Why are compaction and the session cap separate controls?** They address different failure modes. Compaction prevents any single request from being too large (per-request cost). The session cap prevents the total session from being too expensive (cumulative cost). You might want a tight per-request limit but a generous session cap (long sessions with many small calls), or a generous per-request limit but a tight session cap (few but large calls). Two independent knobs give you this control.
+
 ## Why this matters
 
 Every agent loop iteration sends the full message history to the model. Cost grows super-linearly:

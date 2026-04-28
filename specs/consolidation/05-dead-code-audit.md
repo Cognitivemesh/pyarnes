@@ -1,5 +1,16 @@
 # pyarnes_swarm — Dead Code Audit
 
+## Design Rationale
+
+**Why delete dead code before implementation instead of after?** Porting dead code wastes effort and creates confusion — future maintainers can't tell if a class is intentionally unused or accidentally orphaned. Auditing first ensures that Phase 1 tests are written only for code that will actually exist in the consolidated package.
+
+**Why keep `Budget` and `IterationBudget` as separate classes?** They look similar but are fundamentally different data structures:
+- `Budget` (`frozen=True`) is an **immutable value type** — `consume()` returns a *new* `Budget` with updated counts. Used by Claude Code Stop hooks to record session spend as a snapshot.
+- `IterationBudget` is a **mutable shared counter** with `asyncio.Lock` — `consume()` modifies shared state and returns `bool`. Used across parent and sub-agents in a live swarm.
+Merging them would produce a class that is simultaneously immutable (for value semantics) and mutable (for shared state) — a contradiction that cannot be resolved without one of them losing its defining property.
+
+**Why is the cognitive complexity scan a separate pass from vulture?** Vulture finds unused code. The cognitive complexity scan finds *duplicated* concepts — two classes that implement the same idea with slightly different names. These aren't dead code (both are used), but they create confusion about which to reach for. Example: `CompactionTransformer` and `ContextCompressor` both wrap `compact()` — one always-on, one threshold-triggered. Two names for one concept → one class (`MessageCompactor`) with a `context_window` parameter.
+
 ## Method
 
 Three-pass audit:

@@ -1,5 +1,13 @@
 # pyarnes_swarm — Bench: Integrated Evaluation Axes
 
+## Design Rationale
+
+**Why does `Scorer.score()` return `ScoreResult` instead of a `float`?** An `LLMJudgeScorer` makes its own LLM call to evaluate quality. That call has a cost. If the scorer returns only a `float`, you know the quality score but not how much the evaluation itself cost. Over many eval runs, evaluation cost can approach or exceed agent cost — ignoring it produces false economy. `ScoreResult.usage` makes evaluation cost visible so `EvalSuite.run()` can include it in the total.
+
+**Why is `EvalSuite.run()` the integration point instead of the scorer or BurnTracker?** The scorer knows quality. BurnTracker knows cost. `EvalSuite.run()` is the only place that sees both simultaneously — it's the natural place to join them. If the join were in the scorer, scorers would need to import BurnTracker (coupling quality logic to cost infrastructure). If it were in BurnTracker, cost tracking would need to know about quality scoring. `EvalSuite` is the coordinator that knows about both without coupling them.
+
+**Why does the efficiency feedback loop close back to `LLMCostRouter`?** Without feedback, routing is static — you set tiers once and they never change. With feedback, a cheap model that consistently scores well on a task type gets promoted (its complexity ceiling raised). The evaluation system isn't just a report card; it's the signal that makes routing self-improving.
+
 ## The problem
 
 `EvalResult` already has `usage: TokenUsage | None` and `cost: Cost | None`. `EvalSuite` already has `cost_efficiency = average_score / total_cost`. The foundation is there — but `Scorer.score()` returns a bare `float`, and there is no integration point that connects `BurnTracker` to scoring automatically. The three axes are manually assembled by callers.

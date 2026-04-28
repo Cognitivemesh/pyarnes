@@ -6,6 +6,14 @@ Maps every existing test file to its replacement in `tests/swarm/` or a deletion
 - **New test** — path relative to `tests/swarm/`
 - **Action** — MIGRATE (content port to new file), DELETE (redundant after new tests), KEEP (not covered by consolidation)
 
+## Design Rationale
+
+**Why migrate rather than rewrite from scratch?** Existing tests encode correct behaviour that was discovered through debugging and iteration — some of it non-obvious. A from-scratch rewrite risks losing that institutional knowledge. MIGRATE means port the intent, not necessarily the code. If the old test `assert loop.run(msgs) == expected` still tests the right thing, keep it. If it's testing an implementation detail that changed, rewrite it.
+
+**Why are bench/, template/, and tasks/ tests kept and not migrated?** These packages are not being consolidated into `pyarnes_swarm`. They are separate concerns (`bench/` has its own optional extra, `template/` tests the Copier scaffold, `tasks/` tests the CLI runner). Migrating them would conflate consolidation with unrelated changes.
+
+**Why DELETE `test_sandbox.py` rather than migrate it?** `SeccompSandbox` is being deleted entirely (Linux-only, zero callers). A test for deleted code has no migration target. Keeping it would either test nothing or test code that no longer exists.
+
 ## `tests/unit/` — flat files
 
 | Old test | New test | Action |
