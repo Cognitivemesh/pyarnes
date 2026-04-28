@@ -172,3 +172,8 @@ This keeps the bus generic while preserving human-readability.
 ### Event Sourcing (resume_from pattern)
 
 `MessageBus.resume_from(topic, offset)` is event sourcing applied to agent coordination. `offset` is a monotonic message ID — each agent records the last offset it processed, and on restart replays from there. This recovers from crashes without losing work. Understanding event sourcing explains why `offset` exists as a first-class parameter rather than being hidden inside the bus.
+
+## Event Sourcing via `resume_from` Offset
+
+To provide resilient crash-recovery across sessions, the Message Bus implements monotonic offset checkpointing via a `resume_from(topic, offset)` semantic. 
+Each message in a topic receives a strictly monotonic integer ID over the session stream. If the sub-agent or `AgentLoop` terminates abruptly, it seamlessly checkpoints the last successfully processed offset into the local database. Upon restart, it re-connects using `resume_from` to replay any unacknowledged events rather than losing state. This provides event-sourcing with effectively exactly-once execution semantics.

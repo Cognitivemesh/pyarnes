@@ -301,3 +301,176 @@ class MyModelClient:
 ```
 
 Pass it wherever `ModelClientPort` is accepted (e.g. `AgentRuntime(model=MyModelClient(), ...)`).
+
+## Self-registering `@tool` decorator (H10)
+
+The `@tool` decorator registers a `ToolHandler` subclass in a module-level global registry without requiring the caller to build a `ToolRegistry` by hand.
+
+```python
+from pyarnes_swarm.tools import tool
+
+@tool
+class SearchTool(ToolHandler):
+    """Registered automatically under the name 'searchtool' (class name lowercased)."""
+    async def execute(self, arguments: dict) -> str: ...
+
+@tool(name="search")
+class SearchTool(ToolHandler):
+    """Registered under an explicit name."""
+    async def execute(self, arguments: dict) -> str: ...
+```
+
+To merge globally registered tools into an `AgentRuntime`, pass `use_global_registry=True`:
+
+```python
+runtime = AgentRuntime(
+    model=model,
+    tools=registry,          # explicit tools take precedence on name conflicts
+    use_global_registry=True,  # @tool-decorated classes are merged in
+    config=LoopConfig(),
+)
+```
+
+Merge rules:
+- When `use_global_registry=True`, the global registry is merged with `tools` at construction time.
+- If the same name appears in both, the explicitly passed `tools` entry wins — it takes precedence.
+- The global registry is never mutated; merge produces a new combined `ToolRegistry`.
+
+This is an opt-in feature. `use_global_registry` defaults to `False`; existing callers that do not set it see no behaviour change.
+
+## Terminate hint (P6)
+
+A `ToolMessage` with `terminate=True` signals the loop to exit cleanly after the current iteration completes. No exception is raised; the loop drains normally.
+
+```python
+@dataclass
+class ToolMessage:
+    content: str
+    is_error: bool = False
+    terminate: bool = False   # when True, loop exits after this iteration; no exception raised
+```
+
+Usage — a tool that decides the task is complete can signal early exit without raising:
+
+```python
+class DoneCheckTool(ToolHandler):
+    async def execute(self, arguments: dict) -> ToolMessage:
+        if self._is_complete(arguments):
+            return ToolMessage(content="Task complete.", terminate=True)
+        return ToolMessage(content="Still working.")
+```
+
+The loop checks `ToolMessage.terminate` at the top of each iteration. If `True`, the loop exits after appending the tool result to the history and returns the full message list. This is distinct from `UserFixableError` (which bubbles up as an exception) and from `max_iterations` exhaustion (which also exits cleanly but is a limit, not a signal).
+
+## Parallel tool execution (H7)
+
+When the model emits a batch of tool calls in a single turn, the loop may dispatch them concurrently — but only when it is safe to do so. The decision is made by `can_parallelize()`, defined in `pyarnes_swarm.agent.parallel`.
+
+```python
+from pyarnes_swarm.agent.parallel import can_parallelize, SERIAL_TOOLS
+
+def can_parallelize(calls: list[ToolCall]) -> bool:
+    """Return True iff every call in `calls` is safe to dispatch concurrently.
+
+    Conservative by design: any uncertainty resolves to False (serial dispatch).
+    """
+    ...
+```
+
+`can_parallelize` returns `False` if **any** of the following hold:
+
+- Two calls share a path argument — for example, both write to `out.txt`. Detected by intersecting path-shaped argument values across the batch (any field whose value resembles a filesystem path).
+- Any tool name in the batch is listed in `SERIAL_TOOLS`. This set captures handlers that mutate file-system state, hold module-global state, or otherwise must not run concurrently with anything (including themselves).
+
+When `can_parallelize(calls)` is `False`, the loop falls back to sequential dispatch — the existing serial path is unchanged. When `True`, the loop awaits the calls together (`asyncio.gather`) and appends results in original order.
+
+`SERIAL_TOOLS` is a module-level frozenset adopters can extend by composition — define a wrapper module that re-exports `can_parallelize` against an extended set if a custom tool needs to opt out of parallel dispatch. The default set covers the file-system mutating tools shipped with `pyarnes_swarm`.
+
+This is conservative on purpose: parallel dispatch is a performance optimisation, not a correctness primitive. The cost of incorrectly parallelising two writes to the same path is data corruption; the cost of unnecessarily serialising two safe reads is latency. The defaults bias toward correctness.
+
+## Stable public API surface
+
+### `__all__` philosophy
+
+`pyarnes_swarm.__init__` exports an explicit set of symbols via `__all__`. This is the contract adopters may depend on: anything in this table is protected by semver. `from pyarnes_swarm import *` yields only these names — nothing more leaks. Symbols importable only by deep path (e.g. `pyarnes_swarm.budget.Budget`) are implementation surfaces, not subject to the strongest stability guarantee.
+
+### Symbol inventory
+
+| Symbol | Notes |
+|---|---|
+| `pyarnes_swarm.Lifecycle` | Lifecycle tracking; exposes `.budget`, `.dump(path)`, `.load(path)` for session hooks |
+| `pyarnes_swarm.Phase` | Lifecycle phase enum |
+| `pyarnes_swarm.Budget` | Immutable token-spend cap; distinct from IterationBudget (mutable shared counter) |
+| `pyarnes_swarm.IterationBudget` | Mutable shared iteration counter; held by `LoopConfig.budget` |
+| `pyarnes_swarm.MessageCompactorConfig` | Compaction config; held by `LoopConfig.compaction_config` |
+| `pyarnes_swarm.LoopBudget` | CC session budget (max_tokens/max_wall_seconds/max_calls); held by `Lifecycle.budget`; see `12-token-budget.md` |
+| `pyarnes_swarm.TransientError` | Retry with exponential backoff |
+| `pyarnes_swarm.LLMRecoverableError` | Returned as `ToolMessage` so the model adjusts |
+| `pyarnes_swarm.UserFixableError` | Bubbles up for human input |
+| `pyarnes_swarm.UnexpectedError` | Bubbles up for debugging |
+| `pyarnes_swarm.HarnessError` | Base class for all harness errors |
+| `pyarnes_swarm.Severity` | Severity levels for errors and violations |
+| `pyarnes_swarm.ToolHandler` | Protocol — implement to define a tool |
+| `pyarnes_swarm.ModelClient` | Concrete LiteLLM-backed model adapter |
+| `pyarnes_swarm.ModelClientPort` | Protocol — implement to plug in a custom LLM backend |
+| `pyarnes_swarm.get_logger` | Return the configured loguru logger |
+| `pyarnes_swarm.configure_logging` | Configure log level and format at process start |
+| `pyarnes_swarm.LogFormat` | Enum for log format (json / human) |
+| `pyarnes_swarm.AgentRuntime` | Single-agent loop runner; use directly for single-agent setups or testing |
+| `pyarnes_swarm.LoopConfig` | Loop retry and iteration configuration |
+| `pyarnes_swarm.ToolMessage` | Structured tool result returned to the model |
+| `pyarnes_swarm.ToolRegistry` | Registry mapping tool names to `ToolHandler` instances |
+| `pyarnes_swarm.ToolCallLogger` | Writes JSONL tool-call records; stable field set, not stable field order |
+| `pyarnes_swarm.ToolCallEntry` | Dataclass representing one logged tool call |
+| `pyarnes_swarm.OutputCapture` | Context manager for capturing tool stdout/stderr |
+| `pyarnes_swarm.CapturedOutput` | Result of an `OutputCapture` session |
+| `pyarnes_swarm.read_cc_session` | Parse a Claude Code session transcript |
+| `pyarnes_swarm.resolve_cc_session_path` | Resolve the path to the active Claude Code session file |
+| `pyarnes_swarm.Guardrail` | Abstract base for all guardrails |
+| `pyarnes_swarm.GuardrailChain` | Compose multiple guardrails in sequence |
+| `pyarnes_swarm.PathGuardrail` | Block tool calls outside allowed filesystem roots |
+| `pyarnes_swarm.CommandGuardrail` | Block disallowed shell commands |
+| `pyarnes_swarm.ToolAllowlistGuardrail` | Permit only listed tool names |
+| `pyarnes_swarm.SecretLeakGuardrail` | Detect and block secret leakage in tool arguments |
+| `pyarnes_swarm.NetworkEgressGuardrail` | Restrict outbound network calls |
+| `pyarnes_swarm.RateLimitGuardrail` | Enforce per-tool call rate limits |
+| `pyarnes_swarm.Violation` | Sidecar record written when a guardrail fires |
+| `pyarnes_swarm.append_violation` | Append a `Violation` to the violation log |
+| `pyarnes_swarm.default_violation_log_path` | Return the default path for the violation log |
+| `pyarnes_swarm.EvalSuite` | Define and run an evaluation suite |
+| `pyarnes_swarm.EvalResult` | Result of a single evaluation run |
+| `pyarnes_swarm.Scorer` | Abstract base for all scorers |
+| `pyarnes_swarm.ExactMatchScorer` | Score by exact string match |
+| `pyarnes_swarm.ToolUseCorrectnessScorer` | Score by whether the correct tools were called |
+| `pyarnes_swarm.TrajectoryLengthScorer` | Score by trajectory length relative to a reference |
+| `pyarnes_swarm.GuardrailComplianceScorer` | Score by guardrail violation rate |
+| `pyarnes_swarm.Swarm` | Multi-agent orchestrator |
+| `pyarnes_swarm.AgentSpec` | Declarative description of one agent |
+| `pyarnes_swarm.TaskMeta` | Task context used by a `ModelRouter` to select a model |
+| `pyarnes_swarm.ModelRouter` | Protocol — implement to plug in a custom routing strategy |
+| `pyarnes_swarm.RuleBasedRouter` | Route by static model-tier rules |
+| `pyarnes_swarm.LLMCostRouter` | Route by estimated token cost and context-window fit |
+| `pyarnes_swarm.ModelTier` | Enum for model cost/capability tiers |
+| `pyarnes_swarm.MessageBus` | Protocol — implement to plug in a custom message bus |
+| `pyarnes_swarm.InMemoryBus` | In-process message bus for single-machine swarms |
+| `pyarnes_swarm.TursoMessageBus` | Turso-backed durable message bus |
+| `pyarnes_swarm.SecretStore` | Protocol — implement to supply secrets to agents |
+
+### Explicitly private
+
+These surfaces are intentionally excluded from the stability guarantee. Contributors may refactor them freely; adopters must not depend on them:
+
+- `AgentRuntime._call_tool`, `AgentRuntime._dispatch`, and any `_`-prefixed helper on any public class.
+- Log event string names (`"tool.pre"`, `"guardrail.command_blocked"`, etc.) — internal telemetry; adopters must not regex them.
+- `ToolCallLogger` JSONL field order — the set of fields is stable, the order is not.
+- `Lifecycle.history` concrete list type — the iterable contract is stable; mutations on the backing container are not.
+
+### Semver policy
+
+`CHANGELOG.md` at the repo root uses Keep-a-Changelog format seeded from `0.0.0 — initial stable surface declared`. The three tiers: **MAJOR** for removing or renaming any symbol from the table above, changing a `ToolHandler`/`Guardrail`/`Scorer`/`ModelRouter` base-class signature, or changing error-class inheritance; **MINOR** for new public symbols, new optional kwargs, new `Phase` values, new built-in `Guardrail` or `Scorer` subclasses; **PATCH** for bug fixes, docstring changes, and private-surface refactors.
+
+## Tool Handler Sizing Constraint
+
+A critical design constraint for all `ToolHandler.execute()` implementations is that they **must be ≤ 30 lines of code**. The handler's only responsibilities are parameter parsing, validation, and delegating to standard library or external libraries (e.g., executing standard CLI patterns like ingest/redact/sweep).
+
+If a tool handler logic requires more than 30 lines, the core logic should be abstracted away and unit-tested in isolation. We recommend enforcing this using a code-length linting rule (e.g., `mccabe` or custom Flake8 limits) in `pyproject.toml`.

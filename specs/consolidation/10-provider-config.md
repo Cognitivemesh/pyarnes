@@ -164,3 +164,19 @@ env:
 4. Pass the `ProviderConfig` to `ModelClient`
 
 No code changes to `pyarnes_swarm` are required. LiteLLM handles the rest.
+
+## Streaming transport
+
+For streaming responses, implement `StreamingProviderTransport` (a sub-protocol of `ProviderTransport`; see `22-transport.md`). Non-streaming providers only need `ProviderTransport`.
+
+## Cross-Provider Cost Comparison
+
+To securely switch between model providers (OpenAI, Anthropic, Gemini), the `ModelRouter` abstracts configurations utilizing `litellm` routing bindings. Cost discovery is actively performed via dynamic `litellm.model_cost` rather than hardcoding static prices per environment.
+
+| Provider / Router | Model Prefix | Example Config Key | Look-up Pattern |
+|---|---|---|---|
+| **OpenRouter** | `openrouter/` | `openrouter/claude-3-5-sonnet` | `litellm.model_cost["openrouter/claude-3-5-sonnet"]` |
+| **Anthropic** | `anthropic/` | `anthropic/claude-3-5-sonnet-20240620` | `litellm.model_cost["claude-3-5-sonnet-20241022"]` |
+| **OpenAI** | `openai/` | `openai/gpt-4o` | `litellm.model_cost["gpt-4o"]` |
+
+By indexing parameters uniformly in the routing abstractions, the framework guarantees reliable Token Budgeting measurements and threshold checks for diverse backends.
