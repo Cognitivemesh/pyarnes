@@ -33,7 +33,7 @@ The cycle is strictly **Red → Green → Refactor**:
    - Extract private helpers where logic is reused
    - Tests must stay **green throughout the refactor**. If any test goes red during refactor, the refactor broke behaviour — fix it before continuing.
 
-6. **Delete old tests** — immediately after refactor. No old test file survives if the new test suite covers its intent. Run the full suite to confirm nothing regressed: `uv run pytest tests/swarm/ -q`.
+6. **Delete old runtime tests** — immediately after refactor. No old swarm-runtime test file survives if the new `tests/swarm/` suite covers its intent. Template tests, tasks tests, and bench-specific tests that remain outside consolidation are kept in their own areas. Run the full suite to confirm nothing regressed: `uv run pytest tests/swarm/ -q`.
 
 ## What "covers its intent" means
 
@@ -175,7 +175,7 @@ These mistakes appear repeatedly when starting Phase 1. Avoid them:
 
 ## After Phase 2 is complete
 
-All old tests under `tests/unit/`, `tests/features/`, and `tests/template/` are deleted. Only `tests/swarm/` remains.
+All old swarm-runtime tests under `tests/unit/` and `tests/features/` are deleted once their intent is migrated. `tests/template/`, bench-specific tests, and tasks tests remain outside the core swarm migration.
 
 Run the final check:
 ```bash

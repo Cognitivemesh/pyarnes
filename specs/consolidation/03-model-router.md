@@ -38,6 +38,7 @@ class TaskMeta:
     has_destructive_tools: bool = False   # rm, chmod, DROP TABLE, etc.
     complexity_score: float = 0.5         # 0.0 = trivial, 1.0 = complex
     model_hint: str | None = None         # from AgentSpec; router may honour or override
+    required_context_tokens: int = 0      # tokens needed for this task; used by LLMCostRouter for context window filtering
 ```
 
 `complexity_score` is a 0–1 float. Callers compute it from task description length, tool schema complexity, or domain-specific signals. The router is agnostic to how it was computed.

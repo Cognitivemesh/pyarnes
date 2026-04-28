@@ -194,7 +194,50 @@ def test_chained_falls_back(monkeypatch):
 
 Rolling encryption means rolling key management. Where does the decryption key live? Usually in another file, or hardcoded, or derived from a password the developer types — each of which reintroduces the original problem. `keyring` delegates key management to the OS, which has spent decades solving exactly this problem with hardware-backed key stores on modern hardware.
 
+## Credential redaction (H9)
+
+Tool-call arguments are logged to JSONL by `ToolCallLogger`. Without redaction, an argument containing an API key (e.g. a tool that accepts a `token` field) would land in the log file in plaintext.
+
+Module: `pyarnes_swarm.safety.redact`
+
+```python
+from pyarnes_swarm.safety.redact import redact_dict
+
+def redact_dict(d: dict) -> dict:
+    """Return a copy of *d* with values for secret-looking keys replaced by '***REDACTED***'.
+
+    A key is considered secret if its lowercased form contains any of:
+    'key', 'token', 'secret', 'password', 'credential', 'auth'.
+    Nested dicts are recursed. The input is never mutated.
+    """
+    ...
+```
+
+`redact_dict` is the default `redactor` in `ToolCallLogger.__init__`. Every tool-call entry is passed through `redactor(entry.arguments)` before the JSONL line is written.
+
+```python
+@dataclass
+class ToolCallLogger:
+    path: Path
+    redactor: Callable[[dict], dict] | None = redact_dict  # default: redact secret-looking keys
+
+    # Opt out of redaction:
+    # logger = ToolCallLogger(path=Path("..."), redactor=None)
+```
+
+To disable redaction entirely, pass `redactor=None`. To supply a custom policy, pass any `Callable[[dict], dict]` that returns a sanitized copy.
+
 ## Learning resources
 
 - [keyring library documentation](https://keyring.readthedocs.io/) — OS keychain integration, backends per platform, headless fallback configuration
 - [asyncio Synchronisation Primitives](https://docs.python.org/3/library/asyncio-sync.html) — `asyncio.Lock` used in `IterationBudget.consume()` (relevant to the secrets injection pattern in hook integration)
+
+## Why not `.env` files?
+
+Storing secrets locally in `.env` files is a seemingly convenient but critical operational-security anti-pattern that leads to severe failure modes in iterative Agent loops constraints:
+
+1. **`.gitignore` Forgetting**: A stray `.env` added during rapid prototyping is notoriously easily checked into source control by AI developer-tools without human oversight.
+2. **Merge Conflict Re-entry**: Git conflicts around `.gitignore` occasionally erase exclusions, silently re-introducing `.env` tracking.
+3. **Backup Tool Exposure**: System backups and IDE syncing/workspace telemetry mechanisms frequently sweep unencrypted `.env` files across untrusted cloud systems.
+
+For these exact reasons, `pyarnes-core` strictly mandates usage of the OS-level `keyring` (the security standard backing pip, twine, and Jupyter).

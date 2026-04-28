@@ -189,6 +189,46 @@ def _viable_models(candidates: list[str], required_context: int) -> list[str]:
 
 If no model in the configured tiers can fit the required context, `LLMCostRouter.route()` raises `UserFixableError("No configured model has a context window large enough for this task")` rather than silently sending an oversized request.
 
+## `IterationBudget` (H4)
+
+`IterationBudget` is a mutable shared counter for bounding the total number of loop iterations across a swarm. It is defined in `pyarnes_swarm.agent`.
+
+```python
+@dataclass
+class IterationBudget:
+    """Shared mutable iteration counter.
+
+    Pass the same instance to parent and sub-agents so all agents draw from
+    the same pool. asyncio.Lock guards concurrent consume() calls from parallel agents.
+
+    WHY mutable (not frozen)? The whole point is for every agent to see the same
+    running total. A frozen (immutable) counter would require an external registry;
+    a single shared mutable instance is simpler and sufficient.
+    """
+    max_iterations: int
+    iterations_used: int = 0           # mutable; incremented by consume()
+
+    async def consume(self, n: int = 1) -> None:
+        """Increment iterations_used by n. Raises LLMRecoverableError if budget exhausted."""
+        ...
+
+    @property
+    def remaining(self) -> int:
+        """Return max_iterations - iterations_used."""
+        ...
+```
+
+Passing the **same instance** to parent and sub-agents is the sharing mechanism — Python passes objects by reference, so all agents that hold the same `IterationBudget` object decrement a single counter:
+
+```python
+shared = IterationBudget(max_iterations=500)
+
+parent_config = LoopConfig(budget=shared)
+child_config  = LoopConfig(budget=shared)   # same object — same pool
+```
+
+When `iterations_used` reaches `max_iterations`, `consume()` raises `LLMRecoverableError` rather than `UserFixableError` — the budget exhaustion is reported back to the model as a tool error, allowing the orchestrator to decide how to proceed.
+
 ## Integration in `LoopConfig`
 
 ```python
@@ -287,3 +327,182 @@ Do **not** use `tiktoken` directly for Anthropic models — it uses a different 
 
 ### Background reading
 - [Simon Willison on LLM application architecture](https://simonwillison.net/2023/May/18/the-architecture-of-todays-llm-applications/) — practical context for why token costs and routing matter at scale
+
+## Claude Code session integration
+
+### Why call-count and wall-time caps are more reliable than token counting from CC JSONL
+
+Claude Code transcripts carry `message.usage.input_tokens` / `output_tokens` in their JSONL output, but this schema is not a public contract — it can change without notice. Token accounting via JSONL is therefore best-effort. Call-count caps (`max_calls`) and wall-time caps (`max_wall_seconds`) operate on values you control directly (a counter you increment, a clock you read) and are the reliable enforcement path for stopping a CC session.
+
+### `LoopBudget`
+
+A frozen dataclass added to `pyarnes_swarm.agent` alongside `IterationBudget`. All fields default to `None` (opt-in; all `None` is equivalent to passing `budget=None`).
+
+```python
+@dataclass(frozen=True, slots=True)
+class LoopBudget:
+    max_tokens: int | None = None           # cumulative token spend cap (best-effort via JSONL)
+    max_wall_seconds: float | None = None   # wall-clock cap for the entire session
+    max_calls: int | None = None            # cap on total model calls (reliable enforcement path)
+```
+
+> **Relationship to `IterationBudget`:** `max_calls` is the call-count analogue of `IterationBudget.max_iterations`. `LoopBudget` is the richer, CC-session-aware type that adds token and wall-time dimensions. Use `IterationBudget` for simple iteration caps inside the harness loop; use `LoopBudget` when wiring CC session hooks.
+
+### `Lifecycle` snapshot fields
+
+`Lifecycle` gains three additions so a CC `SessionEnd` hook can snapshot state and a `SessionStart` hook can restore it:
+
+```python
+class Lifecycle:
+    budget: LoopBudget | None = None          # optional budget attached to this session
+
+    def dump(self, path: Path) -> None:
+        """Serialise lifecycle state (including budget progress) to JSON at path."""
+        ...
+
+    @classmethod
+    def load(cls, path: Path) -> "Lifecycle":
+        """Restore lifecycle state from a dump file."""
+        ...
+```
+
+`dump` / `load` use stdlib `json` — no extra dependencies. The checkpoint file is written by the `SessionEnd` hook and read by the `SessionStart` hook.
+
+### The `Stop` hook pattern
+
+The CC-documented mechanism for ending a session mid-flight is a `Stop` hook that emits `{"continue": false, "stopReason": "..."}`. The harness ships a reference implementation at `template/.claude/hooks/pyarnes_stop.py`:
+
+```python
+# template/.claude/hooks/pyarnes_stop.py
+import json, sys, time
+from pathlib import Path
+
+checkpoint = Path(sys.argv[1]) if len(sys.argv) > 1 else None
+if checkpoint and checkpoint.exists():
+    state = json.loads(checkpoint.read_text())
+    budget = state.get("budget", {})
+    elapsed = time.monotonic() - state.get("session_start", time.monotonic())
+
+    reasons = []
+    if budget.get("max_calls") and state.get("call_count", 0) >= budget["max_calls"]:
+        reasons.append(f"call cap reached ({budget['max_calls']})")
+    if budget.get("max_wall_seconds") and elapsed >= budget["max_wall_seconds"]:
+        reasons.append(f"wall-time cap reached ({budget['max_wall_seconds']}s)")
+    if budget.get("max_tokens") and state.get("token_count", 0) >= budget["max_tokens"]:
+        reasons.append(f"token cap reached ({budget['max_tokens']})")
+
+    if reasons:
+        print(json.dumps({"continue": False, "stopReason": "; ".join(reasons)}))
+        sys.exit(0)
+
+# No cap hit — allow session to continue
+print(json.dumps({"continue": True}))
+```
+
+The hook is registered under `hooks.Stop` in the project's `.claude/settings.json`. `SessionEnd` writes the checkpoint; `SessionStart` calls `Lifecycle.load()` to restore budget progress across CC restarts.
+
+## Output Token Heuristics Table
+
+Output tokens are the primary bottleneck in scaling swarm environments, as model latency often scales strictly $O(N)$ with output tokens. We use the following empirical multiplier multipliers (heuristics over base English prose):
+
+| Output Type         | Multiplier | Note |
+|---------------------|------------|------|
+| **JSON Schema**     | $1.4\times$| Structure parsing overhead |
+| **Code Snippets**   | $2.0\times$| Heavy syntax tokens |
+| **Tool Calls**      | $3.0\times$| Strict function signature matching |
+| **Chain-of-Thought**| $5.0\times$| Unbounded step-by-step reasoning |
+
+## TALE Self-Estimation Technique
+
+A major optimization in the AgentLoop budget is **TALE** (Targeted Action Logic Evaluation) inspired by recent agent research. Instead of having an expensive model like `claude-3-5-sonnet` plan every step:
+
+```text
+1. Delegate to a fast/cheap model (e.g., haiku / gpt-4o-mini) strictly for "decision estimation."
+2. The small model predicts: "What's the best action?" and "What's the required context length?"
+3. The large model only executes the targeted action, reducing prompt fluff.
+```
+
+Applying TALE consistently reduces the output token usage of the heavy-weight model by up to $67\%$. We recommend integrating this directly into the `ModelRouter` layer for all tasks.
+
+## Compaction internals
+
+The compaction subsystem in `pyarnes_swarm.agent` (split across `compaction.py`, `transform.py`, and `compressor.py` modules) has four design invariants that callers and contributors must respect.
+
+### Layered message transformation — `TransformChain`
+
+`TransformChain` composes ordered, idempotent message transformers (e.g. truncation, summarisation, redaction) and is invoked once per loop iteration **on a fresh copy** of the message list:
+
+```python
+# pseudo-code in pyarnes_swarm.agent.loop
+working = list(self.messages)        # shallow copy — never the stored list
+working = self.transform_chain.apply(working)
+response = await self.client.complete(working, ...)
+```
+
+The stored `self.messages` history is never mutated by transformers. This guarantees:
+
+- A failed iteration does not corrupt history for the next attempt.
+- Reflective tools (`get_history`, debugging logs) always see the unredacted, untransformed sequence.
+- Transformers can be reordered or disabled without retroactive effects on already-stored messages.
+
+Transformers must be pure functions of their input list — no I/O, no shared mutable state.
+
+### Cut-index safety — `_find_cut_index`
+
+The internal helper `_find_cut_index(messages, target_index)` in `pyarnes_swarm.agent.compaction` scans **backward** from `target_index` and returns an adjusted index that never falls inside a tool-call / tool-result pair. Cutting between an `assistant` message that contains `tool_use` blocks and the matching `tool_result` blocks would orphan the tool result on next replay and produce a 400 from the provider.
+
+Behaviour:
+
+- If `messages[target_index]` is a `tool_result`, the helper walks back until the preceding `assistant` tool-call message (or earlier) is included.
+- If `messages[target_index]` is an `assistant` message containing `tool_use` blocks whose results follow, the helper walks back to before that assistant message.
+- The returned index is always `<= target_index`; in the worst case it returns `0`.
+
+All compaction strategies (sliding-window, summarise-then-trim) must call `_find_cut_index` before slicing. Direct slicing of `messages[:k]` without this guard is a bug.
+
+### Anti-thrash guard — `min_savings_ratio`
+
+`MessageCompactorConfig` includes a `min_savings_ratio` field (default `0.10`). After a compaction pass, if `(tokens_before - tokens_after) / tokens_before < min_savings_ratio`, the compactor **discards** the new message list and keeps the original. This prevents:
+
+- Repeated compaction calls that each save a few tokens but cost a summariser invocation.
+- Drift away from the original messages when the transform chain has nothing meaningful to remove.
+- Pathological loops where compaction triggers, saves nothing, triggers again next iteration.
+
+```python
+@dataclass(frozen=True)
+class MessageCompactorConfig:
+    context_window: int
+    capacity_threshold: float = 0.75
+    summary_max_tokens: int = 512
+    overhead_tokens: int = 0
+    output_reserve: int = 4096
+    min_savings_ratio: float = 0.10   # skip compaction if savings below this
+```
+
+The check uses the same token counter as the trigger; both `tokens_before` and `tokens_after` come from `litellm.token_counter()` so the ratio is internally consistent even if the local tokenizer is approximate.
+
+### `AgentRuntime.with_compressor()` — adopter one-liner
+
+`AgentRuntime` (in `pyarnes_swarm.agent.runtime`) exposes a classmethod `with_compressor()` that builds a runtime pre-wired with `ContextCompressor` (auto-trigger compaction). This is the recommended one-liner for adopters; it removes the boilerplate of constructing the compactor, transform chain, and compressor by hand.
+
+```python
+from pyarnes_swarm.agent import AgentRuntime, LoopConfig, MessageCompactorConfig
+
+runtime = AgentRuntime.with_compressor(
+    model="claude-haiku-4-5-20251001",
+    loop_config=LoopConfig(max_iterations=50),
+    compactor_config=MessageCompactorConfig(
+        context_window=200_000,
+        capacity_threshold=0.75,
+        overhead_tokens=overhead,        # measured at startup
+        min_savings_ratio=0.10,
+    ),
+)
+```
+
+Behaviour:
+
+- Constructs a default `TransformChain` (summarisation transformer wired to the cheapest configured model tier).
+- Instantiates `ContextCompressor` with the supplied `MessageCompactorConfig` and registers it with the runtime so it auto-triggers when `tokens_used / effective_window >= capacity_threshold`.
+- Returns a fully-configured `AgentRuntime` ready to `run()`.
+
+Adopters who need bespoke transform pipelines can construct `AgentRuntime(...)` directly and pass their own `compressor=`; `with_compressor()` is a convenience, not the only path.

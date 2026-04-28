@@ -167,4 +167,4 @@ These tests cover new surfaces that have no counterpart in the old test suite:
 | DELETE (dead tests) | ~10 files |
 | KEEP (bench/, template/, tasks/) | ~25 files |
 
-After Phase 2: `tests/unit/` and `tests/features/` directories are deleted entirely. `tests/swarm/`, `tests/template/`, and `tests/unit/tasks/` remain (tasks package is separate and not consolidated).
+After Phase 2: old swarm-runtime tests under `tests/unit/` and `tests/features/` are deleted once migrated. `tests/swarm/`, `tests/template/`, bench-specific tests, and `tests/unit/tasks/` remain because those concerns are not fully absorbed into the core swarm migration.

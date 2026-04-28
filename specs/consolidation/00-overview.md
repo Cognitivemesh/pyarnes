@@ -163,7 +163,7 @@ Each phase must complete before the next begins. Do not run phases in parallel.
 
 | Phase | What happens | When done |
 |---|---|---|
-| **0 — Specs** | Write 11 consolidation specs; archive old specs; delete `docs/` | ✅ Complete |
+| **0 — Specs** | Write and maintain the canonical consolidation specs; archive old specs; delete `docs/` | ✅ Complete |
 | **1 — RED tests** | Create `packages/swarm/` skeleton; write all `tests/swarm/` tests; confirm 100% fail | Next step |
 | **2 — GREEN + REFACTOR** | Implement each module (Red→Green→Refactor per module); delete old tests after each module's refactor | |
 | **3 — Cutover** | Delete dead code; delete old packages; confirm only `tests/swarm/` remains | |
@@ -177,3 +177,44 @@ Start a fresh context window for Phase 1 onwards to avoid context exhaustion mid
 - `08-test-strategy.md` — Red → Green → Refactor discipline
 - `09-test-map.md` — every old test file mapped to new equivalent or deletion reason
 - `12-token-budget.md` — token counting APIs, context overhead baseline, output estimation heuristics, model selection by context window
+- `13-run-logger.md` — run-level capture, `RunReport`, and evaluation persistence
+- `14-deferred-features.md` — archived spec families that remain deferred or historical
+
+---
+
+## Distribution and documentation
+
+### Audience split
+
+The docs site has two distinct audiences with separate entry paths:
+
+- **Adopters** — teams building a product that uses `pyarnes_swarm` as a runtime dependency. They need to know which symbols are stable, how to scaffold a project with Copier, and how to wire the three-part contract (register tools → compose guardrails → run the loop). They should never need to read the API reference to scaffold their first working CLI.
+- **Contributors** — engineers evolving `pyarnes_swarm` itself. They need to know the semver policy, how to add a new `Guardrail` or `Scorer` without breaking downstream pins, and how to evolve the Copier template safely.
+
+### `docs/getting-started/distribution.md`
+
+The canonical adopter onboarding page. Covers:
+
+- The distribution recommendation in one sentence: library-first, adopter owns the CLI, `pyarnes-tasks` is dev-only.
+- The three-phase model: **bootstrap** (scaffold via Copier) → **develop** (write tools/guardrails, run `uv run tasks check`) → **run** (ship the adopter's own CLI).
+- The full adopter/package inventory table showing which `pyarnes_swarm` symbol or sub-module enters at each phase.
+- `pyarnes_ref` pinning strategy: default `main` for bleeding-edge; pin to a tag once the first stable release lands; bump via `uv sync` after updating `pyarnes_ref`.
+- Cross-reference to `docs/template.md` for the full Copier walkthrough.
+
+### `docs/architecture/meta-use.md`
+
+The Adopter C (rtm-toggl-agile) pattern page. Covers:
+
+- Why `pyarnes_swarm` appears twice in this shape: shipped runtime + dev-time coding-agent harness.
+- Full hook code (imported from `template/.claude/hooks/` to stay in sync rather than duplicated).
+- The lifecycle-per-branch pattern: each git branch gets its own `.pyarnes/` JSONL stream so parallel feature branches don't interleave audit logs.
+- `.pyarnes/` directory layout (mirrors the layout in `06-hook-integration.md`).
+- How the bench corpus is structured: `tests/bench/scenarios/*.yaml` labelled fixtures, `EvalSuite` + `DiffSimilarityScorer` / `TestsPassScorer`, minimum `pass_rate >= 0.80` assertion.
+- Cross-reference to `tests/bench/test_agent_quality.py.jinja` from `06-hook-integration.md`.
+
+### Semver policy discoverability
+
+Semver policy lives in `01-package-structure.md` (stable API surface tables and breaking-change rules). The docs surface this through two entry points:
+
+- `docs/getting-started/distribution.md` links to `docs/development/release.md` for adopters who want to understand the pinning contract.
+- `docs/development/evolving.md` includes the "Stable API surface" section (full tables from `01-package-structure.md`) and the breaking-change policy for contributors.

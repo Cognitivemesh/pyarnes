@@ -32,7 +32,16 @@ Three-pass audit:
 | `core/dispatch/ports.py` | whole file | Re-export shim only — all symbols move to `ports.py`. |
 | `core/types.py` | whole file | Re-export shim only — all symbols move to `ports.py`. |
 
-## B. Investigate before cutting — dead private methods (vulture 60%)
+## B. Cut export-only APIs — no production callers
+
+Aggressive stance for consolidation: a symbol that is referenced only by package exports, stable-surface tests, or unit tests is treated as dead unless another consolidation spec gives it a concrete retained role.
+
+| Symbol | File | Evidence |
+|---|---|---|
+| `ASTGuardrail` | `guardrails/guardrails.py` | `rg` finds only the class definition, package re-export, and unit tests. No harness/runtime wiring and no consolidation spec depends on it. |
+| `BenchmarkGateGuardrail` | `guardrails/benchmark_gate.py` | Referenced only by package export, unit tests, docstring example, and `09-test-map.md`. No production caller and no guardrail chain wiring. |
+
+## C. Investigate before cutting — dead private methods (vulture 60%)
 
 These were flagged as unused within their own files. They may be called via dynamic dispatch or only from tests. Verify before cutting.
 
@@ -43,7 +52,16 @@ These were flagged as unused within their own files. They may be called via dyna
 | `RaceEvaluator._validate_alignment()` | `bench/race.py:168` | Same. |
 | `model_config` Pydantic internals | `bench/fact.py`, `bench/race.py` | Likely Pydantic v2 internal (`model_config = ConfigDict(...)`). Do NOT cut — Pydantic reads it reflectively. |
 
-## C. Merge — not duplicates, but cognitive complexity pairs
+## D. Remove dead fields — stored but never consumed
+
+These are not dead modules, but dead fields/config knobs that should not survive the merge.
+
+| Symbol | File | Action |
+|---|---|---|
+| `CompactionConfig.reserve_tokens` | `harness/compaction.py:37` | Docstring already says "unused". No reads exist. Remove from the consolidated config unless a later token-budget spec starts consuming it for real context-window accounting. |
+| `ModelAlias.family` | `bench/burn/normalize.py:98` | Constructed in defaults but never read. Remove from `ModelAlias` and the seeded alias table unless a KPI/report spec starts consuming family directly from aliases. |
+
+## E. Merge — not duplicates, but cognitive complexity pairs
 
 ### `compaction.py::CompactionTransformer` + `compressor.py::ContextCompressor`
 
@@ -79,7 +97,7 @@ Six files across two directories implementing one layered concern. Merge into `o
 
 Base classes (`Scorer`, `AsyncScorer`, `ExactMatchScorer`, `LLMJudgeScorer`, `CodeQualityScorer`) in `scorer.py`; trajectory scorers in `scorers.py`. Same ABC, one logical module. Merge into `bench/scorers.py`. Also adds `ScoreResult` (see `07-bench-integrated-axes.md`).
 
-## D. Keep separate — NOT duplicates
+## F. Keep separate — NOT duplicates
 
 ### `Budget` (core) vs `IterationBudget` (harness)
 
@@ -103,7 +121,13 @@ All 17 safety functions have verified external callers in guardrails or harness.
 
 Fully tested and complete. All 10 modules (`classify.py`, `dedupe.py`, `normalize.py`, `kpis.py`, `optimize.py`, `compare.py`, `types.py`, `provider.py`, `costing.py`, `claude_code.py`) have test coverage. Keep intact — move verbatim to `pyarnes_swarm.bench.burn`.
 
-## E. Inline — too small to justify a module
+## G. Keep despite zero callers
+
+| Symbol | File | Why it stays |
+|---|---|---|
+| `AgentRuntime.with_compressor()` | `harness/runtime.py:175` | No current code callers, but `12-token-budget.md` promotes it as the adopter-facing one-liner API. Public convenience API, not dead code. |
+
+## H. Inline — too small to justify a module
 
 | Source | Destination | Reason |
 |---|---|---|
@@ -113,7 +137,7 @@ Fully tested and complete. All 10 modules (`classify.py`, `dedupe.py`, `normaliz
 | `harness/classifier.py` | `agent.py` | `ClassifiedError` + `classify_error()`. Single caller: `AgentLoop._handle_error`. |
 | `harness/transform.py` (Protocol only) | `ports.py` | `MessageTransformer` Protocol belongs with contracts. `TransformChain` moves to `agent.py`. |
 
-## F. Relocate — wrong home
+## I. Relocate — wrong home
 
 | Symbol | From | To | Reason |
 |---|---|---|---|
@@ -121,6 +145,22 @@ Fully tested and complete. All 10 modules (`classify.py`, `dedupe.py`, `normaliz
 | `LoggerPort` | `core/observability/ports.py` | `ports.py` | Centralise all contracts |
 | `GuardrailPort` | `core/safety/ports.py` | `ports.py` | Same |
 | `SecretStore` (new) | — | `ports.py` | New Protocol; belongs with other contracts |
+
+## J. Stable-surface cleanup
+
+Dead-code cuts that touch exported symbols must update compatibility declarations in the same change. Otherwise the repository ends up with a spec that says "delete this" while `CHANGELOG.md` and `tests/unit/test_stable_surface.py` still enforce that it exists.
+
+Minimum compatibility cleanup set already implied by this audit:
+
+- Remove `SeccompSandbox` from the declared stable surface when it is cut.
+- Remove `SWEBenchScenario` from the declared stable surface when it is cut.
+- Remove `ASTGuardrail` and `BenchmarkGateGuardrail` from the declared stable surface if the aggressive export-only cut is applied.
+
+Companion test/doc changes that should happen with the code deletion:
+
+- Delete or rewrite `tests/unit/test_benchmark_gate.py`.
+- Delete or rewrite `tests/unit/safety/test_ast_deep.py`.
+- Update any stable-surface assertions that still require removed exports.
 
 ## Design rule
 

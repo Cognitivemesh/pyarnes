@@ -164,6 +164,33 @@ __all__ = [
 
 Everything else is importable by path (`from pyarnes_swarm.budget import Budget`) but not part of the guaranteed public surface.
 
+## Public API stability and semver
+
+The guaranteed top-level public surface is exactly the set exported from `pyarnes_swarm.__init__`. Those symbols are the stable entry points adopters may depend on across minor releases.
+
+Private and allowed to drift without notice:
+
+- `_`-prefixed helpers
+- internal module layout behind public imports
+- JSON field ordering in capture logs
+- log event names and structured telemetry keys
+- concrete container types used behind public iterables
+- the concrete type behind lifecycle-history storage
+
+More explicitly:
+
+- `ToolCallLogger` promises a stable set of fields for downstream readers, but not a stable field order in the JSONL output
+- observability event names are internal telemetry, not part of the public API
+- lifecycle/history iteration behavior may be stable while the backing container type is not
+
+Semver expectations:
+
+- MAJOR: removing or renaming a public symbol from `__init__`, changing a required method signature on a public ABC or Protocol, or changing the meaning of a persisted run/capture contract in a breaking way
+- MINOR: adding new public symbols, new optional kwargs, new guardrail or scorer implementations, new optional sink/provider integrations
+- PATCH: bug fixes, doc clarifications, private refactors, and internal file moves that preserve the public import surface
+
+Anything importable only by deep path (`pyarnes_swarm.<module>`) but not re-exported from `__init__` is a documented implementation surface, not part of the strongest stability guarantee.
+
 ## `ports.py` — all Protocols in one file
 
 ```python
@@ -287,3 +314,20 @@ bench = ["pyarnes-swarm[otel]", "pydantic>=2.0"]
 | `core/packaging/` | `version_of()` replaced by `__version__ = "0.1.0"` |
 | `core/dispatch/ports.py` shim | Merged into `ports.py` |
 | `core/types.py` shim | Merged into `ports.py` |
+
+### Layer Violations as CI-Checkable Bugs
+
+To enforce the layered architecture, layer violations must be treated as explicit, CI-checkable bugs rather than just documentation guidelines. This is enforced using `ruff` rules:
+
+```toml
+[tool.ruff.lint.flake8-tidy-imports]
+banned-module-level-imports = [
+  "pyarnes.core.secrets", # Agent shouldn't know about secrets
+  "pyarnes.harness.bus",  # Agent logic shouldn't depend on bus
+]
+```
+
+Verify the layered architecture using:
+```bash
+uv run tasks lint --select=I901
+```
