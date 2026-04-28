@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
-from typing import Any, cast
+from typing import Any
 
 from pyarnes_core.dispatch import (
     ActionKind,
@@ -217,7 +217,7 @@ class AgentLoop:
         )
         return messages
 
-    async def _call_tool(  # noqa: C901
+    async def _call_tool(  # noqa: C901, PLR0912
         self,
         name: str,
         tool_call_id: str,
@@ -313,13 +313,22 @@ class AgentLoop:
 
             except HarnessError as exc:
                 if self.error_registry is not None:
+                    # Handler raises propagate uncaught — the original error context is lost.
+                    # Handlers must not raise; wrap side-effects in try/except internally.
                     custom_result = await self.error_registry.dispatch(exc)
                     if custom_result is not None:
-                        msg = cast(ToolMessage, custom_result)
+                        if not isinstance(custom_result, ToolMessage):
+                            raise UnexpectedError(
+                                message=(
+                                    f"Error registry handler for {type(exc).__name__!r} returned "
+                                    f"{type(custom_result).__name__!r}, expected ToolMessage"
+                                ),
+                                original=exc,
+                            ) from exc
                         await self._log_tool_call(
-                            name, arguments, msg, started_at=started_at, start_mono=start_mono
+                            name, arguments, custom_result, started_at=started_at, start_mono=start_mono
                         )
-                        return msg
+                        return custom_result
                 raise UnexpectedError(
                     message=f"Unexpected harness error in tool '{name}': {exc}",
                     original=exc,

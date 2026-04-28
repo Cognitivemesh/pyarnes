@@ -558,3 +558,21 @@ class TestErrorRegistryIntegration:
         loop = AgentLoop(tools={"t": tool}, model=model, error_registry=registry)
         with pytest.raises(UnexpectedError):
             await loop.run([])
+
+    @pytest.mark.asyncio()
+    async def test_handler_returning_non_tool_message_raises_unexpected(self) -> None:
+        """A handler that returns a non-ToolMessage raises UnexpectedError with a clear message."""
+        registry = ErrorHandlerRegistry()
+
+        async def bad_handler(exc: HarnessError) -> object:
+            return "this is not a ToolMessage"
+
+        registry.register(_CustomHarnessError, bad_handler)  # type: ignore[arg-type]
+
+        tool = FailingTool(exc=_CustomHarnessError(message="trigger"))
+        model = FakeModel(
+            actions=[{"type": "tool_call", "tool": "t", "id": "c4", "arguments": {}}]
+        )
+        loop = AgentLoop(tools={"t": tool}, model=model, error_registry=registry)
+        with pytest.raises(UnexpectedError, match=r"str.*expected ToolMessage"):
+            await loop.run([])
