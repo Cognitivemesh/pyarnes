@@ -24,6 +24,7 @@ from pyarnes_core.errors import (
 )
 from pyarnes_core.lifecycle import Lifecycle, Phase
 from pyarnes_core.observe.logger import LogFormat, configure_logging, get_logger
+from pyarnes_core.sandbox import RestrictedPythonSandbox, SandboxHook, SeccompSandbox
 from pyarnes_core.session_id import safe_session_id
 from pyarnes_core.telemetry import configure_tracing, get_tracer, session_span
 from pyarnes_core.types import JudgeClient, ModelClient, ToolHandler
@@ -38,6 +39,9 @@ __all__ = [
     "LogFormat",
     "ModelClient",
     "Phase",
+    "RestrictedPythonSandbox",
+    "SandboxHook",
+    "SeccompSandbox",
     "Severity",
     "ToolHandler",
     "TransientError",
@@ -45,8 +49,8 @@ __all__ = [
     "UserFixableError",
     "append_private",
     "configure_logging",
-    "get_logger",
     "configure_tracing",
+    "get_logger",
     "get_tracer",
     "safe_session_id",
     "session_span",

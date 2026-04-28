@@ -48,6 +48,7 @@ from pyarnes_core.observability import (
     start_timer,
 )
 from pyarnes_core.observe.logger import get_logger
+from pyarnes_core.sandbox import SandboxHook
 from pyarnes_core.types import ModelClient, ToolHandler
 from pyarnes_guardrails.guardrails import GuardrailChain
 from pyarnes_harness.capture.tool_log import ToolCallLogger
@@ -143,6 +144,9 @@ class AgentLoop:
         error_registry: Optional registry of custom async recovery handlers.
             When set, the registry is consulted in the ``HarnessError``
             catch-all branch before falling through to ``UnexpectedError``.
+        sandbox: Optional sandbox hook called around each tool execution.
+            ``enter()`` is awaited before the tool runs; ``exit(exc)`` is
+            awaited after, receiving the exception or ``None`` on success.
     """
 
     tools: dict[str, ToolHandler]
@@ -152,6 +156,7 @@ class AgentLoop:
     guardrail_chain: GuardrailChain | None = None
     agent_context: AgentContext | None = None
     error_registry: ErrorHandlerRegistry | None = None
+    sandbox: SandboxHook | None = None
 
     async def run(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Execute the agent loop until completion or limit.
@@ -217,7 +222,7 @@ class AgentLoop:
         )
         return messages
 
-    async def _call_tool(  # noqa: C901, PLR0912
+    async def _call_tool(  # noqa: C901, PLR0912, PLR0915
         self,
         name: str,
         tool_call_id: str,
@@ -254,8 +259,18 @@ class AgentLoop:
         attempt = 0
         max_attempts = self.config.max_retries + 1
         while attempt < max_attempts:
+            _sandbox_exc: BaseException | None = None
             try:
-                result = await handler.execute(arguments)
+                if self.sandbox is not None:
+                    await self.sandbox.enter()
+                try:
+                    result = await handler.execute(arguments)
+                except BaseException as _exc:
+                    _sandbox_exc = _exc
+                    raise
+                finally:
+                    if self.sandbox is not None:
+                        await self.sandbox.exit(_sandbox_exc)
             except TransientError as exc:
                 policy = merge_retry_caps(
                     self.config.max_retries,
