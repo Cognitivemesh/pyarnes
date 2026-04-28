@@ -24,6 +24,7 @@ from pyarnes_core.error_registry import ErrorHandlerRegistry
 from pyarnes_core.lifecycle import Lifecycle, Phase
 from pyarnes_core.observability import log_lifecycle_transition
 from pyarnes_core.observe.logger import configure_logging
+from pyarnes_core.telemetry import configure_tracing, session_span, tracing_endpoint_from_env
 from pyarnes_core.types import ModelClient, ToolHandler
 from pyarnes_guardrails.guardrails import GuardrailChain
 from pyarnes_harness.capture.tool_log import ToolCallLogger
@@ -97,6 +98,13 @@ class AgentRuntime:
 
         configure_logging(level=self.log_level, json=self.log_json)
 
+        otel_endpoint = tracing_endpoint_from_env()
+        if otel_endpoint:
+            configure_tracing(
+                endpoint=otel_endpoint,
+                service_name="pyarnes-agent",
+            )
+
         from pyarnes_core.observe.logger import get_logger  # noqa: PLC0415 — deferred to avoid init-time side effects
         _log = get_logger(__name__)
 
@@ -122,19 +130,20 @@ class AgentRuntime:
             error_registry=self.error_registry,
         )
 
-        try:
-            result = await loop.run(messages)
-        except Exception:
-            lifecycle.transition(Phase.FAILED)
-            log_lifecycle_transition(
-                _log,
-                from_phase=Phase.RUNNING.value,
-                to_phase=Phase.FAILED.value,
-                session_id=self.session_id,
-                trace_id=self.trace_id,
-                step=len(messages),
-            )
-            raise
+        with session_span("agent-session", session_id=self.session_id, trace_id=self.trace_id):
+            try:
+                result = await loop.run(messages)
+            except Exception:
+                lifecycle.transition(Phase.FAILED)
+                log_lifecycle_transition(
+                    _log,
+                    from_phase=Phase.RUNNING.value,
+                    to_phase=Phase.FAILED.value,
+                    session_id=self.session_id,
+                    trace_id=self.trace_id,
+                    step=len(messages),
+                )
+                raise
 
         lifecycle.transition(Phase.COMPLETED)
         log_lifecycle_transition(

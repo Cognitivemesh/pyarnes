@@ -25,6 +25,7 @@ from pyarnes_core.errors import (
 from pyarnes_core.lifecycle import Lifecycle, Phase
 from pyarnes_core.observe.logger import LogFormat, configure_logging, get_logger
 from pyarnes_core.session_id import safe_session_id
+from pyarnes_core.telemetry import configure_tracing, get_tracer, session_span
 from pyarnes_core.types import JudgeClient, ModelClient, ToolHandler
 
 __all__ = [
@@ -45,7 +46,10 @@ __all__ = [
     "append_private",
     "configure_logging",
     "get_logger",
+    "configure_tracing",
+    "get_tracer",
     "safe_session_id",
+    "session_span",
     "write_private",
 ]
 
