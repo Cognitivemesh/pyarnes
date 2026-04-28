@@ -75,6 +75,11 @@ _INVISIBLE_TABLE = dict.fromkeys(
 )
 
 
+_SECRET_TAGS: frozenset[str] = frozenset(
+    {"Credentials", "Password", "Secret", "API", "Private Key", "Token"}
+)
+
+
 @dataclass(frozen=True, slots=True)
 class SecretLeakGuardrail(Guardrail):
     """Block tool calls whose arguments or output contain a secret.
@@ -82,9 +87,15 @@ class SecretLeakGuardrail(Guardrail):
     Attributes:
         extra_patterns: Additional regex patterns the adopter wants to
             enforce on top of :data:`_DEFAULT_PATTERNS`.
+        use_pywhat: When ``True`` and ``pywhat`` (soft dep, install
+            separately: ``pip install pywhat>=5.0``) is available, run the
+            identifier alongside the built-in patterns. Additive only —
+            the regex patterns always run regardless of this flag.
+            Gracefully degraded to a no-op when ``pywhat`` is absent.
     """
 
     extra_patterns: tuple[str, ...] = ()
+    use_pywhat: bool = False
 
     def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
         """Raise ``UserFixableError`` when a value matches a secret pattern."""
@@ -94,19 +105,23 @@ class SecretLeakGuardrail(Guardrail):
                 candidate = _normalise(raw)
                 for pattern in patterns:
                     if pattern.search(candidate):
-                        log_warning(
-                            logger,
-                            "guardrail.secret_leak_blocked",
-                            tool=tool_name,
-                            pattern=pattern.pattern,
-                        )
-                        # Generic exception message on purpose — never
-                        # echo the pattern or the matched text into a
-                        # place the violation log or the model will see.
-                        raise UserFixableError(
-                            message=(f"Tool '{tool_name}' blocked: output or arguments match a secret pattern."),
-                            prompt_hint="Remove or redact the secret before continuing.",
-                        )
+                        self._block(tool_name, "regex")
+                if self.use_pywhat and _pywhat_detects(candidate):
+                    self._block(tool_name, "pywhat")
+
+    def _block(self, tool_name: str, source: str) -> None:
+        log_warning(
+            logger,
+            "guardrail.secret_leak_blocked",
+            tool=tool_name,
+            source=source,
+        )
+        # Generic exception message on purpose — never echo the pattern
+        # or the matched text so the model cannot enumerate what triggered.
+        raise UserFixableError(
+            message=(f"Tool '{tool_name}' blocked: output or arguments match a secret pattern."),
+            prompt_hint="Remove or redact the secret before continuing.",
+        )
 
     def _compile(self) -> tuple[re.Pattern[str], ...]:
         """Compile patterns once per call; trivial cost for ~10 entries."""
@@ -117,3 +132,20 @@ class SecretLeakGuardrail(Guardrail):
 def _normalise(text: str) -> str:
     """NFKC-normalise and strip zero-width / RTL marks before matching."""
     return unicodedata.normalize("NFKC", text).translate(_INVISIBLE_TABLE)
+
+
+def _pywhat_detects(candidate: str) -> bool:
+    """Return ``True`` when ``pywhat`` is installed and identifies a secret.
+
+    No-op (returns ``False``) when ``pywhat`` is not installed so the guardrail
+    degrades gracefully without the optional dependency.
+    """
+    try:
+        from pywhat import Pywhat  # noqa: PLC0415
+    except ImportError:
+        return False
+
+    result = Pywhat().identify(candidate)
+    if result is None:
+        return False
+    return any(_SECRET_TAGS & set(match.get("Tags", [])) for match in result.get("Regex", []))

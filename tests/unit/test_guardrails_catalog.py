@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 
+import pyarnes_guardrails.secret_leak as _sl_module
 from pyarnes_core.errors import LLMRecoverableError, UserFixableError
 from pyarnes_guardrails import (
     NetworkEgressGuardrail,
@@ -74,6 +75,37 @@ class TestSecretLeakGuardrail:
             assert "pattern" in str(exc).lower()
         else:
             pytest.fail("guardrail did not raise")
+
+    def test_use_pywhat_false_by_default(self) -> None:
+        g = SecretLeakGuardrail()
+        assert g.use_pywhat is False
+
+    def test_use_pywhat_noop_when_not_installed(self, monkeypatch) -> None:
+        """use_pywhat=True must not raise when pywhat is absent."""
+        sl_module = _sl_module
+
+        monkeypatch.setattr(sl_module, "_pywhat_detects", lambda _: False)
+        g = SecretLeakGuardrail(use_pywhat=True)
+        g.check("Bash", {"command": "hello world"})  # must not raise
+
+    def test_use_pywhat_blocks_when_detected(self, monkeypatch) -> None:
+        """use_pywhat=True raises UserFixableError when _pywhat_detects returns True."""
+        sl_module = _sl_module
+
+        monkeypatch.setattr(sl_module, "_pywhat_detects", lambda _: True)
+        g = SecretLeakGuardrail(use_pywhat=True)
+        with pytest.raises(UserFixableError, match="secret pattern"):
+            g.check("Bash", {"command": "something"})
+
+    def test_use_pywhat_skipped_when_disabled(self, monkeypatch) -> None:
+        """use_pywhat=False never calls _pywhat_detects."""
+        sl_module = _sl_module
+
+        calls = []
+        monkeypatch.setattr(sl_module, "_pywhat_detects", lambda c: calls.append(c) or True)
+        g = SecretLeakGuardrail(use_pywhat=False)
+        g.check("Bash", {"command": "hello"})
+        assert calls == []
 
 
 class TestNetworkEgressGuardrail:
