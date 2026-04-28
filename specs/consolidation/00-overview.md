@@ -144,9 +144,18 @@ Each decision below has a rationale — read these before implementing to avoid 
 | Heuristics for output token estimation | No library can predict output tokens; heuristics are calibrated estimates, P95 replaces them after warm-up |
 | Delete old tests after Refactor | Two test suites for the same module are conflicting specs, not extra safety |
 
-## Deeper reading
+## Design Patterns Used
 
-`deep-dive/pyarnes-swarm-consolidation-specs-2026-04-28.md` — explains every decision above in depth, with concept explanations (MVCC, Ports & Adapters, O(n²) token cost, structural typing) and learning resources.
+| Pattern | Where | Why |
+|---|---|---|
+| Ports & Adapters (Hexagonal) | `ports.py` + all adapters | Contracts stay stable when infra changes |
+| Protocol (structural typing) | All Ports | No inheritance required; structural check at type-check time |
+| ABC (abstract base class) | `Guardrail`, `Scorer` | Provides default behaviour + enforces `@abstractmethod` |
+| Strategy | `ModelRouter` implementations | Swap routing logic without changing the loop |
+| Chain of Responsibility | `GuardrailChain` | Each guardrail checks independently; first violation wins |
+| Observer | `LLMCostRouter.observe()` | Routing learns from evaluation results |
+| Immutable value object | `Budget`, `TaskMeta`, `ScoreResult` | `frozen=True` prevents accidental mutation across coroutines |
+| Mutable shared resource | `IterationBudget` | `asyncio.Lock` makes concurrent consume/refund safe |
 
 ## Consolidation sequence (do in order)
 

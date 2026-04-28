@@ -193,3 +193,8 @@ def test_chained_falls_back(monkeypatch):
 ## Why NOT a bespoke encrypted file
 
 Rolling encryption means rolling key management. Where does the decryption key live? Usually in another file, or hardcoded, or derived from a password the developer types — each of which reintroduces the original problem. `keyring` delegates key management to the OS, which has spent decades solving exactly this problem with hardware-backed key stores on modern hardware.
+
+## Learning resources
+
+- [keyring library documentation](https://keyring.readthedocs.io/) — OS keychain integration, backends per platform, headless fallback configuration
+- [asyncio Synchronisation Primitives](https://docs.python.org/3/library/asyncio-sync.html) — `asyncio.Lock` used in `IterationBudget.consume()` (relevant to the secrets injection pattern in hook integration)

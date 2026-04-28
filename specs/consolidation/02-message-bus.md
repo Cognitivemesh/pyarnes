@@ -154,3 +154,21 @@ async for raw in bus.subscribe("agent.tasks"):
 ```
 
 This keeps the bus generic while preserving human-readability.
+
+## Key concepts
+
+### MVCC (Multi-Version Concurrency Control)
+
+**What**: A database concurrency mechanism where writers create new versions of rows instead of locking them. Readers always see a consistent snapshot; writers don't block each other.
+
+**Why Used Here**: `TursoMessageBus` needs multiple agent OS processes to write messages simultaneously. Standard SQLite WAL mode still serialises writers — one writer at a time. Turso/Limbo uses MVCC so agent-1 publishing `"task.start"` doesn't block agent-2 publishing `"task.progress"`.
+
+**When to Use**: Any scenario with concurrent writes and need for consistent reads. PostgreSQL, CockroachDB, and FoundationDB all use MVCC.
+
+**Learning**: [MVCC in PostgreSQL](https://www.postgresql.org/docs/current/mvcc-intro.html) — the same technique Turso/Limbo uses, explained in depth
+
+---
+
+### Event Sourcing (resume_from pattern)
+
+`MessageBus.resume_from(topic, offset)` is event sourcing applied to agent coordination. `offset` is a monotonic message ID — each agent records the last offset it processed, and on restart replays from there. This recovers from crashes without losing work. Understanding event sourcing explains why `offset` exists as a first-class parameter rather than being hidden inside the bus.

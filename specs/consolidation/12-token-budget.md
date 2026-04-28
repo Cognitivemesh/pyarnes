@@ -274,3 +274,16 @@ loop_config = LoopConfig(
 | TALE self-estimation | Output budget for reasoning tasks | ~67% reduction | One cheap model call |
 
 Do **not** use `tiktoken` directly for Anthropic models — it uses a different vocabulary and counts will be off. Use `litellm.token_counter()` which selects the right tokenizer per model.
+
+## Learning resources
+
+### Official documentation
+- [LiteLLM Token Counting](https://docs.litellm.ai/docs/count_tokens) — `token_counter`, `acount_tokens`, `get_max_tokens` API reference
+- [Anthropic Token Counting API](https://platform.claude.com/docs/en/build-with-claude/token-counting) — `count_tokens()` endpoint; system prompt overhead; tool schemas; images and PDFs
+- [Python `typing.Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol) — how structural subtyping works; relevant to `ModelClientPort` and `SecretStore`
+
+### Research
+- [TALE: Token-Budget-Aware LLM Reasoning (arXiv:2412.18547)](https://arxiv.org/abs/2412.18547) — the self-estimation technique in `use_tale_estimation`; shows ~67% output token reduction on reasoning tasks by giving the model an explicit budget constraint
+
+### Background reading
+- [Simon Willison on LLM application architecture](https://simonwillison.net/2023/May/18/the-architecture-of-todays-llm-applications/) — practical context for why token costs and routing matter at scale

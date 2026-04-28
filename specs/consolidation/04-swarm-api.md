@@ -10,6 +10,8 @@
 
 **Why does `MessageCompactor` use `litellm.token_counter()` (local) in the loop and `acount_tokens()` (API) only at startup?** `acount_tokens()` makes a network call to the provider and takes ~100ms. Calling it on every loop iteration would add 100ms latency to every model call. `token_counter()` is a local computation taking microseconds. The tradeoff: slightly less accurate counts in the loop, but exact baseline measurement at startup where latency doesn't matter.
 
+**Why does `run_parallel()` use a semaphore (`max_concurrency`) rather than a lock?** A semaphore allows N concurrent holders; a lock allows exactly 1. `run_parallel(max_concurrency=4)` lets 4 agents run simultaneously — a lock would serialise them entirely. `asyncio.Semaphore(max_concurrency)` is the correct primitive for bounding concurrency.
+
 ## Hello World (5-step minimum)
 
 ```python
