@@ -184,3 +184,9 @@ These tests cover new surfaces that have no counterpart in the old test suite:
 | KEEP (bench/, template/, tasks/) | ~25 files |
 
 After Phase 2: old swarm-runtime tests under `tests/unit/` and `tests/features/` are deleted once migrated. `tests/swarm/`, `tests/template/`, bench-specific tests, and `tests/unit/tasks/` remain because those concerns are not fully absorbed into the core swarm migration.
+
+## Open questions or deferred items
+
+- **Test isolation strategy.** Fixture scope (`function` / `module` / `session`), parametrization conventions, and shared-state hygiene are not codified. Today different test files use different conventions.
+- **Mocking strategy.** When to mock `litellm.model_cost`, `keyring`, `Turso`, `tree-sitter` — and when to use real-but-cheap implementations — has no written policy.
+- **CI test ordering and flake detection.** Whether tests run alphabetically, in parallel, or with a deterministic seed; how flakes are detected and tracked. (The *budget* and *quarantine policy* for flakes live in `08-test-strategy.md`; the *detection mechanics* live here.)

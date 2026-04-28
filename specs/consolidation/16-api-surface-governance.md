@@ -32,3 +32,9 @@ __all__ = ["AgentLoop", "Swarm", "MessageBus"]
 
 ### Semver Enforcement Tests
 The public API surface is pinned and tested. Any addition or removal of an exported symbol must explicitly update the `test_stable_surface.py` enforcement tests, ensuring accidental leakage or breaking changes are caught in CI.
+
+## Open questions or deferred items
+
+- **Deprecation policy.** Currently no spec governs how breaking changes are announced, what the deprecation window is, or how `DeprecationWarning` should be wired (decorator? `__getattr__` shim? CHANGELOG only?). Belongs here once the policy is decided.
+- **Stable-surface CHANGELOG generation.** The `__all__` declaration is the source of truth for the public surface, but there is no automated diff against the previous tagged release. A pre-release task should compare `__all__` snapshots and surface additions / removals.
+- **Pre-1.0 stability promises.** The spec implies semver but does not state whether 0.x releases follow strict semver, "best-effort" semver, or are explicitly unstable. Adopters need to know.

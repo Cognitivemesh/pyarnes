@@ -106,6 +106,8 @@ Old import → new import:
 
 Each iteration begins with a token count check. Context grows with every tool result appended to history; without compaction, cost is O(n²) in iterations. `litellm.token_counter()` measures the current context before every model call and triggers `MessageCompactor` when the threshold is reached.
 
+> **Diagram:** [Tool dispatch sequence](diagrams/00-tool-dispatch.html). The ASCII version below is preserved for terminal/grep use; the linked HTML diagram is the canonical version and supersedes the ASCII when the two disagree.
+
 ```
 User message
     │

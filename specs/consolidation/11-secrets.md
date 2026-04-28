@@ -251,3 +251,10 @@ To disable redaction entirely, pass `redactor=None`. To supply a custom policy, 
 ## Why not `.env` files?
 
 > See ["The problem with `.env` files"](#the-problem-with-env-files) at the top of this spec for the canonical rationale. This section previously duplicated that content; consolidated into a single home.
+
+## Open questions or deferred items
+
+- **Secret rotation / expiry.** Today the spec covers storage (keyring + env fallback) but not how to rotate a key, mark it expired, or migrate adopters during a vendor key roll.
+- **Audit logging of secret access.** No record of which symbol read which secret at what time. Useful for forensics but cost-heavy at runtime; needs an opt-in switch.
+- **Multi-region / cross-account scenarios.** When an adopter has separate credentials for prod and staging, the `SecretStore` Protocol does not currently encode that — a single keyring lookup returns one value.
+- **Headless keychain bootstrap.** Setting up `keyring` daemons on headless CI / docker is sketched but not codified.

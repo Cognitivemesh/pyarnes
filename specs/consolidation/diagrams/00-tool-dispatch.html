@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tool dispatch sequence — pyarnes_swarm</title>
+<style>
+  :root {
+    --paper: #faf7f2;
+    --ink: #1c1917;
+    --muted: #6b6b6b;
+    --accent: #b5523a;
+    --hairline: #d4d0c8;
+    --tint: #f1ece2;
+  }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    padding: 32px;
+  }
+  .frame {
+    max-width: 1040px;
+    margin: 0 auto;
+    border: 1px solid var(--hairline);
+    background: var(--paper);
+    padding: 28px 28px 16px 28px;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.01em;
+  }
+  .sub {
+    color: var(--muted);
+    margin: 0 0 24px 0;
+    font-size: 13px;
+  }
+  svg { display: block; margin: 0 auto; }
+  .lane-label { font-size: 13px; font-weight: 600; }
+  .actor-rect { fill: var(--tint); stroke: var(--ink); stroke-width: 1; }
+  .lifeline { stroke: var(--hairline); stroke-width: 1; stroke-dasharray: 3 3; }
+  .msg { stroke: var(--ink); stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
+  .msg-self { stroke: var(--ink); stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
+  .msg-return { stroke: var(--ink); stroke-width: 1.2; fill: none; marker-end: url(#arrow); stroke-dasharray: 4 3; }
+  .msg-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; marker-end: url(#arrow-accent); }
+  .msg-label { font-size: 12px; fill: var(--ink); }
+  .msg-label-mono { font-size: 11.5px; font-family: ui-monospace, "JetBrains Mono", monospace; fill: var(--ink); }
+  .frag { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 2; }
+  .frag-tag { fill: var(--paper); stroke: var(--muted); stroke-width: 1; }
+  .frag-tag-text { font-size: 10.5px; font-weight: 600; fill: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+  .callout-box { fill: var(--paper); stroke: var(--accent); stroke-width: 1.2; }
+  .callout-tag { fill: var(--accent); }
+  .callout-tag-text { fill: var(--paper); font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .callout-text { font-size: 12px; fill: var(--ink); }
+  .callout-text-mono { font-size: 11px; font-family: ui-monospace, monospace; fill: var(--ink); }
+  .note { font-size: 11.5px; fill: var(--muted); }
+  .legend-box { fill: var(--paper); stroke: var(--hairline); }
+  caption.figcap { display: block; margin-top: 14px; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<section class="frame">
+  <h1>Tool dispatch sequence — <span style="font-family: ui-monospace, monospace; font-weight: 500;">AgentLoop.run()</span></h1>
+  <p class="sub">Owning spec: <code>00-overview.md</code>. One iteration of the runtime loop, including token-budget checks, guardrails, and the four error-taxonomy outcomes from <code>ToolHandler.execute()</code>.</p>
+
+  <svg viewBox="0 0 1000 880" width="1000" height="880" role="img" aria-label="Tool dispatch sequence diagram">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#1c1917"/>
+      </marker>
+      <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#b5523a"/>
+      </marker>
+    </defs>
+
+    <!-- Actor lanes (7 actors evenly spaced) -->
+    <!-- Lane x-centres: 70, 220, 360, 500, 640, 780, 920 -->
+    <g>
+      <rect class="actor-rect" x="20" y="16" width="100" height="34" rx="2"/>
+      <text class="lane-label" x="70" y="38" text-anchor="middle">User</text>
+      <line class="lifeline" x1="70" y1="50" x2="70" y2="820"/>
+
+      <rect class="actor-rect" x="170" y="16" width="100" height="34" rx="2"/>
+      <text class="lane-label" x="220" y="38" text-anchor="middle">AgentLoop</text>
+      <line class="lifeline" x1="220" y1="50" x2="220" y2="820"/>
+
+      <rect class="actor-rect" x="296" y="16" width="128" height="34" rx="2"/>
+      <text class="lane-label" x="360" y="38" text-anchor="middle">MessageCompactor</text>
+      <line class="lifeline" x1="360" y1="50" x2="360" y2="820"/>
+
+      <rect class="actor-rect" x="448" y="16" width="104" height="34" rx="2"/>
+      <text class="lane-label" x="500" y="38" text-anchor="middle">ModelClient</text>
+      <line class="lifeline" x1="500" y1="50" x2="500" y2="820"/>
+
+      <rect class="actor-rect" x="580" y="16" width="120" height="34" rx="2"/>
+      <text class="lane-label" x="640" y="38" text-anchor="middle">GuardrailChain</text>
+      <line class="lifeline" x1="640" y1="50" x2="640" y2="820"/>
+
+      <rect class="actor-rect" x="730" y="16" width="100" height="34" rx="2"/>
+      <text class="lane-label" x="780" y="38" text-anchor="middle">ToolHandler</text>
+      <line class="lifeline" x1="780" y1="50" x2="780" y2="820"/>
+
+      <rect class="actor-rect" x="876" y="16" width="88" height="34" rx="2"/>
+      <text class="lane-label" x="920" y="38" text-anchor="middle">History</text>
+      <line class="lifeline" x1="920" y1="50" x2="920" y2="820"/>
+    </g>
+
+    <!-- 1. User → AgentLoop: send message -->
+    <line class="msg" x1="70" y1="80" x2="218" y2="80"/>
+    <text class="msg-label" x="144" y="74" text-anchor="middle">send message</text>
+
+    <!-- 2. AgentLoop → AgentLoop: token_counter (self) -->
+    <path class="msg-self" d="M 220 110 C 270 110, 270 138, 222 138"/>
+    <text class="msg-label-mono" x="280" y="116">litellm.token_counter(messages)</text>
+    <text class="note" x="280" y="132">measure context before model call</text>
+
+    <!-- alt frag #1: capacity_threshold -->
+    <rect class="frag" x="190" y="160" width="200" height="60"/>
+    <rect class="frag-tag" x="190" y="156" width="50" height="18"/>
+    <text class="frag-tag-text" x="195" y="169">alt</text>
+    <text class="msg-label-mono" x="244" y="170">tokens/context_window ≥ threshold</text>
+    <line class="msg" x1="222" y1="190" x2="358" y2="190"/>
+    <text class="msg-label-mono" x="290" y="184" text-anchor="middle">compact()</text>
+    <line class="msg-return" x1="358" y1="210" x2="222" y2="210"/>
+    <text class="msg-label" x="290" y="206" text-anchor="middle">compacted history</text>
+
+    <!-- alt frag #2: hard cap -->
+    <rect class="frag" x="50" y="234" width="180" height="36"/>
+    <rect class="frag-tag" x="50" y="230" width="50" height="18"/>
+    <text class="frag-tag-text" x="55" y="243">alt</text>
+    <text class="msg-label-mono" x="104" y="244">cumulative ≥ Budget.max_tokens</text>
+    <line class="msg-accent" x1="218" y1="262" x2="72" y2="262"/>
+    <text class="msg-label" x="144" y="258" text-anchor="middle">stop (hard cap)</text>
+
+    <!-- 5. AgentLoop → ModelClient: next_action -->
+    <line class="msg" x1="222" y1="296" x2="498" y2="296"/>
+    <text class="msg-label-mono" x="360" y="290" text-anchor="middle">next_action(messages)</text>
+
+    <!-- 6. ModelClient → AgentLoop: tool_call OR final_answer -->
+    <line class="msg-return" x1="498" y1="318" x2="222" y2="318"/>
+    <text class="msg-label" x="360" y="314" text-anchor="middle">tool_call  or  final_answer</text>
+
+    <!-- alt: tool_call frag -->
+    <rect class="frag" x="200" y="346" width="752" height="370"/>
+    <rect class="frag-tag" x="200" y="342" width="86" height="18"/>
+    <text class="frag-tag-text" x="206" y="355">alt — tool_call</text>
+
+    <!-- 7a. AgentLoop → GuardrailChain: check -->
+    <line class="msg" x1="222" y1="378" x2="638" y2="378"/>
+    <text class="msg-label-mono" x="430" y="372" text-anchor="middle">check(tool_call)</text>
+
+    <!-- 7b. GuardrailChain → AgentLoop: OK or violation -->
+    <line class="msg-return" x1="638" y1="400" x2="222" y2="400"/>
+    <text class="msg-label" x="430" y="396" text-anchor="middle">ok  /  raise (per rule)</text>
+    <text class="note" x="430" y="412" text-anchor="middle">PathGuardrail, InjectionGuardrail, … — rules vary in error class they raise</text>
+
+    <!-- 7c. AgentLoop → ToolHandler: execute -->
+    <line class="msg" x1="222" y1="442" x2="778" y2="442"/>
+    <text class="msg-label-mono" x="500" y="436" text-anchor="middle">execute(tool_call)</text>
+
+    <!-- 7d. ToolHandler → AgentLoop: result/raise -->
+    <line class="msg-return" x1="778" y1="464" x2="222" y2="464"/>
+    <text class="msg-label" x="500" y="460" text-anchor="middle">result  or  raise (one of 4 error types)</text>
+
+    <!-- callout: four outcomes -->
+    <g>
+      <rect class="callout-box" x="240" y="486" width="700" height="124" rx="3"/>
+      <rect class="callout-tag" x="240" y="486" width="190" height="20"/>
+      <text class="callout-tag-text" x="248" y="500">FOUR ToolHandler OUTCOMES</text>
+      <text class="callout-text-mono" x="252" y="528">TransientError</text>
+      <text class="callout-text" x="380" y="528">→ AgentLoop retries up to <tspan font-family="ui-monospace, monospace">max_retries</tspan></text>
+      <text class="callout-text-mono" x="252" y="548">LLMRecoverableError</text>
+      <text class="callout-text" x="380" y="548">→ append <tspan font-family="ui-monospace, monospace">ToolMessage(is_error=True)</tspan> to History; loop continues</text>
+      <text class="callout-text-mono" x="252" y="568">UserFixableError</text>
+      <text class="callout-text" x="380" y="568">→ interrupt; loop stops; bubble up to caller</text>
+      <text class="callout-text-mono" x="252" y="588">UnexpectedError</text>
+      <text class="callout-text" x="380" y="588">→ bubble up (page on-call); attach <tspan font-family="ui-monospace, monospace">original</tspan> exception</text>
+    </g>
+
+    <!-- 7e. AgentLoop → History: append + iter++ -->
+    <line class="msg" x1="222" y1="640" x2="918" y2="640"/>
+    <text class="msg-label" x="570" y="634" text-anchor="middle">append ToolMessage; iteration_counter++</text>
+
+    <!-- loop back arrow note -->
+    <text class="note" x="570" y="666" text-anchor="middle">↺ loop back to step 2 (re-measure context)</text>
+
+    <!-- alt: final_answer frag -->
+    <rect class="frag" x="20" y="724" width="220" height="40"/>
+    <rect class="frag-tag" x="20" y="720" width="100" height="18"/>
+    <text class="frag-tag-text" x="26" y="733">alt — final_answer</text>
+    <line class="msg-accent" x1="218" y1="752" x2="72" y2="752"/>
+    <text class="msg-label" x="144" y="748" text-anchor="middle">return messages</text>
+
+    <!-- footer note -->
+    <g>
+      <rect class="legend-box" x="260" y="788" width="680" height="34"/>
+      <text class="callout-text" x="276" y="810">
+        Two complementary controls — <tspan font-family="ui-monospace, monospace">MessageCompactorConfig.capacity_threshold</tspan> (per-request) vs <tspan font-family="ui-monospace, monospace">Budget.max_tokens</tspan> (cumulative). Both via <tspan font-family="ui-monospace, monospace">litellm.token_counter()</tspan>.
+      </text>
+    </g>
+  </svg>
+  <p class="figcap">See <code>00-overview.md § Tool-dispatch and error-routing</code> for prose; this diagram is the canonical version.</p>
+</section>
+</body>
+</html>

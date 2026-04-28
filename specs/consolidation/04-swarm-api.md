@@ -219,6 +219,12 @@ result = await runtime.run([{"role": "user", "content": "..."}])
 
 `Swarm.run_agent()` creates an `AgentRuntime` internally. Use `AgentRuntime` directly for single-agent setups or testing.
 
+### Lifecycle FSM
+
+> **Diagram:** [Lifecycle state machine](diagrams/04-lifecycle-fsm.html).
+
+`AgentRuntime` tracks the run lifecycle through six states with the transitions shown in the diagram: `created`, `running`, `paused`, `done`, `failed`, `interrupted`. The terminal states (`done`, `failed`, `interrupted`) are mutually exclusive — exactly one is reached per run. The `running ↔ paused` edge is driven by the steering queue, which drains on `resume()`. The transition triggers (which method call / event causes which transition) are partially captured as edge labels; full tabulation is tracked under `## Open questions or deferred items` below.
+
 ## Error handling
 
 The four error types behave differently at the process boundary:
@@ -490,3 +496,11 @@ These surfaces are intentionally excluded from the stability guarantee. Contribu
 A critical design constraint for all `ToolHandler.execute()` implementations is that they **must be ≤ 30 lines of code**. The handler's only responsibilities are parameter parsing, validation, and delegating to standard library or external libraries (e.g., executing standard CLI patterns like ingest/redact/sweep).
 
 If a tool handler logic requires more than 30 lines, the core logic should be abstracted away and unit-tested in isolation. We recommend enforcing this using a code-length linting rule (e.g., `mccabe` or custom Flake8 limits) in `pyproject.toml`.
+
+## Open questions or deferred items
+
+- **Adopter migration guide.** Several breaking changes have landed without a written migration story:
+  - `Scorer.score()` return type changed from `float` to `ScoreResult` (covered briefly in `07-bench-integrated-axes.md`; needs a how-to-update for adopter custom scorers).
+  - `LoopConfig` field set evolved from the legacy harness; adopters pinning to old versions need a step-by-step.
+- **Lifecycle FSM transition table.** The states are diagrammed in [diagrams/04-lifecycle-fsm.html](diagrams/04-lifecycle-fsm.html), but the precise *triggers* for each transition (which method call / event causes which transition) need to be tabulated, not just shown as edge labels.
+- **Parallel tool execution failure modes.** Spec describes happy-path concurrency via `asyncio.Semaphore`. The behaviour when one of N parallel tool calls raises `UnexpectedError` while others are still running is implementation-defined today.

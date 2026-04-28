@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sanitize → Guardrail pipeline — pyarnes_swarm message safety</title>
+<style>
+  :root {
+    --paper: #faf7f2;
+    --ink: #1c1917;
+    --muted: #6b6b6b;
+    --accent: #b5523a;
+    --hairline: #d4d0c8;
+    --tint: #f1ece2;
+  }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    padding: 32px;
+  }
+  .frame {
+    max-width: 1040px;
+    margin: 0 auto;
+    border: 1px solid var(--hairline);
+    background: var(--paper);
+    padding: 28px 28px 16px 28px;
+  }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px 0; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 24px 0; font-size: 13px; }
+  svg { display: block; margin: 0 auto; }
+  .lane-label { font-size: 13px; font-weight: 600; }
+  .actor-rect { fill: var(--tint); stroke: var(--ink); stroke-width: 1; }
+  .lifeline { stroke: var(--hairline); stroke-width: 1; stroke-dasharray: 3 3; }
+  .msg { stroke: var(--ink); stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
+  .msg-self { stroke: var(--ink); stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
+  .msg-return { stroke: var(--ink); stroke-width: 1.2; fill: none; marker-end: url(#arrow); stroke-dasharray: 4 3; }
+  .msg-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; marker-end: url(#arrow-accent); }
+  .msg-label { font-size: 12px; fill: var(--ink); }
+  .msg-label-mono { font-size: 11.5px; font-family: ui-monospace, "JetBrains Mono", monospace; fill: var(--ink); }
+  .frag { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 2; }
+  .frag-tag { fill: var(--paper); stroke: var(--muted); stroke-width: 1; }
+  .frag-tag-text { font-size: 10.5px; font-weight: 600; fill: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+  .callout-box { fill: var(--paper); stroke: var(--accent); stroke-width: 1.2; }
+  .callout-tag { fill: var(--accent); }
+  .callout-tag-text { fill: var(--paper); font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .callout-text { font-size: 12px; fill: var(--ink); }
+  .callout-text-mono { font-size: 11px; font-family: ui-monospace, monospace; fill: var(--ink); }
+  .note { font-size: 11.5px; fill: var(--muted); }
+</style>
+</head>
+<body>
+<section class="frame">
+  <h1>Sanitize → Guardrail pipeline</h1>
+  <p class="sub">Owning spec: <code>20-message-safety.md</code>. Input filtering (H6) runs once on the message copy passed to the model; output policy (H8) runs per tool call as a rule inside <code>GuardrailChain</code>. The two phases are deliberately separated so the model never sees raw user input and the human never sees a tool call that violates policy.</p>
+
+  <svg viewBox="0 0 1000 720" width="1000" height="720" role="img" aria-label="Sanitize then guardrail sequence diagram">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#1c1917"/>
+      </marker>
+      <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#b5523a"/>
+      </marker>
+    </defs>
+
+    <!-- Lane x-centres: 80, 240, 410, 580, 750, 910 (6 actors) -->
+    <g>
+      <rect class="actor-rect" x="20" y="16" width="120" height="34" rx="2"/>
+      <text class="lane-label" x="80" y="38" text-anchor="middle">User input</text>
+      <line class="lifeline" x1="80" y1="50" x2="80" y2="660"/>
+
+      <rect class="actor-rect" x="170" y="16" width="140" height="34" rx="2"/>
+      <text class="lane-label" x="240" y="38" text-anchor="middle">SanitizePipeline</text>
+      <line class="lifeline" x1="240" y1="50" x2="240" y2="660"/>
+
+      <rect class="actor-rect" x="346" y="16" width="128" height="34" rx="2"/>
+      <text class="lane-label" x="410" y="38" text-anchor="middle">AgentLoop</text>
+      <line class="lifeline" x1="410" y1="50" x2="410" y2="660"/>
+
+      <rect class="actor-rect" x="520" y="16" width="120" height="34" rx="2"/>
+      <text class="lane-label" x="580" y="38" text-anchor="middle">ModelClient</text>
+      <line class="lifeline" x1="580" y1="50" x2="580" y2="660"/>
+
+      <rect class="actor-rect" x="686" y="16" width="128" height="34" rx="2"/>
+      <text class="lane-label" x="750" y="38" text-anchor="middle">GuardrailChain</text>
+      <line class="lifeline" x1="750" y1="50" x2="750" y2="660"/>
+
+      <rect class="actor-rect" x="854" y="16" width="112" height="34" rx="2"/>
+      <text class="lane-label" x="910" y="38" text-anchor="middle">ToolHandler</text>
+      <line class="lifeline" x1="910" y1="50" x2="910" y2="660"/>
+    </g>
+
+    <!-- 1. User input → SanitizePipeline -->
+    <line class="msg" x1="80" y1="80" x2="238" y2="80"/>
+    <text class="msg-label" x="160" y="74" text-anchor="middle">raw message</text>
+
+    <!-- input phase H6 frag -->
+    <rect class="frag" x="160" y="100" width="170" height="76"/>
+    <rect class="frag-tag" x="160" y="96" width="120" height="18"/>
+    <text class="frag-tag-text" x="166" y="109">input phase — H6</text>
+    <path class="msg-self" d="M 240 130 C 290 130, 290 152, 242 152"/>
+    <text class="msg-label-mono" x="298" y="124">strip control sequences</text>
+    <text class="msg-label-mono" x="298" y="138">normalize unicode</text>
+    <text class="msg-label-mono" x="298" y="152">redact known-bad patterns</text>
+
+    <!-- 3. SanitizePipeline → AgentLoop -->
+    <line class="msg" x1="242" y1="200" x2="408" y2="200"/>
+    <text class="msg-label" x="324" y="194" text-anchor="middle">sanitized message copy</text>
+    <text class="note" x="324" y="216" text-anchor="middle">stored history is unchanged — only the copy reaches the model</text>
+
+    <!-- 4. AgentLoop → ModelClient -->
+    <line class="msg" x1="412" y1="244" x2="578" y2="244"/>
+    <text class="msg-label-mono" x="494" y="238" text-anchor="middle">next_action(messages)</text>
+
+    <!-- 5. ModelClient → AgentLoop -->
+    <line class="msg-return" x1="578" y1="266" x2="412" y2="266"/>
+    <text class="msg-label" x="494" y="262" text-anchor="middle">tool_call (proposed)</text>
+
+    <!-- output phase H8 frag -->
+    <rect class="frag" x="380" y="288" width="600" height="240"/>
+    <rect class="frag-tag" x="380" y="284" width="184" height="18"/>
+    <text class="frag-tag-text" x="386" y="297">output phase — H8 (per tool call)</text>
+
+    <!-- 6. AgentLoop → GuardrailChain: check -->
+    <line class="msg" x1="412" y1="320" x2="748" y2="320"/>
+    <text class="msg-label-mono" x="580" y="314" text-anchor="middle">check(tool_call)</text>
+    <text class="note" x="580" y="334" text-anchor="middle">InjectionGuardrail is one rule in the chain</text>
+
+    <!-- alt block: ok / violation -->
+    <rect class="frag" x="392" y="350" width="580" height="160"/>
+    <rect class="frag-tag" x="392" y="346" width="50" height="18"/>
+    <text class="frag-tag-text" x="398" y="359">alt</text>
+    <text class="msg-label-mono" x="446" y="360">ok</text>
+
+    <line class="msg-return" x1="748" y1="380" x2="412" y2="380"/>
+    <text class="msg-label" x="580" y="376" text-anchor="middle">return — proceed</text>
+
+    <line class="msg" x1="412" y1="402" x2="908" y2="402"/>
+    <text class="msg-label-mono" x="660" y="396" text-anchor="middle">execute(tool_call)</text>
+
+    <line class="msg-return" x1="908" y1="424" x2="412" y2="424"/>
+    <text class="msg-label" x="660" y="420" text-anchor="middle">tool result</text>
+
+    <!-- separator inside alt -->
+    <line x1="392" y1="438" x2="972" y2="438" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="2 2"/>
+    <text class="msg-label-mono" x="446" y="450">violation (e.g. ignore-previous-instructions matched)</text>
+
+    <line class="msg-accent" x1="748" y1="476" x2="412" y2="476"/>
+    <text class="msg-label-mono" x="580" y="472" text-anchor="middle">raise LLMRecoverableError</text>
+
+    <text class="msg-label" x="580" y="498" text-anchor="middle">AgentLoop appends ToolMessage(is_error=True) → model self-corrects</text>
+
+    <!-- callout: order rationale -->
+    <g>
+      <rect class="callout-box" x="36" y="540" width="940" height="64" rx="3"/>
+      <rect class="callout-tag" x="36" y="540" width="200" height="20"/>
+      <text class="callout-tag-text" x="44" y="554">WHY THIS ORDER</text>
+      <text class="callout-text" x="48" y="578">Sanitization runs before the model so that prompt-injection payloads in user input cannot reach the model. Guardrails run after the model</text>
+      <text class="callout-text" x="48" y="594">so that an attacker cannot persuade the model to emit a harmful tool call. <tspan style="font-family: ui-monospace, monospace;">LLMRecoverableError</tspan> from the chain returns the error to the model as a <tspan style="font-family: ui-monospace, monospace;">ToolMessage</tspan>; the human is not interrupted.</text>
+    </g>
+
+    <!-- audit log note -->
+    <g>
+      <rect class="callout-box" x="36" y="618" width="940" height="40" rx="3" style="stroke: var(--muted);"/>
+      <rect class="callout-tag" x="36" y="618" width="120" height="20" style="fill: var(--muted);"/>
+      <text class="callout-tag-text" x="44" y="632">AUDIT TRAIL</text>
+      <text class="callout-text" x="48" y="644">Every <tspan style="font-family: ui-monospace, monospace;">GuardrailChain.check()</tspan> outcome (ok or raise) is logged by <tspan style="font-family: ui-monospace, monospace;">ToolCallLogger</tspan> as JSONL. Phase 06 owns the external Claude Code hook contract; this spec owns the in-process safety pipeline.</text>
+    </g>
+  </svg>
+</section>
+</body>
+</html>
