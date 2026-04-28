@@ -14,7 +14,7 @@ import pytest
 
 from pyarnes_core.observability import monotonic_duration, start_timer
 from pyarnes_core.types import ModelClient, ToolHandler
-from pyarnes_harness.capture.tool_log import ToolCallEntry, ToolCallLogger
+from pyarnes_harness.capture.tool_log import ToolCallEntry, ToolCallLogger, read_branch
 from pyarnes_harness.loop import AgentLoop, LoopConfig
 
 
@@ -305,3 +305,90 @@ class TestLoopWithToolCallLogger:
         await asyncio.sleep(0.01)
         assert time.perf_counter() - started < 0.05
         await run_task
+
+
+# ── Session branching (P3) ─────────────────────────────────────────────────
+
+
+class TestSessionBranching:
+    """ToolCallEntry id/parent_id chain and read_branch helper."""
+
+    def _make_entry(self) -> ToolCallEntry:
+        return ToolCallEntry(
+            tool="echo",
+            arguments={},
+            result="ok",
+            is_error=False,
+            started_at="",
+            finished_at="",
+            duration_seconds=0.0,
+        )
+
+    def test_entry_has_id(self) -> None:
+        entry = self._make_entry()
+        assert isinstance(entry.id, str)
+        assert len(entry.id) > 0
+
+    def test_entry_id_is_unique(self) -> None:
+        a = self._make_entry()
+        b = self._make_entry()
+        assert a.id != b.id
+
+    def test_entry_parent_id_defaults_to_none(self) -> None:
+        assert self._make_entry().parent_id is None
+
+    def test_logger_sets_parent_chain(self, tmp_path: Path) -> None:
+        """Each logged entry's parent_id equals the previous entry's id."""
+        log_file = tmp_path / "calls.jsonl"
+        with ToolCallLogger(path=log_file) as log:
+            e1 = log.log_call("a", {}, result="1")
+            e2 = log.log_call("b", {}, result="2")
+            e3 = log.log_call("c", {}, result="3")
+
+        assert e1.parent_id is None
+        assert e2.parent_id == e1.id
+        assert e3.parent_id == e2.id
+
+    def test_logger_persists_id_and_parent_id(self, tmp_path: Path) -> None:
+        """id and parent_id are written to the JSONL file."""
+        log_file = tmp_path / "calls.jsonl"
+        with ToolCallLogger(path=log_file) as log:
+            e1 = log.log_call("a", {}, result="1")
+            e2 = log.log_call("b", {}, result="2")
+
+        lines = log_file.read_text().strip().splitlines()
+        d1 = json.loads(lines[0])
+        d2 = json.loads(lines[1])
+        assert d1["id"] == e1.id
+        assert d1["parent_id"] is None
+        assert d2["id"] == e2.id
+        assert d2["parent_id"] == e1.id
+
+    def test_read_branch_from_start(self, tmp_path: Path) -> None:
+        log_file = tmp_path / "calls.jsonl"
+        with ToolCallLogger(path=log_file) as log:
+            e1 = log.log_call("a", {}, result="1")
+            log.log_call("b", {}, result="2")
+            log.log_call("c", {}, result="3")
+
+        branch = read_branch(log_file, e1.id)
+        assert len(branch) == 3
+        assert branch[0].id == e1.id
+
+    def test_read_branch_from_middle(self, tmp_path: Path) -> None:
+        log_file = tmp_path / "calls.jsonl"
+        with ToolCallLogger(path=log_file) as log:
+            log.log_call("a", {}, result="1")
+            e2 = log.log_call("b", {}, result="2")
+            log.log_call("c", {}, result="3")
+
+        branch = read_branch(log_file, e2.id)
+        assert len(branch) == 2
+        assert branch[0].id == e2.id
+
+    def test_read_branch_unknown_id_returns_empty(self, tmp_path: Path) -> None:
+        log_file = tmp_path / "calls.jsonl"
+        with ToolCallLogger(path=log_file) as log:
+            log.log_call("a", {}, result="1")
+
+        assert read_branch(log_file, "nonexistent-id") == []

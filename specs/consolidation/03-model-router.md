@@ -17,10 +17,12 @@ Returns a model ID string (e.g. `"claude-haiku-4-5-20251001"`, `"openrouter/mist
 
 ## Task signals (`TaskMeta`)
 
+`TaskMeta` is **defined in `swarm.py`** alongside `Swarm` and `AgentSpec`. `routing.py` imports it from there. Do not re-define it.
+
 ```python
 @dataclass(frozen=True)
 class TaskMeta:
-    """Signals used by ModelRouter to pick a model."""
+    """Signals used by ModelRouter to pick a model. Defined in swarm.py."""
     estimated_duration_seconds: float = 0.0
     tool_count: int = 0
     has_destructive_tools: bool = False   # rm, chmod, DROP TABLE, etc.
@@ -115,19 +117,22 @@ router.observe(
 
 `RuleBasedRouter` does not implement `observe()` (its rules are static by design). Use `LLMCostRouter` when you want the router to learn.
 
-## `LiteLLMModelClient` (`agent.py`)
+## `ModelClient` (`agent.py`)
 
-Implements `ModelClient` Protocol using LiteLLM's unified API. Works with any provider supported by LiteLLM — no per-provider code.
+Satisfies `ModelClientPort` Protocol using LiteLLM's unified API. Works with text, image, audio, and embedding models across any provider LiteLLM supports — no per-provider code required.
 
 ```python
-class LiteLLMModelClient:
-    """ModelClient backed by LiteLLM unified API.
+class ModelClient:
+    """Default model adapter — LiteLLM-backed, provider-agnostic.
 
     Accepts any model ID supported by LiteLLM, including provider-prefixed IDs:
-        LiteLLMModelClient("claude-haiku-4-5-20251001")
-        LiteLLMModelClient("openrouter/anthropic/claude-3-haiku")
-        LiteLLMModelClient("huggingface/mistralai/Mistral-7B-Instruct-v0.2")
-        LiteLLMModelClient("nvidia_nim/meta/llama3-70b-instruct")
+        ModelClient("claude-haiku-4-5-20251001")
+        ModelClient("openrouter/anthropic/claude-3-haiku")
+        ModelClient("huggingface/mistralai/Mistral-7B-Instruct-v0.2")
+        ModelClient("nvidia_nim/meta/llama3-70b-instruct")
+        ModelClient("openai/gpt-4o")               # text + image
+        ModelClient("openai/whisper-1")             # audio
+        ModelClient("openai/text-embedding-3-small") # embeddings
     """
     def __init__(
         self,

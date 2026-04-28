@@ -57,6 +57,7 @@ from pyarnes_harness.budget import IterationBudget
 from pyarnes_harness.capture.tool_log import ToolCallLogger
 from pyarnes_harness.context import AgentContext
 from pyarnes_harness.hooks import HookChain
+from pyarnes_harness.parallel import execute_batch
 from pyarnes_harness.steering import SteeringQueue
 from pyarnes_harness.transform import TransformChain
 
@@ -178,7 +179,7 @@ class AgentLoop:
     steering: SteeringQueue | None = None
     transform_chain: TransformChain | None = None
 
-    async def run(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    async def run(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:  # noqa: C901
         """Execute the agent loop until completion or limit.
 
         Args:
@@ -220,6 +221,14 @@ class AgentLoop:
 
             transformed = await self.transform_chain.apply(messages) if self.transform_chain else messages
             action = await self.model.next_action(sanitize_messages(transformed))
+
+            if action.get("type") == "tool_calls":
+                batch_results = await self._call_batch(action.get("calls", []))
+                messages.append(action)
+                for r in batch_results:
+                    messages.append(self._as_tool_entry(r))
+                continue
+
             kind = classify(action)
 
             if kind is ActionKind.FINAL_ANSWER:
@@ -255,6 +264,13 @@ class AgentLoop:
             limit=self.config.max_iterations,
         )
         return messages
+
+    async def _call_batch(self, calls: list[dict[str, Any]]) -> list[ToolMessage]:
+        """Dispatch a batch of tool calls, parallelizing when path-independent."""
+        async def dispatch(name: str, call_id: str, arguments: dict[str, Any]) -> ToolMessage:
+            return await self._call_tool(name, call_id, arguments)
+
+        return await execute_batch(calls, dispatch)  # type: ignore[return-value]
 
     async def _call_tool(  # noqa: C901, PLR0911, PLR0912, PLR0915
         self,

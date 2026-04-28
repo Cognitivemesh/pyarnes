@@ -10,7 +10,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from pyarnes_core.errors import LLMRecoverableError
 from pyarnes_harness.repair import repair_json_args
 
 if TYPE_CHECKING:
@@ -72,8 +71,9 @@ class TransportModelClient:
     """Bridges :class:`ProviderTransport` to the ``ModelClient`` protocol.
 
     Converts a ``NormalizedResponse`` to the action-dict format expected by
-    ``AgentLoop.run()``.  Raises ``LLMRecoverableError`` when the provider
-    returns multiple simultaneous tool calls (handled properly in Phase 5 H7).
+    ``AgentLoop.run()``.  Returns a ``tool_calls`` batch action dict when the
+    provider returns multiple simultaneous tool calls; ``AgentLoop._call_batch``
+    handles parallel or serial dispatch depending on path independence.
     """
 
     transport: ProviderTransport
@@ -87,19 +87,26 @@ class TransportModelClient:
         if not response.tool_calls:
             return {"type": "final_answer", "content": response.content}
 
-        if len(response.tool_calls) > 1:
-            names = [tc.name for tc in response.tool_calls]
-            raise LLMRecoverableError(
-                f"provider returned multiple tool calls in one response: {names}. "
-                "Please call one tool at a time."
-            )
+        if len(response.tool_calls) == 1:
+            tc = response.tool_calls[0]
+            return {
+                "type": "tool_call",
+                "tool": tc.name,
+                "id": tc.id,
+                "arguments": repair_json_args(tc.arguments),
+            }
 
-        tc = response.tool_calls[0]
+        # Multiple tool calls — return a batch action for AgentLoop._call_batch
         return {
-            "type": "tool_call",
-            "tool": tc.name,
-            "id": tc.id,
-            "arguments": repair_json_args(tc.arguments),
+            "type": "tool_calls",
+            "calls": [
+                {
+                    "tool": tc.name,
+                    "id": tc.id,
+                    "arguments": repair_json_args(tc.arguments),
+                }
+                for tc in response.tool_calls
+            ],
         }
 
     def _build_tool_defs(self) -> list[dict[str, Any]]:

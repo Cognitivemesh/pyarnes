@@ -6,7 +6,7 @@
 import asyncio
 from pathlib import Path
 from pyarnes_swarm import (
-    AgentRuntime, LoopConfig, LiteLLMModelClient,
+    AgentRuntime, LoopConfig, ModelClient,
     GuardrailChain, Swarm, AgentSpec, InMemoryBus,
 )
 from pyarnes_swarm.guardrails import PathGuardrail
@@ -55,14 +55,15 @@ class AgentSpec:
     model: str | None = None          # None → router decides
     tools: ToolRegistry | None = None
     guardrails: GuardrailChain | None = None
-    config: LoopConfig | None = None
+    config: LoopConfig | None = None  # pass LoopConfig(budget=shared_budget) to wire IterationBudget
     complexity_hint: float = 0.5      # 0=trivial … 1=complex (for router)
     description: str = ""             # human-readable, used in routing logs
+    log_path: Path | None = None      # if set, ToolCallLogger writes JSONL here
 ```
 
 ## `TaskMeta`
 
-Computed from `AgentSpec` + task context before each run. The router uses this to select a model.
+Defined in `swarm.py` alongside `Swarm` and `AgentSpec`. Also imported by `routing.py`. Computed from `AgentSpec` + task context before each run; the router uses this to select a model.
 
 ```python
 @dataclass(frozen=True)
@@ -82,7 +83,7 @@ class Swarm:
         self,
         bus: MessageBus,
         agents: list[AgentSpec],
-        router: ModelRouter | None = None,   # None → direct model from AgentSpec
+        router: ModelRouter | None = None,   # None → use AgentSpec.model directly; raises ValueError if model is also None
         secret_store: SecretStore | None = None,
     ) -> None: ...
 
@@ -131,13 +132,49 @@ Production checklist:
 - Wire `IterationBudget` for shared swarm step limits
 - Set `LoopConfig.compaction_config` when running long sessions
 
+## `MessageCompactorConfig` — context cost control
+
+**The problem:** each loop iteration sends the full message history to the model. Cost grows super-linearly — 10 iterations with a 1 000-token average context costs 10× more than iteration 1 because the context is 10× longer by the end. Left unchecked this is O(n²) in token spend.
+
+**The fix:** `MessageCompactor` measures context size before every model call using `litellm.token_counter()` and summarises old messages once the context exceeds a fraction of the model's context window.
+
+```python
+@dataclass(frozen=True)
+class MessageCompactorConfig:
+    context_window: int              # model's max context size in tokens (e.g. 200_000 for claude-haiku-4-5)
+    capacity_threshold: float = 0.75 # compact when context reaches this fraction of context_window
+    summary_max_tokens: int = 512    # max tokens for the compaction summary message
+```
+
+`MessageCompactor` internally calls `litellm.token_counter(model=model_id, messages=messages)` before every `ModelClient.next_action()` call. When `token_count / context_window >= capacity_threshold`, it:
+
+1. Summarises messages older than the most recent `N` tool-call pairs into a single `{"role": "system", "content": "<summary>"}` message
+2. Replaces those messages in the history with the summary
+3. The new context is small enough to continue safely
+
+```python
+# Wire it up:
+LoopConfig(
+    max_iterations=50,
+    compaction_config=MessageCompactorConfig(
+        context_window=200_000,   # claude-haiku-4-5-20251001
+        capacity_threshold=0.75,  # compact at 150K tokens
+        summary_max_tokens=512,
+    ),
+)
+```
+
+`litellm.token_counter()` is the single token measurement primitive. It handles tokenizer differences across providers — Anthropic, OpenAI, and open models each count tokens differently; LiteLLM normalises this. No separate tokenizer library is needed.
+
+`Budget.max_tokens` (in `budget.py`) tracks **cumulative** token spend across the whole session and hard-stops the loop when the cap is hit. `MessageCompactorConfig` controls per-request context size. They address different failure modes and compose naturally.
+
 ## `AgentRuntime`
 
 Lower-level entry point. Use when you want to manage a single loop without `Swarm`.
 
 ```python
 runtime = AgentRuntime(
-    model=LiteLLMModelClient("claude-haiku-4-5-20251001"),
+    model=ModelClient("claude-haiku-4-5-20251001"),
     tools=registry,
     guardrails=guardrails,
     config=LoopConfig(max_iterations=20),
@@ -230,13 +267,18 @@ class RateLimitGuardrail(Guardrail):
 
 ### Custom model client
 
-```python
-from pyarnes_swarm.ports import ModelClient
+Implement `ModelClientPort` (the Protocol) to use a backend other than LiteLLM:
 
-class MyModelClient(ModelClient):
+```python
+from pyarnes_swarm.ports import ModelClientPort
+
+class MyModelClient:
+    """Satisfies ModelClientPort — no subclassing needed (structural typing)."""
     async def next_action(self, messages: list[dict]) -> dict:
         # Call your LLM and return:
         # {"type": "tool_call", "tool": "...", "id": "...", "arguments": {...}}
         # {"type": "final_answer", "content": "..."}
         ...
 ```
+
+Pass it wherever `ModelClientPort` is accepted (e.g. `AgentRuntime(model=MyModelClient(), ...)`).

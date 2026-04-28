@@ -17,10 +17,12 @@ partial runs are never lost.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, TextIO
+from uuid import uuid4
 
 from pyarnes_core.observability import dumps, iso_now
 from pyarnes_core.safety.redact import redact_dict
@@ -28,6 +30,7 @@ from pyarnes_core.safety.redact import redact_dict
 __all__ = [
     "ToolCallEntry",
     "ToolCallLogger",
+    "read_branch",
 ]
 
 
@@ -49,6 +52,9 @@ class ToolCallEntry:
         token_out: Output tokens produced, when the caller tracks usage.
         cost_usd: Estimated USD cost, when the caller computes it.
         model: Model identifier that produced this call, when known.
+        id: Unique hex identifier for this entry (auto-generated).
+        parent_id: ``id`` of the previous entry in the session chain, or
+            ``None`` for the first entry. Enables ``read_branch`` navigation.
     """
 
     tool: str
@@ -62,10 +68,14 @@ class ToolCallEntry:
     token_out: int | None = None
     cost_usd: float | None = None
     model: str | None = None
+    id: str = field(default_factory=lambda: uuid4().hex)
+    parent_id: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         """Serialise to a plain dict (one JSON line)."""
         return {
+            "id": self.id,
+            "parent_id": self.parent_id,
             "tool": self.tool,
             "arguments": self.arguments,
             "result": self.result,
@@ -113,6 +123,7 @@ class ToolCallLogger:
         self._path = path
         self._file: TextIO = path.open("a", encoding="utf-8")
         self._redactor = redactor
+        self._last_id: str | None = None
 
     # ── public API ─────────────────────────────────────────────────────
 
@@ -163,8 +174,10 @@ class ToolCallLogger:
             token_out=token_out,
             cost_usd=cost_usd,
             model=model,
+            parent_id=self._last_id,
         )
         self._write(entry)
+        self._last_id = entry.id
         return entry
 
     # ── lifecycle ──────────────────────────────────────────────────────
@@ -200,3 +213,44 @@ class ToolCallLogger:
         line = dumps(payload)
         self._file.write(line + "\n")
         self._file.flush()
+
+
+def read_branch(log_path: Path, from_id: str) -> list[ToolCallEntry]:
+    """Return all entries reachable from *from_id* (inclusive) in log order.
+
+    Reads the JSONL file at *log_path*, finds the first entry whose ``id``
+    equals *from_id*, then returns it and all subsequent entries.  Returns
+    an empty list if *from_id* is not found.
+
+    Args:
+        log_path: Path to the ``.jsonl`` tool-call log.
+        from_id: The ``id`` of the entry to branch from.
+    """
+    entries: list[ToolCallEntry] = []
+    found = False
+    for raw_line in log_path.read_text(encoding="utf-8").splitlines():
+        stripped = raw_line.strip()
+        if not stripped:
+            continue
+        raw = json.loads(stripped)
+        if raw.get("id") == from_id:
+            found = True
+        if found:
+            entries.append(
+                ToolCallEntry(
+                    id=raw["id"],
+                    parent_id=raw.get("parent_id"),
+                    tool=raw["tool"],
+                    arguments=raw["arguments"],
+                    result=raw["result"],
+                    is_error=raw["is_error"],
+                    started_at=raw["started_at"],
+                    finished_at=raw["finished_at"],
+                    duration_seconds=raw["duration_seconds"],
+                    token_in=raw.get("token_in"),
+                    token_out=raw.get("token_out"),
+                    cost_usd=raw.get("cost_usd"),
+                    model=raw.get("model"),
+                )
+            )
+    return entries

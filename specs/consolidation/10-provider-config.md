@@ -2,7 +2,7 @@
 
 ## Supported providers
 
-`LiteLLMModelClient` routes calls to any model supported by LiteLLM's unified API. The caller specifies a provider-prefixed model ID; LiteLLM handles authentication and request shaping transparently.
+`ModelClient` routes calls to any model supported by LiteLLM's unified API. The caller specifies a provider-prefixed model ID; LiteLLM handles authentication and request shaping transparently.
 
 | Provider | LiteLLM prefix | Example model ID |
 |---|---|---|
@@ -15,12 +15,12 @@ OpenRouter and NVIDIA NIM give access to hundreds of models with a single API ke
 
 ## `ProviderConfig`
 
-Binds a `LiteLLMModelClient` to a specific provider's credentials and endpoint.
+Binds a `ModelClient` to a specific provider's credentials and endpoint.
 
 ```python
 @dataclass(frozen=True)
 class ProviderConfig:
-    """Provider binding for LiteLLMModelClient.
+    """Provider binding for ModelClient.
 
     Attributes:
         provider_type: One of "anthropic", "openrouter", "huggingface", "nvidia_nim".
@@ -71,10 +71,10 @@ nvidia_selfhosted = ProviderConfig(
 )
 ```
 
-## Using `ProviderConfig` with `LiteLLMModelClient`
+## Using `ProviderConfig` with `ModelClient`
 
 ```python
-from pyarnes_swarm.agent import LiteLLMModelClient
+from pyarnes_swarm import ModelClient
 from pyarnes_swarm.secrets import ProviderConfig, ChainedSecretStore, KeyringSecretStore, EnvSecretStore
 
 store = ChainedSecretStore(
@@ -83,14 +83,14 @@ store = ChainedSecretStore(
 )
 
 # OpenRouter: the same interface, any model
-client = LiteLLMModelClient(
+client = ModelClient(
     model="openrouter/anthropic/claude-3-haiku",
     provider=ProviderConfig(provider_type="openrouter", api_key_name="openrouter"),
     secret_store=store,
 )
 ```
 
-The `LiteLLMModelClient` calls `store.get(provider.api_key_name)` at first use to resolve the API key. The key is never stored in the config object — it is fetched from the `SecretStore` at runtime.
+The `ModelClient` calls `store.get(provider.api_key_name)` at first use to resolve the API key. The key is never stored in the config object — it is fetched from the `SecretStore` at runtime.
 
 ## Cross-provider cost comparison via `LLMCostRouter`
 
@@ -153,6 +153,6 @@ env:
 1. Identify the LiteLLM prefix for the new provider
 2. Create a `ProviderConfig` with `provider_type` matching the prefix
 3. Store the API key: `keyring.set_password("pyarnes", "<api_key_name>", "<key>")`
-4. Pass the `ProviderConfig` to `LiteLLMModelClient`
+4. Pass the `ProviderConfig` to `ModelClient`
 
 No code changes to `pyarnes_swarm` are required. LiteLLM handles the rest.

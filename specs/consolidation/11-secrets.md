@@ -111,6 +111,8 @@ store = ChainedSecretStore(
 
 This is the default store used by `LiteLLMModelClient` if no `secret_store` is provided.
 
+`LiteLLMModelClient` always calls `store.get(provider.api_key_name)` (not `get_optional`) — if the key is missing the call fails fast with `KeyError`. Tests that don't have a real key should inject an `EnvSecretStore` with `monkeypatch.setenv` or a stub `SecretStore`.
+
 ## CLI helper
 
 ```bash

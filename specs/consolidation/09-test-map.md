@@ -108,8 +108,8 @@ Maps every existing test file to its replacement in `tests/swarm/` or a deletion
 | `bench/test_optimize.py` | KEEP (bench/) | all_detectors, HealthGrade |
 | `bench/test_race.py` | KEEP (bench/) | RaceEvaluator |
 | `bench/test_regression.py` | KEEP (bench/) | RegressionEvaluator |
-| `bench/test_scorer.py` | `test_bench_scorers.py` | MIGRATE — gains ScoreResult tests |
-| `bench/test_scorers_catalog.py` | `test_bench_scorers.py` | MIGRATE — all scorer classes |
+| `bench/test_scorer.py` | `test_bench_scorers.py` | MIGRATE — **breaking change**: `Scorer.score()` now returns `ScoreResult`, not `float`; update all subclass assertions |
+| `bench/test_scorers_catalog.py` | `test_bench_scorers.py` | MIGRATE — all scorer classes; assert `ScoreResult.score` not bare float |
 
 ## `tests/unit/tasks/`
 
@@ -136,11 +136,25 @@ Maps every existing test file to its replacement in `tests/swarm/` or a deletion
 | `template/test_dev_hooks.py` | KEEP (template/) | Tests Copier template hooks |
 | `template/test_scaffold.py` | KEEP (template/) | Tests Copier scaffold output |
 
+## New test files with no old equivalent
+
+These tests cover new surfaces that have no counterpart in the old test suite:
+
+| New test | Covers |
+|---|---|
+| `test_providers.py` | `LiteLLMModelClient` (mocked LiteLLM), `ProviderConfig`, `SecretStore` resolution at first call; replaces and extends `test_transport.py` |
+| `test_secrets.py` | `KeyringSecretStore` (mocked keyring), `EnvSecretStore`, `ChainedSecretStore` fallback ordering |
+| `test_routing.py` | `RuleBasedRouter`, `LLMCostRouter` with mocked `litellm.model_cost`, `LLMCostRouter.observe()` |
+| `test_bus.py` | `InMemoryBus` publish/subscribe, `TursoMessageBus` with `:memory:` db |
+| `test_swarm.py` | `Swarm.run_agent()`, `Swarm.run_parallel()` result ordering, partial-failure isolation, timeout → `TimeoutError` |
+| `test_ports.py` | All Protocol structural checks (ensure classes satisfy the Protocol without subclassing) |
+
 ## Summary
 
 | Action | Count |
 |---|---|
 | MIGRATE to `tests/swarm/` | ~55 files |
+| NEW (no old equivalent) | ~6 files |
 | DELETE (dead tests) | ~10 files |
 | KEEP (bench/, template/, tasks/) | ~25 files |
 

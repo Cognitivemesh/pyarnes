@@ -33,7 +33,7 @@ from pyarnes_swarm import AgentRuntime, LoopConfig, GuardrailChain, Swarm
 4. `MessageBus` backed by Turso/Limbo (embedded, MVCC) for durable inter-process messaging; NATS JetStream as optional extra
 5. All dead code removed; two overlapping observability subsystems merged into one
 6. Existing implemented specs archived; new `specs/consolidation/` specs are canonical
-7. Multi-provider routing — OpenRouter, HuggingFace Inference, NVIDIA NIM, Anthropic Direct — through one `LiteLLMModelClient` interface
+7. Multi-provider routing — OpenRouter, HuggingFace Inference, NVIDIA NIM, Anthropic Direct — through one `ModelClient` interface (LiteLLM-backed; handles text, images, audio, and embeddings)
 8. Secrets management via OS keychain (`keyring`) — no `.env` files, no accidental GitHub leaks
 9. Evaluation feedback loop: `ScoreResult` flows from `Scorer` → `EvalSuite.run()` → `cost_efficiency` → `LLMCostRouter.observe()`
 10. Full TDD discipline — Red → Green → Refactor per module
@@ -71,6 +71,7 @@ Old import → new import:
 | Old | New |
 |---|---|
 | `from pyarnes_core.types import ToolHandler` | `from pyarnes_swarm.ports import ToolHandler` |
+| `from pyarnes_core.types import ModelClient` | `from pyarnes_swarm.ports import ModelClientPort` (Protocol) or `from pyarnes_swarm import ModelClient` (concrete) |
 | `from pyarnes_core.errors import TransientError` | `from pyarnes_swarm.errors import TransientError` |
 | `from pyarnes_harness.loop import AgentLoop, LoopConfig` | `from pyarnes_swarm.agent import AgentLoop, LoopConfig` |
 | `from pyarnes_guardrails import GuardrailChain` | `from pyarnes_swarm import GuardrailChain` |
@@ -87,12 +88,20 @@ Old import → new import:
 
 ## Tool-dispatch and error-routing (canonical diagram)
 
+Each iteration begins with a token count check. Context grows with every tool result appended to history; without compaction, cost is O(n²) in iterations. `litellm.token_counter()` measures the current context before every model call and triggers `MessageCompactor` when the threshold is reached.
+
 ```
 User message
     │
     ▼
 AgentLoop.run()
     │
+    ├─► litellm.token_counter(messages)          ← measure BEFORE every model call
+    │        │ tokens / context_window >= threshold → MessageCompactor.compact()
+    │        │   (summarise old messages → keep context cost bounded)
+    │        │ cumulative_tokens >= Budget.max_tokens → stop (hard token cap)
+    │        │
+    │        ▼
     ├─► ModelClient.next_action() ──► tool_call or final_answer
     │        │
     │        ▼
@@ -107,11 +116,17 @@ AgentLoop.run()
     │        │ UnexpectedError → bubble up (page on-call)
     │        │
     │        ▼
-    │   ToolMessage (result fed back to model)
+    │   ToolMessage appended to history; iteration counter++
     │
     ▼
 final_answer → return messages
 ```
+
+Two complementary controls:
+- `MessageCompactorConfig.capacity_threshold` — keeps any single request's context small (per-request cost)
+- `Budget.max_tokens` — caps total token spend across the whole session (cumulative cost)
+
+Both use `litellm.token_counter()` as the measurement primitive.
 
 ## Consolidation sequence (do in order)
 

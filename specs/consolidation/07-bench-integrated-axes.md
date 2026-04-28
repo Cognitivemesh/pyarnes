@@ -23,7 +23,7 @@ class ScoreResult:
     passed: bool | None = None       # if None, caller applies threshold
 ```
 
-### Updated `Scorer` ABC
+### Updated `Scorer` ABC  *(breaking change — return type changes from `float` to `ScoreResult`)*
 
 ```python
 class Scorer(ABC):
@@ -45,6 +45,32 @@ class AsyncScorer(ABC):  # alias kept for backwards compat during migration
 `ExactMatchScorer` returns `ScoreResult(score=1.0/0.0, usage=None)`.
 `LLMJudgeScorer` returns `ScoreResult(score=..., usage=<judge_call_usage>)`.
 `CodeQualityScorer` returns `ScoreResult(score=..., usage=None)`.
+
+### `EvalResult` — full schema
+
+```python
+@dataclass(frozen=True)
+class EvalResult:
+    scenario: str
+    expected: Any
+    actual: Any
+    score: float               # 0.0 – 1.0
+    passed: bool               # score >= threshold (threshold set at EvalSuite.run() call)
+    usage: TokenUsage | None = None   # combined agent + scorer token usage
+    cost: Cost | None = None          # None when no CostCalculator provided
+```
+
+`TokenUsage` and `Cost` are imported from `pyarnes_swarm.bench.burn.types`. `Cost` carries `amount: Decimal` and `currency: str` (e.g. `"EUR"`).
+
+### `CostCalculator` Protocol
+
+```python
+class CostCalculator(Protocol):
+    """Converts token usage into a monetary cost. Lives in bench/burn/costing.py."""
+    def compute(self, usage: TokenUsage) -> Cost: ...
+```
+
+The concrete implementation is `LiteLLMCostCalculator` in `bench/burn/costing.py` — already implemented, no changes needed.
 
 ### `EvalSuite.run()` — the integration point
 

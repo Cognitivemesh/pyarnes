@@ -124,17 +124,60 @@ from pyarnes_swarm import Swarm, AgentSpec
 
 budget = IterationBudget(max_iterations=500)
 
+shared_config = LoopConfig(budget=budget)   # budget lives in LoopConfig, not AgentSpec
+
 swarm = Swarm(
     bus=TursoMessageBus(),
     agents=[
-        AgentSpec(name="orchestrator", budget=budget, ...),
-        AgentSpec(name="worker-1",     budget=budget, ...),
-        AgentSpec(name="worker-2",     budget=budget, ...),
+        AgentSpec(name="orchestrator", config=shared_config, ...),
+        AgentSpec(name="worker-1",     config=shared_config, ...),
+        AgentSpec(name="worker-2",     config=shared_config, ...),
     ],
 )
 ```
 
 `IterationBudget.consume()` is async and thread-safe via `asyncio.Lock`. When the budget is exhausted, `consume()` returns `False` and the loop terminates cleanly. Sub-agents can call `refund()` if they finish early, returning unused steps to the shared pool.
+
+### Budget exhaustion and refund patterns
+
+```python
+import asyncio
+from pyarnes_swarm.budget import IterationBudget
+
+budget = IterationBudget(max_iterations=500)
+
+# Agent loop checks the budget before each step
+async def agent_loop(budget: IterationBudget) -> None:
+    while True:
+        allowed = await budget.consume()      # acquires lock, decrements
+        if not allowed:
+            # Budget exhausted — terminate cleanly rather than raising
+            break
+        action = await model.next_action(messages)
+        if action["type"] == "final_answer":
+            break
+        result = await tools.execute(action)
+        messages.append(result)
+
+# Sub-agent that may finish early returns unused steps
+async def sub_agent(budget: IterationBudget, steps_reserved: int) -> str:
+    steps_used = 0
+    while steps_used < steps_reserved:
+        allowed = await budget.consume()
+        if not allowed:
+            break
+        # ... do work ...
+        steps_used += 1
+        if task_complete():
+            # Return unused steps to the shared pool
+            unused = steps_reserved - steps_used
+            if unused > 0:
+                await budget.refund(unused)
+            break
+    return result
+```
+
+`consume()` returns `False` without raising — the caller decides whether that is an error or a clean stop. `refund()` adds steps back to the pool so sibling agents can use them; call it only when you know you will do no more work.
 
 ## Enabling hooks in a Copier scaffold
 

@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyarnes_core.errors import LLMRecoverableError
 from pyarnes_harness.tools.registry import ToolRegistry, ToolSchema
 from pyarnes_harness.transport.ports import (
     NormalizedResponse,
@@ -111,8 +110,8 @@ async def test_transport_client_single_tool_call() -> None:
 
 
 @pytest.mark.asyncio
-async def test_transport_client_multi_tool_calls_raises() -> None:
-    """Multiple tool calls in one response → LLMRecoverableError (Phase 4 guard)."""
+async def test_transport_client_multi_tool_calls_returns_batch() -> None:
+    """Multiple tool calls in one response → tool_calls batch action dict."""
     transport = MagicMock()
     transport.complete = AsyncMock(
         return_value=NormalizedResponse(
@@ -125,8 +124,11 @@ async def test_transport_client_multi_tool_calls_raises() -> None:
         )
     )
     client = TransportModelClient(transport=transport, registry=ToolRegistry())
-    with pytest.raises(LLMRecoverableError, match="multiple"):
-        await client.next_action([])
+    action = await client.next_action([])
+    assert action["type"] == "tool_calls"
+    assert len(action["calls"]) == 2
+    assert action["calls"][0]["tool"] == "a"
+    assert action["calls"][1]["tool"] == "b"
 
 
 @pytest.mark.asyncio

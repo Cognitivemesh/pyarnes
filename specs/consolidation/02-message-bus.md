@@ -115,8 +115,16 @@ swarm = Swarm(
 )
 
 async def main():
-    # Dispatch tasks; workers pick them up from the bus
-    await swarm.run_parallel(["Summarise file a.py", "Summarise file b.py"])
+    # run_parallel takes (agent_name, messages) tuples — same format as run_agent
+    results = await swarm.run_parallel([
+        ("worker-1", [{"role": "user", "content": "Summarise file a.py"}]),
+        ("worker-2", [{"role": "user", "content": "Summarise file b.py"}]),
+    ])
+    for res in results:
+        if isinstance(res, Exception):
+            print("task failed:", res)
+        else:
+            print(res[-1]["content"])
 
 asyncio.run(main())
 ```

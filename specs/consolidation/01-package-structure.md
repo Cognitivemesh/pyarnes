@@ -15,7 +15,8 @@ packages/swarm/
         │  ── DOMAIN (orchestration — imports only from contracts) ─
         ├── swarm.py          # Swarm, AgentSpec, TaskMeta
         ├── routing.py        # RuleBasedRouter, LLMCostRouter, RoutingRule, ModelTier
-        ├── agent.py          # AgentLoop, AgentRuntime, LoopConfig, LiteLLMModelClient
+        ├── agent.py          # AgentLoop, AgentRuntime, LoopConfig, ModelClient
+        │                     #   ModelClient: LiteLLM-backed, text/image/audio/embeddings
         │                     #   inlines: ClassifiedError, ActionKind, RetryPolicy
         ├── budget.py         # Budget (immutable) + IterationBudget (mutable async)
         ├── context.py        # AgentContext, Lifecycle, Phase FSM
@@ -25,7 +26,10 @@ packages/swarm/
         │  ── ADAPTERS (concrete infra — imports domain + contracts) ─
         ├── bus.py            # TursoMessageBus [DEFAULT, BETA] + InMemoryBus
         ├── bus_nats.py       # NatsJetStreamBus (only importable with [nats] extra)
-        ├── guardrails.py     # Guardrail ABC + GuardrailChain + all guardrail classes
+        ├── guardrails.py     # Guardrail ABC (inherit to write a guardrail) +
+│                     #   GuardrailChain + all built-in guardrail classes
+│                     # Note: GuardrailPort (in ports.py) is the injection Protocol —
+│                     #   used by Swarm to accept the chain; Guardrail is the ABC callers subclass
         │
         │  ── INFRASTRUCTURE (I/O helpers — no domain logic) ────
         ├── safety.py         # paths, injection, redact, sanitize, command_scan,
@@ -85,8 +89,8 @@ Each layer may only import from layers above it in the list. Import from a lower
 
 ```python
 from pyarnes_swarm.swarm      import Swarm, AgentSpec
-from pyarnes_swarm.agent      import AgentRuntime, LoopConfig, LiteLLMModelClient
-from pyarnes_swarm.ports      import MessageBus, ModelClient, ModelRouter, ToolHandler
+from pyarnes_swarm.agent      import AgentRuntime, LoopConfig, ModelClient
+from pyarnes_swarm.ports      import MessageBus, ModelClientPort, ModelRouter, ToolHandler
 from pyarnes_swarm.routing    import RuleBasedRouter, LLMCostRouter, ModelTier
 from pyarnes_swarm.bus        import InMemoryBus, TursoMessageBus
 from pyarnes_swarm.guardrails import GuardrailChain
@@ -94,9 +98,11 @@ from pyarnes_swarm.guardrails import GuardrailChain
 __all__ = [
     "Swarm", "AgentSpec",
     "AgentRuntime", "LoopConfig",
-    "ModelRouter", "MessageBus", "ModelClient", "ToolHandler",
+    # Concrete model adapter — LiteLLM-backed, supports text + image + audio + embeddings
+    "ModelClient",
+    # Ports (implement these to plug in custom backends)
+    "ModelRouter", "MessageBus", "ModelClientPort", "ToolHandler",
     "RuleBasedRouter", "LLMCostRouter", "ModelTier",
-    "LiteLLMModelClient",
     "InMemoryBus", "TursoMessageBus",
     "GuardrailChain",
 ]
@@ -110,7 +116,8 @@ Everything else is importable by path (`from pyarnes_swarm.budget import Budget`
 class ToolHandler(Protocol):
     async def execute(self, arguments: dict[str, Any]) -> Any: ...
 
-class ModelClient(Protocol):
+class ModelClientPort(Protocol):
+    """Implement this to plug in a custom model backend."""
     async def next_action(self, messages: list[dict[str, Any]]) -> dict[str, Any]: ...
 
 class JudgeClient(Protocol):
