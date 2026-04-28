@@ -148,6 +148,7 @@ These tests cover new surfaces that have no counterpart in the old test suite:
 | `test_bus.py` | `InMemoryBus` publish/subscribe, `TursoMessageBus` with `:memory:` db |
 | `test_swarm.py` | `Swarm.run_agent()`, `Swarm.run_parallel()` result ordering, partial-failure isolation, timeout → `TimeoutError` |
 | `test_ports.py` | All Protocol structural checks (ensure classes satisfy the Protocol without subclassing) |
+| `test_token_budget.py` | `MessageCompactorConfig`, `MessageCompactor` trigger logic (mock `token_counter`), `overhead_tokens` baseline, `LLMCostRouter` context-window filter, `TaskMeta.required_context_tokens` |
 
 ## Summary
 

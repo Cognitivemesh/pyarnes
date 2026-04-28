@@ -147,3 +147,4 @@ Start a fresh context window for Phase 1 onwards to avoid context exhaustion mid
 - `04-swarm-api.md` — Hello World and Swarm + AgentSpec reference
 - `08-test-strategy.md` — Red → Green → Refactor discipline
 - `09-test-map.md` — every old test file mapped to new equivalent or deletion reason
+- `12-token-budget.md` — token counting APIs, context overhead baseline, output estimation heuristics, model selection by context window
