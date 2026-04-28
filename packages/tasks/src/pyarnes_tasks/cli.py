@@ -113,6 +113,9 @@ def _build_tasks() -> tuple[dict[str, list[str]], Path]:
         "codeburn:kpis":     [py, "-m", "pyarnes_tasks.codeburn_kpis"],
         "codeburn:compare":  [py, "-m", "pyarnes_tasks.codeburn_compare"],
         "codeburn:optimize": [py, "-m", "pyarnes_tasks.codeburn_optimize"],
+        # Observer: stream and filter structured JSONL logs.
+        "observer:tail": [py, "-m", "pyarnes_tasks.observer_tail"],
+        "observer:filter": [py, "-m", "pyarnes_tasks.observer_filter"],
     }
 
     if tests:
