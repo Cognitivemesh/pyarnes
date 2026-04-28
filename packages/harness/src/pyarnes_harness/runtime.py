@@ -28,11 +28,14 @@ from pyarnes_core.telemetry import configure_tracing, session_span, tracing_endp
 from pyarnes_core.types import ModelClient, ToolHandler
 from pyarnes_guardrails.guardrails import GuardrailChain
 from pyarnes_harness.capture.tool_log import ToolCallLogger
+from pyarnes_harness.compaction import CompactionConfig
+from pyarnes_harness.compressor import ContextCompressor
 from pyarnes_harness.context import AgentContext
 from pyarnes_harness.hooks import HookChain
 from pyarnes_harness.loop import AgentLoop, LoopConfig
 from pyarnes_harness.steering import SteeringQueue
 from pyarnes_harness.tools.registry import global_registry
+from pyarnes_harness.transform import TransformChain
 
 __all__ = ["AgentRuntime"]
 
@@ -68,6 +71,7 @@ class AgentRuntime:
     error_registry: ErrorHandlerRegistry | None = None
     hook_chain: HookChain | None = None
     steering: SteeringQueue | None = None
+    transform_chain: TransformChain | None = None
     session_id: str | None = None
     trace_id: str | None = None
     log_level: str = "INFO"
@@ -138,6 +142,7 @@ class AgentRuntime:
             error_registry=self.error_registry,
             hook_chain=self.hook_chain,
             steering=self.steering,
+            transform_chain=self.transform_chain,
         )
 
         with session_span("agent-session", session_id=self.session_id, trace_id=self.trace_id):
@@ -165,3 +170,41 @@ class AgentRuntime:
             step=len(result),
         )
         return result
+
+    @classmethod
+    def with_compressor(
+        cls,
+        tools: dict[str, Any],
+        model: ModelClient,
+        context_window: int,
+        *,
+        capacity_threshold: float = 0.75,
+        compaction_config: CompactionConfig | None = None,
+        **kwargs: Any,
+    ) -> AgentRuntime:
+        """Build an ``AgentRuntime`` with a ``ContextCompressor`` pre-wired.
+
+        The compressor is prepended to a new ``TransformChain`` (or merged into
+        an existing one passed via *kwargs*).
+
+        Args:
+            tools: Tool name → handler mapping.
+            model: The backing LLM client.
+            context_window: Model's maximum token capacity.
+            capacity_threshold: Fraction at which compaction fires (default 0.75).
+            compaction_config: Compaction tunables; defaults to ``CompactionConfig()``.
+            **kwargs: Forwarded verbatim to ``AgentRuntime.__init__``.
+
+        Returns:
+            A fully configured ``AgentRuntime`` instance.
+        """
+        cfg = compaction_config or CompactionConfig()
+        compressor = ContextCompressor(
+            model=model,
+            context_window=context_window,
+            capacity_threshold=capacity_threshold,
+            config=cfg,
+        )
+        existing: TransformChain | None = kwargs.pop("transform_chain", None)
+        stages = [compressor, *(existing.stages if existing is not None else [])]
+        return cls(tools=tools, model=model, transform_chain=TransformChain(stages=stages), **kwargs)

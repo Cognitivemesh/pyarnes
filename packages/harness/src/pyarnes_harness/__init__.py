@@ -15,6 +15,8 @@ from pyarnes_harness.capture.cc_session import read_cc_session, resolve_cc_sessi
 from pyarnes_harness.capture.output import CapturedOutput, OutputCapture
 from pyarnes_harness.capture.tool_log import ToolCallEntry, ToolCallLogger
 from pyarnes_harness.classifier import ClassifiedError, classify_error
+from pyarnes_harness.compaction import CompactionConfig, CompactionTransformer, compact
+from pyarnes_harness.compressor import ContextCompressor
 from pyarnes_harness.context import AgentContext
 from pyarnes_harness.guardrails import (
     AsyncGuardrail,
@@ -31,6 +33,7 @@ from pyarnes_harness.loop import AgentLoop, LoopConfig, ToolMessage
 from pyarnes_harness.runtime import AgentRuntime
 from pyarnes_harness.steering import SteeringQueue
 from pyarnes_harness.tools.registry import ToolRegistry, global_registry, tool
+from pyarnes_harness.transform import MessageTransformer, TransformChain
 from pyarnes_harness.verification import VerificationLoop, VerificationResult
 
 __all__ = [
@@ -41,12 +44,16 @@ __all__ = [
     "CapturedOutput",
     "ClassifiedError",
     "CommandGuardrail",
+    "CompactionConfig",
+    "CompactionTransformer",
+    "ContextCompressor",
     "Guardrail",
     "GuardrailChain",
     "HookChain",
     "InjectionGuardrail",
     "IterationBudget",
     "LoopConfig",
+    "MessageTransformer",
     "OutputCapture",
     "PathGuardrail",
     "PostToolHook",
@@ -58,9 +65,11 @@ __all__ = [
     "ToolCallLogger",
     "ToolMessage",
     "ToolRegistry",
+    "TransformChain",
     "VerificationLoop",
     "VerificationResult",
     "classify_error",
+    "compact",
     "global_registry",
     "read_cc_session",
     "resolve_cc_session_path",

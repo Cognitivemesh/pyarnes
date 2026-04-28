@@ -58,6 +58,7 @@ from pyarnes_harness.capture.tool_log import ToolCallLogger
 from pyarnes_harness.context import AgentContext
 from pyarnes_harness.hooks import HookChain
 from pyarnes_harness.steering import SteeringQueue
+from pyarnes_harness.transform import TransformChain
 
 __all__ = [
     "AgentLoop",
@@ -159,6 +160,10 @@ class AgentLoop:
             transform the result after successful execution.
         steering: Optional queue of mid-execution user notes. Notes are
             drained and prepended to messages at the start of each iteration.
+        transform_chain: Optional pipeline of message transformers applied
+            before each ``model.next_action()`` call. Runs before
+            ``sanitize_messages`` so summaries produced by transformers are
+            also sanitized.
     """
 
     tools: dict[str, ToolHandler]
@@ -171,6 +176,7 @@ class AgentLoop:
     sandbox: SandboxHook | None = None
     hook_chain: HookChain | None = None
     steering: SteeringQueue | None = None
+    transform_chain: TransformChain | None = None
 
     async def run(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Execute the agent loop until completion or limit.
@@ -212,7 +218,8 @@ class AgentLoop:
                 reflection = await self._request_reflection(messages)
                 messages.append(reflection)
 
-            action = await self.model.next_action(sanitize_messages(messages))
+            transformed = await self.transform_chain.apply(messages) if self.transform_chain else messages
+            action = await self.model.next_action(sanitize_messages(transformed))
             kind = classify(action)
 
             if kind is ActionKind.FINAL_ANSWER:
