@@ -1,6 +1,6 @@
-"""Explicit FSM that drives output through all quality gates before acceptance.
+"""Sequential quality-gate pipeline that verifies agent output before acceptance.
 
-The loop enforces a fixed stage order — GENERATE → GUARDRAIL_CHECK → TEST →
+The pipeline enforces a fixed stage order — GENERATE → GUARDRAIL_CHECK → TEST →
 BENCHMARK — so callers get a deterministic, auditable quality guarantee.  Any
 gate failure triggers a fix cycle (the caller's ``generate`` callable is
 responsible for producing a different result on retry).  If all fix attempts
@@ -63,7 +63,7 @@ class VerificationResult:
 
 @dataclass(slots=True)
 class VerificationLoop:
-    """Explicit FSM that verifies agent output through composable quality gates.
+    """Sequential quality-gate pipeline for verifying agent-generated outputs.
 
     Stages run in order: GENERATE → GUARDRAIL_CHECK → TEST → BENCHMARK.
     On any gate failure the loop increments ``fix_attempts`` and returns to
@@ -72,7 +72,12 @@ class VerificationLoop:
 
     Attributes:
         guardrail_chain: Optional chain of safety guardrails.  When ``None``
-            the GUARDRAIL_CHECK stage is skipped entirely.
+            the GUARDRAIL_CHECK stage is skipped entirely.  Concrete guardrails
+            that scan specific argument keys (``PathGuardrail``,
+            ``CommandGuardrail``) will be no-ops here because the check is
+            called with ``{"output": str(output)}``.  Use ``SemanticGuardrail``
+            or a custom ``AsyncGuardrail`` subclass to enforce output-level
+            policies.
         max_fix_attempts: Maximum number of fix/generate cycles before
             escalation.  Default is ``3`` (four total generate calls).
     """
@@ -111,6 +116,12 @@ class VerificationLoop:
             UserFixableError: When a guardrail raises ``UserFixableError``
                 (propagated immediately), or when all fix attempts are
                 exhausted without passing every gate.
+
+        Note:
+            ``generate``, ``test``, and ``benchmark`` callables must handle
+            ``LLMRecoverableError`` and ``TransientError`` internally — the
+            pipeline does not wrap callable invocations in the error taxonomy.
+            Unhandled exceptions propagate directly to the caller.
         """
         log_event(logger, "verification.start", task=task, max_fix_attempts=self.max_fix_attempts)
         fix_attempts = 0

@@ -64,8 +64,10 @@ class TestVerificationResult:
         assert r.score == 0.5
 
     def test_immutable(self) -> None:
+        import dataclasses
+
         r = VerificationResult(output="x", passed=True, fix_attempts=0, score=0.0)
-        with pytest.raises(Exception):  # noqa: B017
+        with pytest.raises(dataclasses.FrozenInstanceError):
             r.output = "y"  # type: ignore[misc]
 
 
@@ -173,6 +175,18 @@ class TestVerificationLoopEscalation:
                 benchmark=_score_below,
                 benchmark_threshold=0.5,
             )
+
+    @pytest.mark.asyncio()
+    async def test_passes_on_final_fix_attempt(self) -> None:
+        """max_fix_attempts=2 allows fix_attempts 1 and 2 — third generate must succeed."""
+        loop = VerificationLoop(max_fix_attempts=2)
+        result = await loop.run(
+            task="last chance",
+            generate=_generate_seq("a", "b", "c"),
+            test=_test_seq(False, False, True),
+        )
+        assert result.passed is True
+        assert result.fix_attempts == 2
 
 
 class TestVerificationLoopGuardrails:
