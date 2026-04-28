@@ -1,5 +1,21 @@
 # pyarnes_swarm — ModelRouter
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Model Router (Which Model) |
+> | **Status** | active |
+> | **Type** | core-runtime |
+> | **Owns** | ModelRouter Protocol, RuleBasedRouter, LLMCostRouter, three-filter pipeline (context window → complexity → cost), efficiency feedback loop (router.observe) |
+> | **Depends on** | 01-package-structure.md |
+> | **Extends** | 12-token-budget.md |
+> | **Supersedes** | — |
+> | **Read after** | 02-message-bus.md |
+> | **Read before** | 04-swarm-api.md |
+> | **Not owned here** | provider config / API keys / rate limits (see `10-provider-config.md`); transport adapter / schema conversion (see `22-transport.md`); token counting primitives (see `12-token-budget.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Why a ModelRouter?
 
 Running every agent task on the most capable (most expensive) model wastes money on trivial subtasks. A ModelRouter inspects task signals — complexity, tool count, tool types — and assigns the cheapest model that can handle the task without sacrificing quality.
@@ -27,21 +43,16 @@ Returns a model ID string (e.g. `"claude-haiku-4-5-20251001"`, `"openrouter/mist
 
 ## Task signals (`TaskMeta`)
 
-`TaskMeta` is **defined in `swarm.py`** alongside `Swarm` and `AgentSpec`. `routing.py` imports it from there. Do not re-define it.
+> **Canonical definition lives in [04-swarm-api.md](04-swarm-api.md).** `TaskMeta` is implemented in `swarm.py` alongside `Swarm` and `AgentSpec`; `routing.py` imports it from there. Do not redefine it here.
 
-```python
-@dataclass(frozen=True)
-class TaskMeta:
-    """Signals used by ModelRouter to pick a model. Defined in swarm.py."""
-    estimated_duration_seconds: float = 0.0
-    tool_count: int = 0
-    has_destructive_tools: bool = False   # rm, chmod, DROP TABLE, etc.
-    complexity_score: float = 0.5         # 0.0 = trivial, 1.0 = complex
-    model_hint: str | None = None         # from AgentSpec; router may honour or override
-    required_context_tokens: int = 0      # tokens needed for this task; used by LLMCostRouter for context window filtering
-```
+What this router uses from `TaskMeta`:
 
-`complexity_score` is a 0–1 float. Callers compute it from task description length, tool schema complexity, or domain-specific signals. The router is agnostic to how it was computed.
+- `complexity_score` (0.0–1.0) — primary tier-selection signal. Callers compute it from task description length, tool schema complexity, or domain-specific signals; the router is agnostic to how it was computed.
+- `required_context_tokens` — used by `LLMCostRouter` to filter models whose context window is too small.
+- `model_hint` — optional adopter override; the router may honour or override it.
+- `has_destructive_tools` — gates routing-to-cheap-model decisions for safety-relevant runs.
+
+Field-level documentation and the full dataclass appear in [04-swarm-api.md](04-swarm-api.md).
 
 ## `RuleBasedRouter` — static rules
 

@@ -1,5 +1,21 @@
 # Deferred features — superseded
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Deferred / Historical Absorption Map |
+> | **Status** | appendix |
+> | **Type** | historical-appendix |
+> | **Owns** | mapping of absorbed legacy specs (PR-01..PR-06, harness-feature-expansion, etc.) to their canonical consolidation homes |
+> | **Depends on** | 00-overview.md |
+> | **Extends** | — |
+> | **Supersedes** | — |
+> | **Read after** | — |
+> | **Read before** | — |
+> | **Not owned here** | every active concept — this appendix owns only the legacy-spec → consolidation-target mapping; see `00-overview.md` inventory for canonical owners |
+> | **Last reviewed** | 2026-04-29 |
+
 > **Note:** All features previously listed here as "deferred" have been absorbed into the consolidation specs. This file is preserved as a historical pointer.
 
 The following original specs have been absorbed:

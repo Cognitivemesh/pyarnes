@@ -1,5 +1,21 @@
 # pyarnes_swarm — Secrets Management
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Secrets and Credential Redaction |
+> | **Status** | active |
+> | **Type** | integrations-safety |
+> | **Owns** | SecretStore Protocol, KeyringSecretStore, EnvSecretStore, ChainedSecretStore, credential redaction policy (H9), CLI helper, CI setup, secret-key naming convention |
+> | **Depends on** | 10-provider-config.md |
+> | **Extends** | — |
+> | **Supersedes** | — |
+> | **Read after** | 10-provider-config.md |
+> | **Read before** | 07-bench-integrated-axes.md |
+> | **Not owned here** | provider config (see `10-provider-config.md`); transport (see `22-transport.md`); error taxonomy definitions (see `01-package-structure.md`); message-safety pipeline (see `20-message-safety.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Design Rationale
 
 **Why OS keychain over a bespoke encrypted file?** Rolling your own encryption means rolling your own key management. Where does the decryption key live? Usually in another file, hardcoded in source, or derived from a password the developer types — each of which reintroduces the original problem. `keyring` delegates key management to the OS, which uses hardware-backed key stores on modern hardware (Secure Enclave on Apple Silicon, TPM on Windows). The OS has spent decades solving this problem; we inherit that solution for free.
@@ -234,10 +250,4 @@ To disable redaction entirely, pass `redactor=None`. To supply a custom policy, 
 
 ## Why not `.env` files?
 
-Storing secrets locally in `.env` files is a seemingly convenient but critical operational-security anti-pattern that leads to severe failure modes in iterative Agent loops constraints:
-
-1. **`.gitignore` Forgetting**: A stray `.env` added during rapid prototyping is notoriously easily checked into source control by AI developer-tools without human oversight.
-2. **Merge Conflict Re-entry**: Git conflicts around `.gitignore` occasionally erase exclusions, silently re-introducing `.env` tracking.
-3. **Backup Tool Exposure**: System backups and IDE syncing/workspace telemetry mechanisms frequently sweep unencrypted `.env` files across untrusted cloud systems.
-
-For these exact reasons, `pyarnes-core` strictly mandates usage of the OS-level `keyring` (the security standard backing pip, twine, and Jupyter).
+> See ["The problem with `.env` files"](#the-problem-with-env-files) at the top of this spec for the canonical rationale. This section previously duplicated that content; consolidated into a single home.

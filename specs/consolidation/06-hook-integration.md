@@ -1,5 +1,21 @@
 # pyarnes_swarm — Claude Code Hook Integration
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — External Hook Integration (Claude Code) |
+> | **Status** | active |
+> | **Type** | integrations-safety |
+> | **Owns** | external Claude Code lifecycle hooks (PreToolUse, PostToolUse, Stop), stdin JSON contract, exit code semantics, settings.json registration, .pyarnes/ directory layout, adopter shapes (pii-redaction, s3-sweep, rtm-toggl-agile) |
+> | **Depends on** | 04-swarm-api.md |
+> | **Extends** | 21-loop-hooks.md |
+> | **Supersedes** | 19-claude-judge-plugin.md (deferred subsection) |
+> | **Read after** | 21-loop-hooks.md |
+> | **Read before** | 20-message-safety.md |
+> | **Not owned here** | internal in-process hooks / PreToolHook / PostToolHook (see `21-loop-hooks.md`); model selection (see `03-model-router.md`); evaluation semantics (see `07-bench-integrated-axes.md`); message-safety pipeline (see `20-message-safety.md`); judge-plugin design notes (see `19-claude-judge-plugin.md`, deferred appendix) |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Design Rationale
 
 **Why the "meta-use" pattern?** Most libraries are used in one direction: your code imports the library. Here, `pyarnes_swarm` is imported *twice* — by the agent under construction AND by the Claude Code hooks that govern that agent. This is unusual but intentional: the same safety primitives (guardrails, budgets) that protect the agent's own tool calls should also protect the coding agent building those tools. One library, one set of primitives, two integration points.

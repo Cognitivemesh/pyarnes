@@ -1,5 +1,21 @@
 # pyarnes_swarm — Test Strategy
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Test Strategy (TDD Discipline) |
+> | **Status** | active |
+> | **Type** | testing |
+> | **Owns** | TDD cycle (RED → GREEN → REFACTOR per module), per-module test requirements, watch mode, test infrastructure fixtures, Phase 1 pitfalls |
+> | **Depends on** | 01-package-structure.md, 04-swarm-api.md |
+> | **Extends** | 09-test-map.md |
+> | **Supersedes** | — |
+> | **Read after** | 05-dead-code-audit.md |
+> | **Read before** | 09-test-map.md |
+> | **Not owned here** | test-to-module migration map (see `09-test-map.md`); dead-code audit policy (see `05-dead-code-audit.md`); tooling exclusions (see `15-tooling-artifacts.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Design Rationale
 
 **Why delete old tests immediately after Refactor instead of keeping them as extra coverage?** Two test suites for the same module are not "extra safety" — they're conflicting specifications. When one passes and the other fails, you don't know which is correct. When both pass, you're paying maintenance cost for redundant tests. Deleting old tests after the new suite is green eliminates the ambiguity and forces the new tests to be complete rather than relying on the old ones as a safety net.

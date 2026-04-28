@@ -1,5 +1,21 @@
 # 18-evaluation-taxonomy
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Evaluation Taxonomy (Appendix) |
+> | **Status** | appendix |
+> | **Type** | historical-appendix |
+> | **Owns** | Tier 1/2/3 use-case taxonomy reference, 2³ ablation matrix definitions |
+> | **Depends on** | 07-bench-integrated-axes.md |
+> | **Extends** | 07-bench-integrated-axes.md |
+> | **Supersedes** | — |
+> | **Read after** | — |
+> | **Read before** | — |
+> | **Not owned here** | scorer / evaluator contracts (see `07-bench-integrated-axes.md`, which owns `Scorer`, `EvalResult`, `ScoreResult`) — this file is a taxonomy reference appendix only |
+> | **Last reviewed** | 2026-04-29 |
+
 > See also `07-bench-integrated-axes.md` § Use-case reference: coding agents and deep agents — full taxonomy with worked examples.
 
 ## Evaluation Use-Case Taxonomy

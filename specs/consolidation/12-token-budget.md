@@ -1,5 +1,21 @@
 # pyarnes_swarm — Token Budget Management
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Token Budget |
+> | **Status** | active |
+> | **Type** | core-runtime |
+> | **Owns** | token counting APIs (litellm.token_counter, acount_tokens, anthropic.count_tokens), context overhead baseline, per-request capacity threshold, session token cap (Budget.max_tokens), output token estimation heuristics, model selection by context window, MessageCompactor compaction internals, TALE self-estimation (deferred subsection) |
+> | **Depends on** | 04-swarm-api.md |
+> | **Extends** | 03-model-router.md |
+> | **Supersedes** | — |
+> | **Read after** | 04-swarm-api.md |
+> | **Read before** | 06-hook-integration.md |
+> | **Not owned here** | runtime loop sequence (see `04-swarm-api.md`); model selection (see `03-model-router.md`); evaluation result schema (see `07-bench-integrated-axes.md`); run persistence (see `13-run-logger.md`); error taxonomy definitions (see `01-package-structure.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Design Rationale
 
 **Why measure tokens at all if the provider just returns a 400 when context is exceeded?** A 400 error mid-loop loses all in-progress work. The model has been called, tool results accumulated, and partial state built up. Measuring tokens *before* the call lets you compact proactively and continue, rather than fail reactively and restart.

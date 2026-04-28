@@ -1,5 +1,21 @@
 # 16-api-surface-governance
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — API Surface Governance |
+> | **Status** | active |
+> | **Type** | governance |
+> | **Owns** | semver policy, breaking-change rules, __all__ enforcement, stable-surface declaration, deprecation policy stub |
+> | **Depends on** | 01-package-structure.md, 04-swarm-api.md |
+> | **Extends** | — |
+> | **Supersedes** | — |
+> | **Read after** | 15-tooling-artifacts.md |
+> | **Read before** | 17-template-version-control.md |
+> | **Not owned here** | actual symbol definitions / package layout (see `01-package-structure.md`); runtime symbols (see `04-swarm-api.md`); evaluation symbols (see `07-bench-integrated-axes.md`); template versioning (see `17-template-version-control.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 > See also `04-swarm-api.md` § Stable public API surface — full symbol inventory and semver policy.
 
 ## API Surface Governance

@@ -1,5 +1,21 @@
 # pyarnes_swarm — Graph Package (`pyarnes_graph`)
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Code-Review Graph Package (Optional Subsystem) |
+> | **Status** | active |
+> | **Type** | optional-subsystem |
+> | **Owns** | pyarnes_graph package, three-table SQLModel schema, TreeSitter indexer pipeline, WhyComment extractor, graph-based scorers (TokenReductionScorer, LLMJudgeScorer), blast-radius and centrality analyses |
+> | **Depends on** | 06-hook-integration.md, 07-bench-integrated-axes.md, 13-run-logger.md |
+> | **Extends** | — |
+> | **Supersedes** | PR-01-graph-package-foundation.md, PR-02-extractor-and-indexer.md, PR-03-analytics-and-report.md, PR-04-tools-mcp-and-hook.md, PR-05-eval-and-usage-tracking.md, PR-06-skills-template-docs.md |
+> | **Read after** | 13-run-logger.md |
+> | **Read before** | — |
+> | **Not owned here** | runtime loop (see `04-swarm-api.md`); evaluation contracts — `Scorer` and `EvalResult` (see `07-bench-integrated-axes.md`); message-safety pipeline (see `20-message-safety.md`); external hook event-JSON contract (see `06-hook-integration.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Design Rationale
 
 **Why a separate `pyarnes_graph` package instead of bundling into `pyarnes_swarm`?** The graph feature pulls in heavy optional dependencies — Tree-sitter grammars, NetworkX, Leiden via `graspologic` (numpy / scipy / numba), Jinja2, the MCP SDK, libsql drivers. Adopters who only want orchestration shouldn't pay that install cost. A separate workspace member lets `pyarnes_swarm` stay slim and lets graph users opt in via `pyarnes-graph` as an explicit dependency. The dependency direction is one-way: `pyarnes_graph` imports from `pyarnes_swarm` (`ModelClient`, `ToolHandler`, `Scorer`/`ScoreResult`, `ToolCallLogger`, `GuardrailChain`); `pyarnes_swarm` never imports from `pyarnes_graph`.
