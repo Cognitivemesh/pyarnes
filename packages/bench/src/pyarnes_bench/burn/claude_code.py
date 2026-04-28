@@ -17,13 +17,18 @@ where ``type == "assistant"`` and ``message.usage`` is present are parsed.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from pyarnes_bench.burn.provider import JsonlProvider
 from pyarnes_bench.burn.types import TokenUsage
+from pyarnes_harness.capture.cc_session import read_cc_session
+
+if TYPE_CHECKING:
+    from pyarnes_harness.capture.tool_log import ToolCallEntry
 
 __all__ = [
     "ClaudeCodeProvider",
+    "parse_session_calls",
 ]
 
 
@@ -79,3 +84,18 @@ class ClaudeCodeProvider(JsonlProvider):
         """Return the family prefix (e.g. 'claude') from a model ID string."""
         # "some-family-version" → "some"; empty string when model_id unknown
         return model_id.split("-", maxsplit=1)[0] if model_id else ""
+
+
+def parse_session_calls(path: Path) -> list[ToolCallEntry]:
+    """Return the per-call stream for a CC session file.
+
+    Thin wrapper around :func:`pyarnes_harness.capture.cc_session.read_cc_session`
+    so callers can stay in the burn namespace. Empty / unreadable files
+    yield an empty list rather than raising.
+    """
+    if not path.is_file():
+        return []
+    try:
+        return list(read_cc_session(path))
+    except OSError:
+        return []

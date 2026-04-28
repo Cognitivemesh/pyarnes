@@ -40,6 +40,25 @@ class Severity(Enum):
     HIGH = "high"
     CRITICAL = "critical"
 
+    @property
+    def weight(self) -> int:
+        """Return a comparable integer weight (higher = more severe).
+
+        Lets callers rank, sort, or threshold-filter by severity without
+        re-declaring the order. The numbers are evaluation weights, not
+        ordinals — gaps reflect that one ``HIGH`` should outweigh two
+        ``MEDIUM``s in the codeburn health-grade scoring.
+        """
+        return _SEVERITY_WEIGHTS[self]
+
+
+_SEVERITY_WEIGHTS: dict[Severity, int] = {
+    Severity.LOW: 1,
+    Severity.MEDIUM: 3,
+    Severity.HIGH: 7,
+    Severity.CRITICAL: 12,
+}
+
 
 @dataclass(frozen=True, slots=True)
 class HarnessError(Exception):

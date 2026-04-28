@@ -37,6 +37,7 @@ graph TB
 | `scorers.py` | Trajectory scorers — `ToolUseCorrectnessScorer`, `TrajectoryLengthScorer`, `GuardrailComplianceScorer`. Consume `Iterable[ToolCallEntry]` so one scorer grades in-process `AgentLoop` runs and Claude Code transcripts alike. |
 | `_judge.py` | Private — `judge_json(client, prompt, PydanticModel)` helper with single retry + `LLMRecoverableError` on persistent failure. |
 | `_citations.py` | Private — `strip_markers` + `URL_RE` utilities shared by report evaluators. |
+| `burn/` | CodeBurn-style observability: `claude_code.py`, `provider.py`, `costing.py`, `normalize.py`, `classify.py`, `dedupe.py`, `kpis.py`, `compare.py`, `optimize.py`. Adopter-facing surface lives in [adopter/build/codeburn.md](../../adopter/build/codeburn.md); detectors and the A–F grade thresholds live in `burn/optimize.py`. |
 
 ## Why this package exists
 
