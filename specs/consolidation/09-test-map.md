@@ -1,5 +1,21 @@
 # pyarnes_swarm — Test Map
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Test Migration Map |
+> | **Status** | active |
+> | **Type** | testing |
+> | **Owns** | mapping of legacy test files to new tests/swarm/ equivalents, migration rules (MIGRATE/DELETE/KEEP), test directory structure transitions |
+> | **Depends on** | 08-test-strategy.md |
+> | **Extends** | — |
+> | **Supersedes** | — |
+> | **Read after** | 08-test-strategy.md |
+> | **Read before** | 15-tooling-artifacts.md |
+> | **Not owned here** | TDD discipline (see `08-test-strategy.md`); dead-code audit (see `05-dead-code-audit.md`); tooling exclusions (see `15-tooling-artifacts.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 Maps every existing test file to its replacement in `tests/swarm/` or a deletion reason. Column definitions:
 
 - **Old test** — path relative to `tests/`

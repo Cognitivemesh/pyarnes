@@ -164,10 +164,22 @@ def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: tuple[s
         _print_help(tasks)
         return 1
 
+    import shutil
+    if name in {"graph:render", "graph:blast"} and not shutil.which(cmd[0]):
+        print(f"\nMissing graph binary: {cmd[0]}", file=sys.stderr)  # noqa: T201
+        print(f"To run {name}, you must install the optional graph tools.", file=sys.stderr)  # noqa: T201
+        print("Run `uv sync --group graph` (or `uv add --group dev pyarnes-tasks[graph]`) first.\n", file=sys.stderr)  # noqa: T201
+        return 1
+
     print(f"\n{'─' * 60}")  # noqa: T201
     print(f"  ▶ {name}")  # noqa: T201
     print(f"{'─' * 60}\n")  # noqa: T201
-    code = subprocess.run([*cmd, *extra], check=False, cwd=root).returncode  # noqa: S603  # nosec B603
+    try:
+        code = subprocess.run([*cmd, *extra], check=False, cwd=root).returncode  # noqa: S603  # nosec B603
+    except FileNotFoundError as e:
+        print(f"\nCommand skipped — missing binary: {e.filename}", file=sys.stderr)  # noqa: T201
+        return 1
+
     if name in _PYTEST_COLLECTION_TASKS and code == _PYTEST_NO_TESTS_EXIT_CODE:
         return 0
     return code

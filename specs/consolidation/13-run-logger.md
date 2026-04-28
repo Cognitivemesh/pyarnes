@@ -1,5 +1,21 @@
 # pyarnes_swarm — Run Logger and Evaluation Capture
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Run Logger and Capture |
+> | **Status** | active |
+> | **Type** | evaluation-capture |
+> | **Owns** | RunReport schema, EvalRunLogger, RunSink, TursoSink, .pyarnes/runs/<run_id>/ JSONL layout, ToolCallEntry serialization, dual-source ToolCallEntry normalization |
+> | **Depends on** | 07-bench-integrated-axes.md, 06-hook-integration.md |
+> | **Extends** | 12-token-budget.md |
+> | **Supersedes** | harness-run-logger.md |
+> | **Read after** | 07-bench-integrated-axes.md |
+> | **Read before** | 23-graph-package.md |
+> | **Not owned here** | evaluation semantics — `ScoreResult` and `EvalResult` schemas (see `07-bench-integrated-axes.md`); external hook contract (see `06-hook-integration.md`); token counting (see `12-token-budget.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Design Rationale
 
 **Why a dedicated run-level capture spec instead of burying this in bench or hooks?** `ToolCallLogger` captures one tool call at a time. `EvalSuite` holds results in memory. Neither defines the persistent run-level contract that ties traces, summary metrics, and evaluation rows together. A separate spec makes the storage boundary explicit so bench workflows, hook integrations, and adopter dashboards all read the same shape.
@@ -180,10 +196,15 @@ Private and allowed to drift:
 - `test_bus.py` or a dedicated capture test covers `TursoSink` with an in-memory or test Turso target
 - CI enforces zero `sqlite3` imports in the capture and bench persistence paths
 
-## See also
+## Cross-references
+
+**Depends on:**
 
 - `06-hook-integration.md` — Claude Code hook audit trail and dev-time `.pyarnes/` layout
 - `07-bench-integrated-axes.md` — evaluation workflows that consume `RunReport` and `EvalRunLogger`
+
+**Extends:**
+
 - `12-token-budget.md` — token accounting inputs that populate `RunReport.tokens_in` and `tokens_out`
 
 ## Dual-Source `ToolCallEntry` Normalization

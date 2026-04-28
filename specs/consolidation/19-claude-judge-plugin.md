@@ -1,5 +1,21 @@
 # 19-claude-judge-plugin
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Claude Code Judge Plugin (Deferred Appendix) |
+> | **Status** | appendix |
+> | **Type** | historical-appendix |
+> | **Owns** | Claude Code judge plugin design notes (deferred), exit code mapping, ClaudeCliJudge sketch |
+> | **Depends on** | 06-hook-integration.md |
+> | **Extends** | 06-hook-integration.md |
+> | **Supersedes** | claudecode-pyarnes-judge-plugin.md |
+> | **Read after** | — |
+> | **Read before** | — |
+> | **Not owned here** | external hook contract / event semantics (see `06-hook-integration.md`); error taxonomy and exit codes (see `01-package-structure.md`, `04-swarm-api.md`) — this file is a deferred-design appendix only |
+> | **Last reviewed** | 2026-04-29 |
+
 > See also `06-hook-integration.md` § Deferred: Claude Code judge plugin — full deferred plugin design.
 
 ## Claude Code Judge Plugin

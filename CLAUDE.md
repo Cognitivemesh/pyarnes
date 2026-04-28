@@ -104,7 +104,6 @@ uv run tasks complexity  # radon:cc + radon:mi
 - `tests/unit/` — unit tests
 - `tests/features/` — BDD feature files (pytest-bdd / Gherkin)
 - `specs/consolidation/` — canonical specs for `pyarnes_swarm` (replaces docs/)
-- `specs/archive/` — implemented specs from the monorepo era
 - `template/` + `copier.yml` — Copier template used by `uvx copier copy gh:Cognitivemesh/pyarnes <dest>`
   to scaffold new projects that depend on pyarnes packages via git URLs.
 

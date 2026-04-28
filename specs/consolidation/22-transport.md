@@ -1,5 +1,21 @@
 # pyarnes_swarm — Transport Layer
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Transport (Through Which Transport) |
+> | **Status** | active |
+> | **Type** | integrations-safety |
+> | **Owns** | ProviderTransport Protocol, LiteLLMTransport adapter, TransportModelClient, tool-schema conversion, raw vs LiteLLM transport selection |
+> | **Depends on** | 03-model-router.md |
+> | **Extends** | 04-swarm-api.md |
+> | **Supersedes** | — |
+> | **Read after** | 20-message-safety.md |
+> | **Read before** | 10-provider-config.md |
+> | **Not owned here** | model selection (see `03-model-router.md`); provider config (see `10-provider-config.md`); secrets (see `11-secrets.md`); inter-agent message bus (see `02-message-bus.md`) — bus is for cross-process messaging, transport is for model-call plumbing |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Design Rationale
 
 **Why does `TransportModelClient` adapt `ProviderTransport` → `ModelClient` instead of changing `AgentLoop` directly?** `AgentLoop` depends only on the `ModelClient` protocol. Introducing a new transport backend — LiteLLM, a stub, a future provider — requires zero changes to `AgentLoop`. Only the transport changes. This is the open/closed principle applied concretely: `AgentLoop` is closed to modification; the transport layer is open to extension.

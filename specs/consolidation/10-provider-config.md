@@ -1,5 +1,21 @@
 # pyarnes_swarm — Provider Configuration
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Provider Config (Through Which Provider) |
+> | **Status** | active |
+> | **Type** | integrations-safety |
+> | **Owns** | ProviderConfig, supported providers (OpenRouter, HuggingFace, NVIDIA NIM, Anthropic Direct), provider prefix resolution, ProviderConfig integration with ModelClient, adding a new provider |
+> | **Depends on** | 03-model-router.md, 22-transport.md |
+> | **Extends** | 11-secrets.md |
+> | **Supersedes** | — |
+> | **Read after** | 22-transport.md |
+> | **Read before** | 11-secrets.md |
+> | **Not owned here** | model selection (see `03-model-router.md`); transport adapters / schema conversion (see `22-transport.md`); secrets storage (see `11-secrets.md`); evaluation cost calculation (see `07-bench-integrated-axes.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Design Rationale
 
 **Why `ProviderConfig` instead of hardcoding provider logic in `ModelClient`?** `ModelClient` uses LiteLLM's unified API — the provider prefix in the model ID (`openrouter/anthropic/claude-3-haiku`) already tells LiteLLM where to send the request. `ProviderConfig` adds only the secret resolution step: which key in the `SecretStore` holds the API key for this provider. Keeping these separate means adding a new provider requires zero code changes to `ModelClient` — only a new `ProviderConfig`.

@@ -1,5 +1,21 @@
 # pyarnes_swarm — Swarm API
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Swarm API (Runtime Center of Gravity) |
+> | **Status** | active |
+> | **Type** | core-runtime |
+> | **Owns** | Swarm, AgentSpec, AgentRuntime, AgentLoop, LoopConfig, MessageCompactorConfig, Budget/IterationBudget contracts, lifecycle FSM, error-handling recovery semantics, runtime loop sequence, parallel tool execution, @tool decorator, stable public symbol inventory |
+> | **Depends on** | 01-package-structure.md, 02-message-bus.md, 03-model-router.md |
+> | **Extends** | 12-token-budget.md, 20-message-safety.md, 21-loop-hooks.md, 22-transport.md |
+> | **Supersedes** | legacy harness API slices absorbed during consolidation |
+> | **Read after** | 03-model-router.md |
+> | **Read before** | 12-token-budget.md |
+> | **Not owned here** | model selection (see `03-model-router.md`); provider config (see `10-provider-config.md`); secrets (see `11-secrets.md`); transport (see `22-transport.md`); evaluation semantics (see `07-bench-integrated-axes.md`); run persistence (see `13-run-logger.md`); template migration (see `17-template-version-control.md`); inter-agent messaging (see `02-message-bus.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Design Rationale
 
 **Why five steps in the Hello World?** The five objects (`ToolHandler`, `ToolRegistry`, `GuardrailChain`, `Swarm`/`AgentSpec`) represent five genuinely different concerns: what tools do, where tools are registered, what safety rules apply, and how the swarm is composed. Collapsing them into fewer objects would mean either magic (auto-discovery) or a bloated constructor that accepts everything. The five steps are the minimum explicit wiring.

@@ -1,5 +1,21 @@
 # pyarnes_swarm — Dead Code Audit
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Dead Code Audit |
+> | **Status** | active |
+> | **Type** | testing |
+> | **Owns** | dead-code audit policy, three-pass method (vulture → callee trace → cognitive complexity), cut/keep ledger, stable-surface cleanup process |
+> | **Depends on** | 01-package-structure.md, 04-swarm-api.md |
+> | **Extends** | 08-test-strategy.md |
+> | **Supersedes** | — |
+> | **Read after** | 08-test-strategy.md |
+> | **Read before** | 09-test-map.md |
+> | **Not owned here** | TDD discipline (see `08-test-strategy.md`); test migration map (see `09-test-map.md`); tooling exclusions (see `15-tooling-artifacts.md`); error taxonomy definitions (see `01-package-structure.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Design Rationale
 
 **Why delete dead code before implementation instead of after?** Porting dead code wastes effort and creates confusion — future maintainers can't tell if a class is intentionally unused or accidentally orphaned. Auditing first ensures that Phase 1 tests are written only for code that will actually exist in the consolidated package.

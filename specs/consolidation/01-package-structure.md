@@ -1,5 +1,21 @@
 # pyarnes_swarm — Package Structure
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Package Structure |
+> | **Status** | active |
+> | **Type** | core-runtime |
+> | **Owns** | package boundaries, layer rules, ports.py contracts (TaskMeta, ModelClientPort, ToolHandler), errors.py taxonomy, semver-stable __init__ surface, file/folder architecture |
+> | **Depends on** | 00-overview.md |
+> | **Extends** | — |
+> | **Supersedes** | — |
+> | **Read after** | 00-overview.md |
+> | **Read before** | 02-message-bus.md |
+> | **Not owned here** | runtime loop sequence and recovery semantics (see `04-swarm-api.md`); evaluation contracts (see `07-bench-integrated-axes.md`); hook integration (see `06-hook-integration.md`, `21-loop-hooks.md`); transport adapters (see `22-transport.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Flat layout (18 top-level files + bench/ subpackage)
 
 ```

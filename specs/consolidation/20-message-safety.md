@@ -1,5 +1,21 @@
 # pyarnes_swarm — Message Safety Pipeline
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Message Safety |
+> | **Status** | active |
+> | **Type** | integrations-safety |
+> | **Owns** | SanitizePipeline (input H6), InjectionGuardrail (output H8), prompt-injection defense, sanitization-vs-guardrail phase ordering |
+> | **Depends on** | 04-swarm-api.md |
+> | **Extends** | 21-loop-hooks.md |
+> | **Supersedes** | — |
+> | **Read after** | 06-hook-integration.md |
+> | **Read before** | 22-transport.md |
+> | **Not owned here** | external hook contract (see `06-hook-integration.md`); internal hook insertion points (see `21-loop-hooks.md`); evaluation semantics (see `07-bench-integrated-axes.md`); transport (see `22-transport.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Design Rationale
 
 **Why sanitize on a copy, not the stored history?** The stored conversation history must be replayable without sanitization artifacts. If `sanitize_messages()` mutated the history in place, replaying the session from the stored JSONL would produce different model inputs than the original run — defeating audit and debugging. Operating on the copy passed to `model.next_action()` keeps the raw messages intact in storage while ensuring only sanitized content reaches the model.

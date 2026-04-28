@@ -1,5 +1,21 @@
 # pyarnes_swarm — Bench: Integrated Evaluation Axes
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Bench (Evaluation Axes) |
+> | **Status** | active |
+> | **Type** | evaluation-capture |
+> | **Owns** | Scorer ABC, ScoreResult, EvalResult, EvalSuite.run(), CostCalculator, RACE evaluator, FACT evaluator, use-case taxonomy (Tier 1/2/3), efficiency feedback loop closure |
+> | **Depends on** | 04-swarm-api.md, 12-token-budget.md |
+> | **Extends** | 13-run-logger.md, 18-evaluation-taxonomy.md |
+> | **Supersedes** | bench-fact-evaluator.md, bench-race-evaluator.md, bench-scorer-verdict.md, bench-use-cases-coding-and-deep-agents.md |
+> | **Read after** | 11-secrets.md |
+> | **Read before** | 13-run-logger.md |
+> | **Not owned here** | error taxonomy definitions (see `01-package-structure.md`); recovery semantics (see `04-swarm-api.md`); run persistence schema (see `13-run-logger.md`); model routing (see `03-model-router.md`); evaluation-taxonomy reference appendix (see `18-evaluation-taxonomy.md`); graph-based scorers (see `23-graph-package.md`) |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Design Rationale
 
 **Why does `Scorer.score()` return `ScoreResult` instead of a `float`?** An `LLMJudgeScorer` makes its own LLM call to evaluate quality. That call has a cost. If the scorer returns only a `float`, you know the quality score but not how much the evaluation itself cost. Over many eval runs, evaluation cost can approach or exceed agent cost — ignoring it produces false economy. `ScoreResult.usage` makes evaluation cost visible so `EvalSuite.run()` can include it in the total.

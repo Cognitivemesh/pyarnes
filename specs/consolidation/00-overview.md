@@ -1,5 +1,21 @@
 # pyarnes_swarm — Consolidation Overview
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Consolidation Overview |
+> | **Status** | active |
+> | **Type** | core-runtime |
+> | **Owns** | portfolio map, reading paths, spec inventory, top-level taxonomy, design principles index |
+> | **Depends on** | — |
+> | **Extends** | — |
+> | **Supersedes** | legacy specs absorbed during consolidation (see 14-deferred-features.md for mapping) |
+> | **Read after** | — |
+> | **Read before** | 01-package-structure.md |
+> | **Not owned here** | implementation contracts of each subsystem — see the inventory table above for the canonical owner of every concept |
+> | **Last reviewed** | 2026-04-29 |
+
 ## What problem does it solve?
 
 `pyarnes_swarm` is the successor to the 5-package pyarnes monorepo. It collapses pyarnes-core, pyarnes-harness, pyarnes-guardrails, pyarnes-bench, and pyarnes-tasks into one installable package with a flat, auditable structure.
@@ -157,6 +173,52 @@ Each decision below has a rationale — read these before implementing to avoid 
 | Immutable value object | `Budget`, `TaskMeta`, `ScoreResult` | `frozen=True` prevents accidental mutation across coroutines |
 | Mutable shared resource | `IterationBudget` | `asyncio.Lock` makes concurrent consume/refund safe |
 
+## Spec inventory and reading paths
+
+> If you read only one spec, read [04-swarm-api.md](04-swarm-api.md). It is the canonical runtime story; 02-message-bus and 03-model-router are supporting internals, not peers.
+
+### Inventory by group (all 24 specs, 00 through 23 inclusive)
+
+| Group | Specs | Role |
+|---|---|---|
+| **core-runtime** | 00, 01, 02, 03, 04, 12 | The minimum reading set to understand how the system runs. |
+| **integrations-safety** | 06, 10, 11, 20, 21, 22 | External hooks, internal hooks, sanitization, transport, providers, secrets. |
+| **evaluation-capture** | 07, 13 | Bench scoring and run persistence. |
+| **governance** | 16, 17 | Stable API surface and template-evolution policy. |
+| **testing** | 05, 08, 09, 15 | Dead-code audit, TDD strategy, test-migration map, tooling artifacts. |
+| **optional-subsystem** | 23 | Code-review graph package — opt-in, not part of the minimum runtime. |
+| **historical-appendix** | 14, 18, 19 | Absorbed / deferred specs kept for traceability. |
+
+### Reading paths
+
+Two paths cover the two distinct reasons to read these specs.
+
+- **Architecture path** (top-down system understanding):
+  `00 → 01 → 02 → 03 → 04 → 12 → 06 → 21 → 20 → 22 → 10 → 11 → 07 → 13 → 23`
+- **Adopter onboarding path** (ship a working CLI fast):
+  `00 → 04 → 11 → 10 → 06`
+
+### Dependency map
+
+When changing a spec, re-read every spec listed on the right. (Appendix and pure-testing specs are omitted — they have no dependents.)
+
+| Change | Re-read |
+|---|---|
+| **01** package-structure | 02, 03, 04, 06, 07, 10, 11, 12, 13, 16 |
+| **02** message-bus | 04 |
+| **03** model-router | 04, 10, 12, 22 |
+| **04** swarm-api | 06, 07, 13, 16, 21 |
+| **06** hook-integration | 07, 13, 21 |
+| **07** bench-integrated-axes | 12, 13, 23 |
+| **10** provider-config | 03, 11, 22 |
+| **11** secrets | 04, 10, 22 |
+| **12** token-budget | 03, 04, 07, 13 |
+| **13** run-logger | 06, 07, 23 |
+| **16** api-surface-governance | 01, 04 |
+| **21** loop-hooks | 04, 06 |
+| **22** transport | 03, 10, 11 |
+| **23** graph-package | 06, 07, 13 |
+
 ## Consolidation sequence (do in order)
 
 Each phase must complete before the next begins. Do not run phases in parallel.
@@ -170,7 +232,11 @@ Each phase must complete before the next begins. Do not run phases in parallel.
 
 Start a fresh context window for Phase 1 onwards to avoid context exhaustion mid-implementation.
 
-## See also
+## Cross-references
+
+The full inventory and dependency map is above (see "Spec inventory and reading paths"). This list is annotated quick access to the most-cited specs from this overview:
+
+**Optional follow-up:**
 
 - `01-package-structure.md` — flat file layout and import rules
 - `04-swarm-api.md` — Hello World and Swarm + AgentSpec reference
@@ -178,6 +244,9 @@ Start a fresh context window for Phase 1 onwards to avoid context exhaustion mid
 - `09-test-map.md` — every old test file mapped to new equivalent or deletion reason
 - `12-token-budget.md` — token counting APIs, context overhead baseline, output estimation heuristics, model selection by context window
 - `13-run-logger.md` — run-level capture, `RunReport`, and evaluation persistence
+
+**Historical source:**
+
 - `14-deferred-features.md` — archived spec families that remain deferred or historical
 
 ---

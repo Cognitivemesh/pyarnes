@@ -1,5 +1,21 @@
 # pyarnes_swarm — MessageBus
 
+> **Spec header**
+>
+> | Field | Value |
+> |---|---|
+> | **Title** | pyarnes_swarm — Message Bus |
+> | **Status** | active |
+> | **Type** | core-runtime |
+> | **Owns** | MessageBus Protocol, Turso/InMemory/NATS implementations, message serialization, offset/resume semantics |
+> | **Depends on** | 01-package-structure.md |
+> | **Extends** | — |
+> | **Supersedes** | — |
+> | **Read after** | 01-package-structure.md |
+> | **Read before** | 03-model-router.md |
+> | **Not owned here** | model selection (see `03-model-router.md`); provider config (see `10-provider-config.md`); transport adapters (see `22-transport.md`) — the bus is inter-agent messaging only, not model-call plumbing |
+> | **Last reviewed** | 2026-04-29 |
+
 ## Why a MessageBus?
 
 `pyarnes_swarm` runs agents as **separate OS processes** to avoid Python GIL contention and context loss from sub-agent spawning in the same process. Separate processes cannot share in-process queues. A `MessageBus` gives them a durable, typed channel to coordinate.
