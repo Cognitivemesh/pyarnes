@@ -25,6 +25,7 @@ from pyarnes_harness.guardrails import (
 )
 from pyarnes_harness.loop import AgentLoop, LoopConfig, ToolMessage
 from pyarnes_harness.tools.registry import ToolRegistry
+from pyarnes_harness.verification import VerificationLoop, VerificationResult
 
 __all__ = [
     "AgentContext",
@@ -43,6 +44,8 @@ __all__ = [
     "ToolCallLogger",
     "ToolMessage",
     "ToolRegistry",
+    "VerificationLoop",
+    "VerificationResult",
     "read_cc_session",
     "resolve_cc_session_path",
 ]
