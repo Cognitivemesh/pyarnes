@@ -13,6 +13,7 @@ from pyarnes_guardrails.guardrails import (
     CommandGuardrail,
     Guardrail,
     GuardrailChain,
+    InjectionGuardrail,
     PathGuardrail,
     ToolAllowlistGuardrail,
 )
@@ -23,6 +24,7 @@ __all__ = [
     "CommandGuardrail",
     "Guardrail",
     "GuardrailChain",
+    "InjectionGuardrail",
     "PathGuardrail",
     "SemanticGuardrail",
     "ToolAllowlistGuardrail",

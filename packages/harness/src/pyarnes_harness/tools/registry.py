@@ -3,9 +3,18 @@
 Not safe for concurrent mutation. ``register`` and ``unregister`` do
 classic check-then-mutate sequences; expect a single owner task per
 registry. Concurrent dispatch is not part of the current design.
+
+Self-registration
+-----------------
+Use the :func:`tool` decorator to register a handler class at *import time*
+into the module-level :data:`_global` registry.  Call
+:func:`global_registry` to retrieve it, or set
+``AgentRuntime.use_global_registry = True`` to merge it automatically.
 """
 
 from __future__ import annotations
+
+from typing import TypeVar
 
 from pyarnes_core.observability import log_event
 from pyarnes_core.observe.logger import get_logger
@@ -13,7 +22,11 @@ from pyarnes_core.types import ToolHandler
 
 __all__ = [
     "ToolRegistry",
+    "global_registry",
+    "tool",
 ]
+
+_T = TypeVar("_T")
 
 logger = get_logger(__name__)
 
@@ -94,3 +107,33 @@ class ToolRegistry:
 
     def __repr__(self) -> str:  # noqa: D105
         return f"ToolRegistry(tools={self.names!r})"
+
+
+# ── Global self-registration surface ──────────────────────────────────────
+
+_global: ToolRegistry = ToolRegistry()
+
+
+def global_registry() -> ToolRegistry:
+    """Return the module-level registry populated by ``@tool`` decorators."""
+    return _global
+
+
+def tool(name: str) -> type[_T]:  # type: ignore[return]
+    """Class decorator that registers the decorated class in the global registry.
+
+    The class is instantiated with no arguments on decoration, so tool classes
+    must be constructible without parameters.
+
+    Example::
+
+        @tool("read_file")
+        class ReadFileTool:
+            async def execute(self, arguments):
+                ...
+    """
+    def decorator(cls: type[_T]) -> type[_T]:
+        _global.register(name, cls())  # type: ignore[arg-type]
+        return cls
+
+    return decorator  # type: ignore[return-value]

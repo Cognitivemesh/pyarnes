@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, TextIO
 
 from pyarnes_core.observability import dumps, iso_now
+from pyarnes_core.safety.redact import redact_dict
 
 __all__ = [
     "ToolCallEntry",
@@ -98,7 +99,7 @@ class ToolCallLogger:
         self,
         path: Path,
         *,
-        redactor: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
+        redactor: Callable[[dict[str, Any]], dict[str, Any]] | None = redact_dict,
     ) -> None:
         """Open (or create) the JSONL file for appending.
 

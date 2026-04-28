@@ -14,18 +14,20 @@ from pyarnes_harness.capture.cc_session import read_cc_session, resolve_cc_sessi
 from pyarnes_harness.capture.output import CapturedOutput, OutputCapture
 from pyarnes_harness.capture.tool_log import ToolCallEntry, ToolCallLogger
 from pyarnes_harness.context import AgentContext
+from pyarnes_harness.budget import IterationBudget
 from pyarnes_harness.guardrails import (
     AsyncGuardrail,
     CommandGuardrail,
     Guardrail,
     GuardrailChain,
+    InjectionGuardrail,
     PathGuardrail,
     SemanticGuardrail,
     ToolAllowlistGuardrail,
 )
 from pyarnes_harness.loop import AgentLoop, LoopConfig, ToolMessage
 from pyarnes_harness.runtime import AgentRuntime
-from pyarnes_harness.tools.registry import ToolRegistry
+from pyarnes_harness.tools.registry import ToolRegistry, global_registry, tool
 from pyarnes_harness.verification import VerificationLoop, VerificationResult
 
 __all__ = [
@@ -37,6 +39,8 @@ __all__ = [
     "CommandGuardrail",
     "Guardrail",
     "GuardrailChain",
+    "InjectionGuardrail",
+    "IterationBudget",
     "LoopConfig",
     "OutputCapture",
     "PathGuardrail",
@@ -48,8 +52,10 @@ __all__ = [
     "ToolRegistry",
     "VerificationLoop",
     "VerificationResult",
+    "global_registry",
     "read_cc_session",
     "resolve_cc_session_path",
+    "tool",
 ]
 
 from pyarnes_core.packaging import version_of

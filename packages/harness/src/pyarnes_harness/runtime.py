@@ -30,6 +30,7 @@ from pyarnes_guardrails.guardrails import GuardrailChain
 from pyarnes_harness.capture.tool_log import ToolCallLogger
 from pyarnes_harness.context import AgentContext
 from pyarnes_harness.loop import AgentLoop, LoopConfig
+from pyarnes_harness.tools.registry import global_registry
 
 __all__ = ["AgentRuntime"]
 
@@ -67,6 +68,7 @@ class AgentRuntime:
     trace_id: str | None = None
     log_level: str = "INFO"
     log_json: bool = True
+    use_global_registry: bool = False
     lifecycle: Lifecycle | None = field(default=None, init=False)
 
     async def run(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -120,8 +122,10 @@ class AgentRuntime:
             step=0,
         )
 
+        tools = {**global_registry().as_dict(), **self.tools} if self.use_global_registry else self.tools
+
         loop = AgentLoop(
-            tools=self.tools,
+            tools=tools,
             model=self.model,
             config=self.config,
             guardrail_chain=self.guardrail_chain,

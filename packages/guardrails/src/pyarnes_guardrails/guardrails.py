@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from pyarnes_core.errors import UserFixableError
+from pyarnes_core.errors import LLMRecoverableError, UserFixableError
 from pyarnes_core.observability import log_warning
 from pyarnes_core.observe.logger import get_logger
 from pyarnes_core.safety import (
@@ -25,6 +25,7 @@ from pyarnes_core.safety import (
     walk_strings,
     walk_values_for_keys,
 )
+from pyarnes_core.safety.injection import walk_for_injection
 
 __all__ = [
     "ASTGuardrail",
@@ -32,6 +33,7 @@ __all__ = [
     "CommandGuardrail",
     "Guardrail",
     "GuardrailChain",
+    "InjectionGuardrail",
     "PathGuardrail",
     "ToolAllowlistGuardrail",
 ]
@@ -238,6 +240,26 @@ class ASTGuardrail(Guardrail):
         except Exception:
             log_warning(logger, "guardrail.ast_blocked", tool=tool_name)
             raise
+
+
+@dataclass(frozen=True, slots=True)
+class InjectionGuardrail(Guardrail):
+    """Block tool calls whose arguments contain prompt injection patterns.
+
+    Scans all string values recursively using
+    :func:`pyarnes_core.safety.injection.walk_for_injection`.
+    Raises :class:`~pyarnes_core.errors.LLMRecoverableError` so the model
+    can adjust its call rather than interrupting the user.
+    """
+
+    def check(self, tool_name: str, arguments: dict[str, Any]) -> None:
+        """Raise ``LLMRecoverableError`` on detected injection attempt."""
+        label = walk_for_injection(arguments)
+        if label is not None:
+            log_warning(logger, "guardrail.injection_blocked", tool=tool_name, pattern=label)
+            raise LLMRecoverableError(
+                message=f"Prompt injection detected in arguments for '{tool_name}' (pattern: {label})",
+            )
 
 
 # ── Chain ──────────────────────────────────────────────────────────────────
