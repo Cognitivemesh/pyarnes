@@ -73,6 +73,8 @@ class TaskMeta:
     has_destructive_tools: bool = False
     complexity_score: float = 0.5
     model_hint: str | None = None
+    required_context_tokens: int = 0   # overhead + history + output reserve; used by LLMCostRouter
+                                        # to filter models whose context window is too small
 ```
 
 ## `Swarm`
@@ -136,17 +138,22 @@ Production checklist:
 
 **The problem:** each loop iteration sends the full message history to the model. Cost grows super-linearly — 10 iterations with a 1 000-token average context costs 10× more than iteration 1 because the context is 10× longer by the end. Left unchecked this is O(n²) in token spend.
 
-**The fix:** `MessageCompactor` measures context size before every model call using `litellm.token_counter()` and summarises old messages once the context exceeds a fraction of the model's context window.
+**The fix:** `MessageCompactor` measures context size before every model call using `litellm.token_counter()` (fast, local) and summarises old messages once the context exceeds a fraction of the effective window.
 
 ```python
 @dataclass(frozen=True)
 class MessageCompactorConfig:
-    context_window: int              # model's max context size in tokens (e.g. 200_000 for claude-haiku-4-5)
-    capacity_threshold: float = 0.75 # compact when context reaches this fraction of context_window
-    summary_max_tokens: int = 512    # max tokens for the compaction summary message
+    context_window: int               # model's max context window in tokens
+    capacity_threshold: float = 0.75  # compact when tokens / effective_window >= this
+    summary_max_tokens: int = 512     # max tokens for the compaction summary message
+    overhead_tokens: int = 0          # fixed system overhead measured once at startup via acount_tokens()
+    output_reserve: int = 4096        # reserved for model output; subtracted from available window
+    # Effective window = context_window - overhead_tokens - output_reserve
 ```
 
-`MessageCompactor` internally calls `litellm.token_counter(model=model_id, messages=messages)` before every `ModelClient.next_action()` call. When `token_count / context_window >= capacity_threshold`, it:
+`overhead_tokens` is measured **once at `Swarm` startup** using `litellm.acount_tokens()` (API-accurate), not on every loop iteration. `litellm.token_counter()` (local, zero-cost) is used inside the hot loop. See spec 12 for the full token budget system.
+
+`MessageCompactor` calls `litellm.token_counter(model=model_id, messages=messages)` before every `ModelClient.next_action()` call. When `current_tokens / effective_window >= capacity_threshold`, it:
 
 1. Summarises messages older than the most recent `N` tool-call pairs into a single `{"role": "system", "content": "<summary>"}` message
 2. Replaces those messages in the history with the summary

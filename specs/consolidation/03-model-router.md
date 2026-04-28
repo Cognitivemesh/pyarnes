@@ -62,7 +62,13 @@ router = RuleBasedRouter([
 
 ## `LLMCostRouter` — cost-aware via LiteLLM
 
-Uses `litellm.model_cost` to estimate cost **before dispatching**, then picks the cheapest model whose quality tier covers the task's complexity.
+Uses `litellm.model_cost` to estimate cost **before dispatching**. Routing applies two sequential filters:
+
+1. **Context window filter** — exclude any model whose `max_tokens` (from `litellm.model_cost`) is less than the task's `required_context_tokens`. A model that cannot fit the context is never selected, regardless of price.
+2. **Complexity filter** — from the remaining candidates, select the tier whose `max_complexity >= task.complexity_score`.
+3. **Cost sort** — within the matching tier, pick the cheapest model by `litellm.model_cost[model]["input_cost_per_token"]`.
+
+If no model passes both filters, `LLMCostRouter.route()` raises `UserFixableError` — the caller must either compact the context or configure a model with a larger window.
 
 ```python
 @dataclass(frozen=True)
@@ -71,16 +77,32 @@ class ModelTier:
     max_complexity: float     # tasks with score ≤ this value can use this tier
 
 class LLMCostRouter:
-    """Routes to cheapest model that meets the task's complexity threshold.
+    """Routes to cheapest model that meets complexity AND context window constraints.
 
-    Compares costs across providers using litellm.model_cost.
-    Self-updates when LiteLLM releases new pricing.
+    Selection order:
+      1. Filter: model.max_tokens >= meta.required_context_tokens
+      2. Filter: tier.max_complexity >= meta.complexity_score
+      3. Sort:   cheapest by litellm.model_cost input_cost_per_token
+
+    Raises UserFixableError if no model survives both filters.
     Default currency: EUR.
     """
     def __init__(self, tiers: list[ModelTier], currency: str = "EUR") -> None: ...
     def route(self, spec: AgentSpec, meta: TaskMeta) -> str: ...
     def estimated_cost_per_1k(self, model_id: str) -> Decimal: ...
     def observe(self, model_id: str, task_type: str, efficiency: float) -> None: ...
+```
+
+`TaskMeta` gains `required_context_tokens: int = 0` — set by the caller to the estimated context size for this task (overhead + history + output reserve). The router uses `litellm.get_max_tokens(model)` to check viability:
+
+```python
+# Inside LLMCostRouter.route():
+from litellm import model_cost as _mc
+
+viable = [
+    m for m in tier.models
+    if _mc.get(m, {}).get("max_tokens", 0) >= meta.required_context_tokens
+]
 ```
 
 Example configuration:
@@ -98,6 +120,8 @@ router = LLMCostRouter(tiers=[
 ```
 
 Within a tier, `LLMCostRouter` picks the cheapest model (by `litellm.model_cost` pricing). Cross-provider: the same model may be cheaper via OpenRouter than direct — the router compares them automatically.
+
+**Auxiliary tasks** (compaction summariser, TALE self-estimation) are always routed to the cheapest-tier model regardless of `complexity_score`. They must not drive up session cost. See spec 12 for the full model selection table.
 
 ## Efficiency feedback loop
 
