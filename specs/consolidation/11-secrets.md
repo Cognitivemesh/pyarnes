@@ -250,10 +250,6 @@ To disable redaction entirely, pass `redactor=None`. To supply a custom policy, 
 - [keyring library documentation](https://keyring.readthedocs.io/) — OS keychain integration, backends per platform, headless fallback configuration
 - [asyncio Synchronisation Primitives](https://docs.python.org/3/library/asyncio-sync.html) — `asyncio.Lock` used in `IterationBudget.consume()` (relevant to the secrets injection pattern in hook integration)
 
-## Why not `.env` files?
-
-> See ["The problem with `.env` files"](#the-problem-with-env-files) at the top of this spec for the canonical rationale. This section previously duplicated that content; consolidated into a single home.
-
 ## Open questions or deferred items
 
 - **Secret rotation / expiry.** Today the spec covers storage (keyring + env fallback) but not how to rotate a key, mark it expired, or migrate adopters during a vendor key roll.
