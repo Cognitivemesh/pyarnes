@@ -208,10 +208,6 @@ def test_chained_falls_back(monkeypatch):
     assert store.get("fallback_key") == "from-env"
 ```
 
-## Why NOT a bespoke encrypted file
-
-Rolling encryption means rolling key management. Where does the decryption key live? Usually in another file, or hardcoded, or derived from a password the developer types — each of which reintroduces the original problem. `keyring` delegates key management to the OS, which has spent decades solving exactly this problem with hardware-backed key stores on modern hardware.
-
 ## Credential redaction (H9)
 
 Tool-call arguments are logged to JSONL by `ToolCallLogger`. Without redaction, an argument containing an API key (e.g. a tool that accepts a `token` field) would land in the log file in plaintext.
