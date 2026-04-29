@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pyarnes — Code Map Playground</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --panel: #12161b;
+    --panel-2: #181d23;
+    --line: #232a32;
+    --muted: #8a96a3;
+    --text: #e6edf3;
+    --accent: #7aa2f7;
+    --accent-2: #9ece6a;
+    --warn: #e0af68;
+    --danger: #f7768e;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+
+    --layer-bench: #2c1d44;
+    --layer-bench-stroke: #b794f6;
+    --layer-harness: #1f2d3d;
+    --layer-harness-stroke: #7aa2f7;
+    --layer-guardrails: #3a2424;
+    --layer-guardrails-stroke: #f7768e;
+    --layer-core: #1c3328;
+    --layer-core-stroke: #9ece6a;
+    --layer-tasks: #3a3018;
+    --layer-tasks-stroke: #e0af68;
+    --layer-external: #2a2a2e;
+    --layer-external-stroke: #8a96a3;
+
+    --conn-dep: #5b6470;
+    --conn-data: #7aa2f7;
+    --conn-tool: #9ece6a;
+    --conn-event: #f7768e;
+    --conn-skill: #e0af68;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: var(--ui);
+    font-size: 13px;
+    overflow: hidden;
+  }
+  .app {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    grid-template-rows: 1fr auto;
+    height: 100vh;
+  }
+  /* Sidebar */
+  .sidebar {
+    grid-row: 1 / span 2;
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    padding: 14px 14px 24px;
+  }
+  .sidebar h1 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 2px;
+    letter-spacing: 0.2px;
+  }
+  .sidebar .sub {
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 14px;
+  }
+  .group {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .group:first-of-type { border-top: none; padding-top: 0; }
+  .group-title {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .preset-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .btn {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--line);
+    padding: 7px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: var(--ui);
+    font-size: 12px;
+    text-align: left;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .btn:hover { background: #1d242b; border-color: #2d3640; }
+  .btn.active {
+    background: #1a2638;
+    border-color: var(--accent);
+    color: #c8d6f5;
+  }
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 4px;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 4px;
+  }
+  .check-row:hover { background: var(--panel-2); }
+  .check-row input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 14px; height: 14px;
+    cursor: pointer;
+  }
+  .swatch {
+    width: 18px; height: 3px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .swatch.dashed {
+    height: 0; border-top: 2px dashed currentColor; border-color: currentColor;
+  }
+  .check-row .lbl { flex: 1; }
+  .check-row .meta { color: var(--muted); font-family: var(--mono); font-size: 10.5px; }
+
+  .comments-list {
+    margin-top: 4px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .comment {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    padding: 7px 9px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .comment .c-target {
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .comment .c-path {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    margin-bottom: 5px;
+  }
+  .comment .c-text { white-space: pre-wrap; line-height: 1.45; }
+  .comment .c-del {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 11px;
+    margin-top: 4px;
+    padding: 0;
+  }
+  .comment .c-del:hover { color: var(--danger); }
+  .empty {
+    color: var(--muted);
+    font-size: 11.5px;
+    font-style: italic;
+    padding: 4px 0;
+  }
+
+  /* Canvas */
+  .canvas-wrap {
+    grid-column: 2;
+    grid-row: 1;
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 0%, #131820 0%, var(--bg) 60%);
+  }
+  .canvas-toolbar {
+    position: absolute;
+    top: 12px; right: 12px;
+    z-index: 10;
+    display: flex; gap: 6px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 4px;
+  }
+  .canvas-toolbar button {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    width: 28px; height: 26px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .canvas-toolbar button:hover { background: var(--panel-2); }
+  .legend {
+    position: absolute;
+    bottom: 12px; left: 12px;
+    background: rgba(18, 22, 27, 0.92);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 11px;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .legend .row { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+  .legend .row:first-child { margin-top: 0; }
+  .legend .chip {
+    width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+  }
+  svg.canvas {
+    width: 100%; height: 100%;
+    display: block;
+  }
+  svg.canvas .node-rect {
+    cursor: pointer;
+    transition: stroke-width 0.12s, filter 0.12s;
+  }
+  svg.canvas .node-rect:hover { filter: brightness(1.25); }
+  svg.canvas .node-rect.commented {
+    stroke-width: 2.5;
+    stroke: var(--accent) !important;
+  }
+  svg.canvas .node-label {
+    font-family: var(--ui);
+    font-size: 11.5px;
+    font-weight: 600;
+    fill: var(--text);
+    pointer-events: none;
+  }
+  svg.canvas .node-sub {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    fill: var(--muted);
+    pointer-events: none;
+  }
+  svg.canvas .layer-band-label {
+    font-family: var(--ui);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    fill: var(--muted);
+    pointer-events: none;
+  }
+
+  /* Prompt output */
+  .prompt-bar {
+    grid-column: 2;
+    grid-row: 2;
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    padding: 10px 14px 12px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto 1fr;
+    gap: 6px 12px;
+    max-height: 35vh;
+  }
+  .prompt-bar .label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+  }
+  .prompt-bar pre {
+    grid-column: 1;
+    grid-row: 2;
+    margin: 0;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: #c8d2dd;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+  .prompt-bar .copy {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: stretch;
+    background: var(--accent);
+    color: #0b0d10;
+    border: none;
+    border-radius: 6px;
+    padding: 0 18px;
+    font-family: var(--ui);
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 110px;
+  }
+  .prompt-bar .copy:hover { filter: brightness(1.06); }
+  .prompt-bar .copy.copied { background: var(--accent-2); }
+
+  /* Modal */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 100;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px 18px;
+    width: 460px;
+    max-width: 90vw;
+  }
+  .modal h2 {
+    margin: 0 0 2px;
+    font-size: 14px;
+  }
+  .modal .modal-path {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+  .modal textarea {
+    width: 100%;
+    min-height: 90px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    color: var(--text);
+    font-family: var(--ui);
+    font-size: 12.5px;
+    padding: 8px 10px;
+    resize: vertical;
+  }
+  .modal textarea:focus { outline: none; border-color: var(--accent); }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 10px;
+  }
+  .modal-actions .btn-primary {
+    background: var(--accent);
+    color: #0b0d10;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .modal-actions .btn-primary:hover { filter: brightness(1.08); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <h1>Pyarnes — Code Map</h1>
+    <div class="sub">Click a component to leave feedback. The prompt below updates live.</div>
+
+    <div class="group">
+      <div class="group-title">View Presets</div>
+      <div class="preset-grid" id="presets"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Layers</div>
+      <div id="layer-toggles"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Connection Types</div>
+      <div id="conn-toggles"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">Comments (<span id="comment-count">0</span>)</div>
+      <div class="comments-list" id="comments-list"></div>
+    </div>
+  </aside>
+
+  <div class="canvas-wrap">
+    <div class="canvas-toolbar">
+      <button id="zoom-out" title="Zoom out">−</button>
+      <button id="zoom-reset" title="Reset zoom">⟳</button>
+      <button id="zoom-in" title="Zoom in">+</button>
+    </div>
+    <svg class="canvas" id="canvas" viewBox="0 0 1180 720" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <marker id="arr-dep" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#5b6470"/>
+        </marker>
+        <marker id="arr-data" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#7aa2f7"/>
+        </marker>
+        <marker id="arr-tool" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#9ece6a"/>
+        </marker>
+        <marker id="arr-event" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#f7768e"/>
+        </marker>
+        <marker id="arr-skill" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#e0af68"/>
+        </marker>
+      </defs>
+      <g id="layer-bands"></g>
+      <g id="connections"></g>
+      <g id="nodes"></g>
+    </svg>
+    <div class="legend">
+      <div class="row"><span class="chip" style="background:#b794f6"></span>Bench</div>
+      <div class="row"><span class="chip" style="background:#7aa2f7"></span>Harness</div>
+      <div class="row"><span class="chip" style="background:#f7768e"></span>Guardrails</div>
+      <div class="row"><span class="chip" style="background:#9ece6a"></span>Core</div>
+      <div class="row"><span class="chip" style="background:#e0af68"></span>Tasks</div>
+      <div class="row"><span class="chip" style="background:#8a96a3"></span>External</div>
+    </div>
+  </div>
+
+  <div class="prompt-bar">
+    <div class="label">Prompt</div>
+    <pre id="prompt-output"></pre>
+    <button class="copy" id="copy-btn">Copy Prompt</button>
+  </div>
+
+</div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <h2 id="modal-title">Component</h2>
+    <div class="modal-path" id="modal-path">path/to/file.py</div>
+    <textarea id="modal-text" placeholder="What would you change here? Suggestions, questions, concerns..."></textarea>
+    <div class="modal-actions">
+      <button class="btn" id="modal-cancel">Cancel</button>
+      <button class="btn-primary" id="modal-save">Save Comment</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+ * Pyarnes architecture data
+ * ============================================================ */
+
+const LAYERS = {
+  bench:      { label: 'Bench (pyarnes-bench)',         y: 80,  fill: 'var(--layer-bench)',      stroke: 'var(--layer-bench-stroke)',      desc: 'evaluation & benchmarking' },
+  harness:    { label: 'Harness (pyarnes-harness)',     y: 220, fill: 'var(--layer-harness)',    stroke: 'var(--layer-harness-stroke)',    desc: 'agent loop runtime' },
+  guardrails: { label: 'Guardrails (pyarnes-guardrails)', y: 360, fill: 'var(--layer-guardrails)', stroke: 'var(--layer-guardrails-stroke)', desc: 'composable safety checks' },
+  core:       { label: 'Core (pyarnes-core)',           y: 500, fill: 'var(--layer-core)',       stroke: 'var(--layer-core-stroke)',       desc: 'types, errors, lifecycle, observability' },
+  tasks:      { label: 'Tasks (pyarnes-tasks)',         y: 640, fill: 'var(--layer-tasks)',      stroke: 'var(--layer-tasks-stroke)',      desc: 'cross-platform task runner CLI' },
+  external:   { label: 'External',                       y: 220, fill: 'var(--layer-external)',  stroke: 'var(--layer-external-stroke)',   desc: 'third-party libraries' },
+};
+
+const NODE_W = 120;
+const NODE_H = 50;
+
+const NODES = [
+  // Bench layer
+  { id: 'bench-eval',       label: 'Eval Harness',       sub: 'bench/eval.py',                 layer: 'bench',      x: 30 },
+  { id: 'bench-fact',       label: 'FACT Scoring',       sub: 'bench/fact.py',                 layer: 'bench',      x: 165 },
+  { id: 'bench-race',       label: 'RACE Scoring',       sub: 'bench/race.py',                 layer: 'bench',      x: 300 },
+  { id: 'bench-regression', label: 'Regression',         sub: 'bench/regression.py',           layer: 'bench',      x: 435 },
+  { id: 'bench-scorer',     label: 'Scorers + Judge',    sub: 'bench/scorer*.py, _judge.py',   layer: 'bench',      x: 570 },
+  { id: 'bench-burn',       label: 'CodeBurn',           sub: 'bench/burn/',                   layer: 'bench',      x: 705 },
+  { id: 'bench-swe',        label: 'SWE-Bench',          sub: 'bench/swe_bench.py',            layer: 'bench',      x: 840 },
+
+  // Harness layer
+  { id: 'harness-loop',       label: 'Agent Loop',       sub: 'harness/loop.py',               layer: 'harness',    x: 30 },
+  { id: 'harness-runtime',    label: 'Runtime',          sub: 'harness/runtime.py',            layer: 'harness',    x: 165 },
+  { id: 'harness-tools',      label: 'Tool Registry',    sub: 'harness/tools/registry.py',     layer: 'harness',    x: 300 },
+  { id: 'harness-transport',  label: 'Transport',        sub: 'harness/transport/*',           layer: 'harness',    x: 435 },
+  { id: 'harness-capture',    label: 'Capture',          sub: 'harness/capture/*',             layer: 'harness',    x: 570 },
+  { id: 'harness-context',    label: 'Context Mgmt',     sub: 'harness/{context,compaction,compressor}.py', layer: 'harness', x: 705 },
+  { id: 'harness-classifier', label: 'Classifier+Repair', sub: 'harness/{classifier,repair,verification}.py', layer: 'harness', x: 840 },
+
+  // Guardrails layer
+  { id: 'gr-guardrails',  label: 'Composer',         sub: 'guardrails/guardrails.py',         layer: 'guardrails', x: 30 },
+  { id: 'gr-rate-limit',  label: 'Rate Limit',       sub: 'guardrails/rate_limit.py',         layer: 'guardrails', x: 200 },
+  { id: 'gr-secret-leak', label: 'Secret Leak',      sub: 'guardrails/secret_leak.py',        layer: 'guardrails', x: 370 },
+  { id: 'gr-network',     label: 'Network Egress',   sub: 'guardrails/network_egress.py',     layer: 'guardrails', x: 540 },
+  { id: 'gr-semantic',    label: 'Semantic Judge',   sub: 'guardrails/semantic.py',           layer: 'guardrails', x: 710 },
+  { id: 'gr-benchmark',   label: 'Benchmark Gate',   sub: 'guardrails/benchmark_gate.py',     layer: 'guardrails', x: 880 },
+
+  // Core layer
+  { id: 'core-types',         label: 'Types',           sub: 'core/types.py',                 layer: 'core',       x: 30 },
+  { id: 'core-errors',        label: 'Error Taxonomy',  sub: 'core/{errors,error_registry}.py', layer: 'core',     x: 165 },
+  { id: 'core-lifecycle',     label: 'Lifecycle',       sub: 'core/lifecycle.py',             layer: 'core',       x: 300 },
+  { id: 'core-observability', label: 'Observability',   sub: 'core/observability/*',          layer: 'core',       x: 435 },
+  { id: 'core-safety',        label: 'Safety Primitives', sub: 'core/safety/*',               layer: 'core',       x: 570 },
+  { id: 'core-budget',        label: 'Budget',          sub: 'core/budget.py',                layer: 'core',       x: 705 },
+  { id: 'core-sandbox',       label: 'Sandbox',         sub: 'core/sandbox.py',               layer: 'core',       x: 840 },
+
+  // Tasks layer
+  { id: 'tasks-cli',     label: 'tasks CLI',        sub: 'tasks/cli.py',                   layer: 'tasks',      x: 30 },
+  { id: 'tasks-bench',   label: 'Bench Runner',     sub: 'tasks/bench_run.py',             layer: 'tasks',      x: 200 },
+  { id: 'tasks-burn',    label: 'CodeBurn CLI',     sub: 'tasks/codeburn_*.py',            layer: 'tasks',      x: 370 },
+  { id: 'tasks-observer', label: 'Observer Filter', sub: 'tasks/observer_*.py',            layer: 'tasks',      x: 540 },
+
+  // External
+  { id: 'ext-litellm', label: 'LiteLLM',  sub: 'pypi: litellm',  layer: 'external', x: 1010, yOverride: 220 },
+  { id: 'ext-loguru',  label: 'Loguru',   sub: 'pypi: loguru',   layer: 'external', x: 1010, yOverride: 500 },
+  { id: 'ext-anthropic', label: 'Anthropic API', sub: 'transport target', layer: 'external', x: 1010, yOverride: 80 },
+];
+
+/* Connection types: dependency / data-flow / tool-call / event / skill-invoke */
+const CONNECTIONS = [
+  // Cross-package dependencies
+  { from: 'gr-guardrails', to: 'core-errors',         type: 'dependency' },
+  { from: 'harness-loop', to: 'core-lifecycle',       type: 'dependency' },
+  { from: 'harness-loop', to: 'core-errors',          type: 'dependency' },
+  { from: 'harness-runtime', to: 'core-types',        type: 'dependency' },
+  { from: 'bench-eval', to: 'harness-loop',           type: 'dependency' },
+  { from: 'bench-eval', to: 'core-observability',     type: 'dependency' },
+  { from: 'tasks-bench', to: 'bench-eval',            type: 'dependency' },
+  { from: 'tasks-burn', to: 'bench-burn',             type: 'dependency' },
+
+  // Agent-loop data flow
+  { from: 'harness-loop', to: 'harness-transport',    type: 'data-flow' },
+  { from: 'harness-loop', to: 'harness-context',      type: 'data-flow' },
+  { from: 'harness-loop', to: 'harness-classifier',   type: 'data-flow' },
+  { from: 'harness-runtime', to: 'harness-loop',      type: 'data-flow' },
+
+  // Tool calls
+  { from: 'harness-loop', to: 'harness-tools',        type: 'tool-call' },
+  { from: 'harness-tools', to: 'harness-capture',     type: 'tool-call' },
+
+  // Guardrail enforcement (data-flow)
+  { from: 'harness-loop', to: 'gr-guardrails',        type: 'data-flow' },
+  { from: 'gr-guardrails', to: 'gr-rate-limit',       type: 'data-flow' },
+  { from: 'gr-guardrails', to: 'gr-secret-leak',      type: 'data-flow' },
+  { from: 'gr-guardrails', to: 'gr-network',          type: 'data-flow' },
+  { from: 'gr-guardrails', to: 'gr-semantic',         type: 'data-flow' },
+  { from: 'gr-guardrails', to: 'gr-benchmark',        type: 'data-flow' },
+
+  // Safety primitive usage
+  { from: 'gr-secret-leak', to: 'core-safety',        type: 'dependency' },
+  { from: 'gr-network', to: 'core-safety',            type: 'dependency' },
+  { from: 'harness-classifier', to: 'core-safety',    type: 'dependency' },
+
+  // Observability events
+  { from: 'harness-loop', to: 'core-observability',   type: 'event' },
+  { from: 'harness-capture', to: 'core-observability', type: 'event' },
+  { from: 'gr-guardrails', to: 'core-observability',  type: 'event' },
+  { from: 'tasks-observer', to: 'core-observability', type: 'event' },
+  { from: 'core-observability', to: 'ext-loguru',     type: 'event' },
+
+  // Bench scoring flows
+  { from: 'bench-eval', to: 'bench-fact',             type: 'data-flow' },
+  { from: 'bench-eval', to: 'bench-race',             type: 'data-flow' },
+  { from: 'bench-eval', to: 'bench-regression',       type: 'data-flow' },
+  { from: 'bench-fact', to: 'bench-scorer',           type: 'data-flow' },
+  { from: 'bench-race', to: 'bench-scorer',           type: 'data-flow' },
+  { from: 'bench-burn', to: 'bench-scorer',           type: 'data-flow' },
+
+  // External skill-invoke
+  { from: 'harness-transport', to: 'ext-litellm',     type: 'skill-invoke' },
+  { from: 'harness-transport', to: 'ext-anthropic',   type: 'skill-invoke' },
+  { from: 'bench-scorer', to: 'ext-litellm',          type: 'skill-invoke' },
+
+  // Budget + sandbox
+  { from: 'harness-loop', to: 'core-budget',          type: 'dependency' },
+  { from: 'core-sandbox', to: 'core-safety',          type: 'dependency' },
+  { from: 'harness-runtime', to: 'core-sandbox',      type: 'dependency' },
+];
+
+/* ============================================================
+ * Presets
+ * ============================================================ */
+
+const ALL_LAYERS = ['bench', 'harness', 'guardrails', 'core', 'tasks', 'external'];
+const ALL_CONNS = ['dependency', 'data-flow', 'tool-call', 'event', 'skill-invoke'];
+
+const PRESETS = {
+  full: {
+    label: 'Full System',
+    layers: [...ALL_LAYERS],
+    conns: [...ALL_CONNS],
+  },
+  loop: {
+    label: 'Agent Loop',
+    layers: ['harness', 'core', 'external'],
+    conns: ['data-flow', 'tool-call', 'dependency', 'skill-invoke'],
+  },
+  safety: {
+    label: 'Safety Stack',
+    layers: ['guardrails', 'core', 'harness'],
+    conns: ['data-flow', 'dependency', 'event'],
+  },
+  eval: {
+    label: 'Evaluation',
+    layers: ['bench', 'harness', 'tasks', 'external'],
+    conns: ['data-flow', 'dependency', 'skill-invoke'],
+  },
+  observability: {
+    label: 'Observability',
+    layers: ['core', 'harness', 'guardrails', 'tasks', 'external'],
+    conns: ['event', 'dependency'],
+  },
+};
+
+/* ============================================================
+ * State
+ * ============================================================ */
+
+const state = {
+  preset: 'full',
+  layers: Object.fromEntries(ALL_LAYERS.map(l => [l, true])),
+  conns:  Object.fromEntries(ALL_CONNS.map(c => [c, true])),
+  comments: [], // { id, target, targetLabel, targetFile, layer, text }
+  zoom: 1,
+};
+
+const NODE_INDEX = Object.fromEntries(NODES.map(n => [n.id, n]));
+
+function nodeY(node) {
+  return node.yOverride !== undefined ? node.yOverride : LAYERS[node.layer].y;
+}
+
+/* ============================================================
+ * SVG rendering
+ * ============================================================ */
+
+const svgNS = 'http://www.w3.org/2000/svg';
+
+function svgEl(tag, attrs = {}) {
+  const el = document.createElementNS(svgNS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function renderLayerBands() {
+  const g = document.getElementById('layer-bands');
+  g.innerHTML = '';
+  for (const [key, lyr] of Object.entries(LAYERS)) {
+    if (key === 'external') continue;
+    if (!state.layers[key]) continue;
+    const band = svgEl('rect', {
+      x: 12, y: lyr.y - 30, width: 980, height: 100,
+      rx: 8, ry: 8,
+      fill: lyr.fill, opacity: 0.18,
+      stroke: lyr.stroke, 'stroke-opacity': 0.25,
+    });
+    g.appendChild(band);
+    const label = svgEl('text', {
+      x: 24, y: lyr.y - 12,
+      class: 'layer-band-label',
+    });
+    label.textContent = lyr.label.toUpperCase();
+    g.appendChild(label);
+  }
+}
+
+function renderNodes() {
+  const g = document.getElementById('nodes');
+  g.innerHTML = '';
+  for (const node of NODES) {
+    if (!state.layers[node.layer]) continue;
+    const lyr = LAYERS[node.layer];
+    const y = nodeY(node);
+    const hasComment = state.comments.some(c => c.target === node.id);
+
+    const grp = svgEl('g', { transform: `translate(${node.x}, ${y})` });
+    const rect = svgEl('rect', {
+      x: 0, y: 0, width: NODE_W, height: NODE_H,
+      rx: 6, ry: 6,
+      fill: lyr.fill,
+      stroke: lyr.stroke,
+      'stroke-width': hasComment ? 2.5 : 1.2,
+      class: 'node-rect' + (hasComment ? ' commented' : ''),
+    });
+    rect.addEventListener('click', () => openModal(node));
+    grp.appendChild(rect);
+
+    const lbl = svgEl('text', {
+      x: NODE_W / 2, y: 22,
+      'text-anchor': 'middle',
+      class: 'node-label',
+    });
+    lbl.textContent = node.label;
+    grp.appendChild(lbl);
+
+    const sub = svgEl('text', {
+      x: NODE_W / 2, y: 38,
+      'text-anchor': 'middle',
+      class: 'node-sub',
+    });
+    sub.textContent = node.sub;
+    grp.appendChild(sub);
+
+    if (hasComment) {
+      const dot = svgEl('circle', {
+        cx: NODE_W - 8, cy: 8, r: 4,
+        fill: 'var(--accent)',
+      });
+      grp.appendChild(dot);
+    }
+
+    g.appendChild(grp);
+  }
+}
+
+function connStyle(type) {
+  switch (type) {
+    case 'dependency':   return { stroke: '#5b6470', dash: '2,3',  marker: 'arr-dep'   };
+    case 'data-flow':    return { stroke: '#7aa2f7', dash: 'none', marker: 'arr-data'  };
+    case 'tool-call':    return { stroke: '#9ece6a', dash: '6,3',  marker: 'arr-tool'  };
+    case 'event':        return { stroke: '#f7768e', dash: '3,3',  marker: 'arr-event' };
+    case 'skill-invoke': return { stroke: '#e0af68', dash: '8,4',  marker: 'arr-skill' };
+  }
+}
+
+function renderConnections() {
+  const g = document.getElementById('connections');
+  g.innerHTML = '';
+  for (const c of CONNECTIONS) {
+    if (!state.conns[c.type]) continue;
+    const a = NODE_INDEX[c.from], b = NODE_INDEX[c.to];
+    if (!a || !b) continue;
+    if (!state.layers[a.layer] || !state.layers[b.layer]) continue;
+
+    const ax = a.x + NODE_W / 2;
+    const ay = nodeY(a) + (nodeY(b) > nodeY(a) ? NODE_H : 0);
+    const bx = b.x + NODE_W / 2;
+    const by = nodeY(b) + (nodeY(b) > nodeY(a) ? 0 : NODE_H);
+    const dy = by - ay;
+    const cy1 = ay + dy * 0.4;
+    const cy2 = by - dy * 0.4;
+
+    const style = connStyle(c.type);
+    const path = svgEl('path', {
+      d: `M ${ax} ${ay} C ${ax} ${cy1}, ${bx} ${cy2}, ${bx} ${by}`,
+      stroke: style.stroke,
+      'stroke-width': 1.4,
+      'stroke-dasharray': style.dash === 'none' ? '0' : style.dash,
+      fill: 'none',
+      'marker-end': `url(#${style.marker})`,
+      opacity: 0.78,
+    });
+    g.appendChild(path);
+  }
+}
+
+function renderAll() {
+  renderLayerBands();
+  renderConnections();
+  renderNodes();
+  renderComments();
+  renderPresetActive();
+  updatePrompt();
+}
+
+/* ============================================================
+ * Sidebar controls
+ * ============================================================ */
+
+function renderPresets() {
+  const root = document.getElementById('presets');
+  root.innerHTML = '';
+  for (const [key, p] of Object.entries(PRESETS)) {
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.dataset.preset = key;
+    btn.textContent = p.label;
+    btn.addEventListener('click', () => applyPreset(key));
+    root.appendChild(btn);
+  }
+}
+
+function renderPresetActive() {
+  document.querySelectorAll('#presets .btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.preset === state.preset);
+  });
+}
+
+function applyPreset(key) {
+  const p = PRESETS[key];
+  state.preset = key;
+  for (const l of ALL_LAYERS) state.layers[l] = p.layers.includes(l);
+  for (const c of ALL_CONNS) state.conns[c] = p.conns.includes(c);
+  syncToggleUI();
+  renderAll();
+}
+
+function renderLayerToggles() {
+  const root = document.getElementById('layer-toggles');
+  root.innerHTML = '';
+  for (const [key, lyr] of Object.entries(LAYERS)) {
+    const row = document.createElement('label');
+    row.className = 'check-row';
+    row.innerHTML = `
+      <input type="checkbox" data-layer="${key}" ${state.layers[key] ? 'checked' : ''}/>
+      <span class="swatch" style="background:${cssVarValue(lyr.stroke)}"></span>
+      <span class="lbl">${lyr.label.replace(/\(.*?\)/, '').trim()}</span>
+      <span class="meta">${lyr.desc}</span>
+    `;
+    row.querySelector('input').addEventListener('change', e => {
+      state.layers[key] = e.target.checked;
+      state.preset = matchPreset();
+      renderPresetActive();
+      renderAll();
+    });
+    root.appendChild(row);
+  }
+}
+
+function renderConnToggles() {
+  const root = document.getElementById('conn-toggles');
+  root.innerHTML = '';
+  const labels = {
+    'dependency':   'Imports / dependencies',
+    'data-flow':    'Data flow',
+    'tool-call':    'Tool calls',
+    'event':        'Observability events',
+    'skill-invoke': 'External invocations',
+  };
+  for (const c of ALL_CONNS) {
+    const style = connStyle(c);
+    const row = document.createElement('label');
+    row.className = 'check-row';
+    const swatchStyle = style.dash === 'none'
+      ? `background:${style.stroke}`
+      : `background:linear-gradient(to right, ${style.stroke} 60%, transparent 60%); background-size: 8px 3px;`;
+    row.innerHTML = `
+      <input type="checkbox" data-conn="${c}" ${state.conns[c] ? 'checked' : ''}/>
+      <span class="swatch" style="${swatchStyle}"></span>
+      <span class="lbl">${labels[c]}</span>
+    `;
+    row.querySelector('input').addEventListener('change', e => {
+      state.conns[c] = e.target.checked;
+      state.preset = matchPreset();
+      renderPresetActive();
+      renderAll();
+    });
+    root.appendChild(row);
+  }
+}
+
+function syncToggleUI() {
+  document.querySelectorAll('#layer-toggles input').forEach(inp => {
+    inp.checked = state.layers[inp.dataset.layer];
+  });
+  document.querySelectorAll('#conn-toggles input').forEach(inp => {
+    inp.checked = state.conns[inp.dataset.conn];
+  });
+}
+
+function matchPreset() {
+  for (const [key, p] of Object.entries(PRESETS)) {
+    const layersMatch = ALL_LAYERS.every(l => state.layers[l] === p.layers.includes(l));
+    const connsMatch = ALL_CONNS.every(c => state.conns[c] === p.conns.includes(c));
+    if (layersMatch && connsMatch) return key;
+  }
+  return null;
+}
+
+function cssVarValue(value) {
+  if (!value || !value.startsWith('var(')) return value;
+  const name = value.match(/var\((--[^)]+)\)/)[1];
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/* ============================================================
+ * Comments + modal
+ * ============================================================ */
+
+let modalNode = null;
+
+function openModal(node) {
+  modalNode = node;
+  document.getElementById('modal-title').textContent = node.label;
+  document.getElementById('modal-path').textContent = node.sub;
+  const existing = state.comments.find(c => c.target === node.id);
+  document.getElementById('modal-text').value = existing ? existing.text : '';
+  document.getElementById('modal-bg').classList.add('show');
+  setTimeout(() => document.getElementById('modal-text').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('modal-bg').classList.remove('show');
+  modalNode = null;
+}
+
+function saveComment() {
+  if (!modalNode) return;
+  const text = document.getElementById('modal-text').value.trim();
+  state.comments = state.comments.filter(c => c.target !== modalNode.id);
+  if (text) {
+    state.comments.push({
+      id: Date.now(),
+      target: modalNode.id,
+      targetLabel: modalNode.label,
+      targetFile: modalNode.sub,
+      layer: modalNode.layer,
+      text,
+    });
+  }
+  closeModal();
+  renderAll();
+}
+
+function renderComments() {
+  const list = document.getElementById('comments-list');
+  document.getElementById('comment-count').textContent = state.comments.length;
+  list.innerHTML = '';
+  if (state.comments.length === 0) {
+    const e = document.createElement('div');
+    e.className = 'empty';
+    e.textContent = 'Click any component on the map to add feedback.';
+    list.appendChild(e);
+    return;
+  }
+  for (const c of state.comments) {
+    const div = document.createElement('div');
+    div.className = 'comment';
+    div.innerHTML = `
+      <div class="c-target">${escapeHtml(c.targetLabel)}</div>
+      <div class="c-path">${escapeHtml(c.targetFile)}</div>
+      <div class="c-text">${escapeHtml(c.text)}</div>
+      <button class="c-del" data-id="${c.id}">Delete</button>
+    `;
+    div.querySelector('.c-del').addEventListener('click', () => {
+      state.comments = state.comments.filter(x => x.id !== c.id);
+      renderAll();
+    });
+    list.appendChild(div);
+  }
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[ch]);
+}
+
+/* ============================================================
+ * Prompt output
+ * ============================================================ */
+
+function activeLayerNames() {
+  return ALL_LAYERS.filter(l => state.layers[l]);
+}
+
+function updatePrompt() {
+  const visibleLayers = activeLayerNames();
+  const allShown = visibleLayers.length === ALL_LAYERS.length;
+  const lines = [];
+
+  lines.push('This is the pyarnes monorepo architecture.');
+
+  if (state.preset && state.preset !== 'full') {
+    lines.push(`Currently focused on the **${PRESETS[state.preset].label}** view.`);
+  } else if (!allShown) {
+    const labels = visibleLayers.map(l => LAYERS[l].label.replace(/\s*\(.*\)$/, ''));
+    lines.push(`Visible layers: ${labels.join(', ')}.`);
+  }
+
+  const offConns = ALL_CONNS.filter(c => !state.conns[c]);
+  if (offConns.length > 0 && offConns.length < ALL_CONNS.length) {
+    lines.push(`Hiding connection types: ${offConns.join(', ')}.`);
+  }
+
+  if (state.comments.length === 0) {
+    lines.push('');
+    lines.push('Walk me through this architecture and call out anything that looks fragile, over-coupled, or under-tested.');
+  } else {
+    lines.push('');
+    lines.push(`Feedback on ${state.comments.length} component${state.comments.length === 1 ? '' : 's'}:`);
+    for (const c of state.comments) {
+      lines.push('');
+      lines.push(`**${c.targetLabel}** (${c.targetFile}):`);
+      lines.push(c.text);
+    }
+    lines.push('');
+    lines.push('Please address each item: explain trade-offs, propose changes, and flag anything that touches another layer.');
+  }
+
+  document.getElementById('prompt-output').textContent = lines.join('\n');
+}
+
+/* ============================================================
+ * Copy + zoom
+ * ============================================================ */
+
+document.getElementById('copy-btn').addEventListener('click', async () => {
+  const text = document.getElementById('prompt-output').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+  }
+  const btn = document.getElementById('copy-btn');
+  btn.textContent = 'Copied!';
+  btn.classList.add('copied');
+  setTimeout(() => {
+    btn.textContent = 'Copy Prompt';
+    btn.classList.remove('copied');
+  }, 1300);
+});
+
+const canvas = document.getElementById('canvas');
+function applyZoom() {
+  const baseW = 1180, baseH = 720;
+  const w = baseW / state.zoom;
+  const h = baseH / state.zoom;
+  const cx = baseW / 2, cy = baseH / 2;
+  canvas.setAttribute('viewBox', `${cx - w / 2} ${cy - h / 2} ${w} ${h}`);
+}
+document.getElementById('zoom-in').addEventListener('click',   () => { state.zoom = Math.min(2.2, state.zoom * 1.2); applyZoom(); });
+document.getElementById('zoom-out').addEventListener('click',  () => { state.zoom = Math.max(0.5, state.zoom / 1.2); applyZoom(); });
+document.getElementById('zoom-reset').addEventListener('click', () => { state.zoom = 1; applyZoom(); });
+
+/* ============================================================
+ * Modal wiring
+ * ============================================================ */
+
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-save').addEventListener('click', saveComment);
+document.getElementById('modal-bg').addEventListener('click', e => {
+  if (e.target.id === 'modal-bg') closeModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && document.getElementById('modal-bg').classList.contains('show')) {
+    saveComment();
+  }
+});
+
+/* ============================================================
+ * Boot
+ * ============================================================ */
+
+renderPresets();
+renderLayerToggles();
+renderConnToggles();
+renderAll();
+applyZoom();
+</script>
+</body>
+</html>
