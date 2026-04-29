@@ -96,7 +96,7 @@ async def test_execute_batch_serial_tool_runs_sequentially() -> None:
 @pytest.mark.asyncio
 async def test_execute_batch_returns_in_call_order() -> None:
     """Results are returned in the same order as input calls."""
-    handler = AsyncMock(side_effect=lambda name, cid, args: f"r:{name}")
+    handler = AsyncMock(side_effect=lambda name, _cid, _args: f"r:{name}")
     calls = [_call("x"), _call("y"), _call("z")]
     results = await execute_batch(calls, handler)
     assert list(results) == ["r:x", "r:y", "r:z"]

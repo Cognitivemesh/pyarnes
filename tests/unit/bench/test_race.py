@@ -235,18 +235,14 @@ class TestHypothesisInvariants:
         )
         assert score.final_score > 0.5
 
-    @given(
-        score_a=st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
-        score_b=st.floats(min_value=0.0, max_value=1.0, allow_nan=False),
-    )
+    @given(score_a=st.floats(min_value=0.0, max_value=1.0, allow_nan=False))
     @settings(max_examples=300, deadline=None)
     @pytest.mark.asyncio
-    async def test_equal_scores_always_yield_half(self, score_a: float, score_b: float) -> None:
+    async def test_equal_scores_always_yield_half(self, score_a: float) -> None:
         """When both target and reference are judged identically, final_score == 0.5."""
-        same = score_a  # noqa: F841 — both sides use the same score value
 
         def scorer(prompt: str) -> float:
-            return score_a  # same for both
+            return score_a  # both sides receive the same score
 
         judge = ScriptedJudge(score_fn=scorer)
         evaluator = RaceEvaluator(client=judge, trials=1)
