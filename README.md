@@ -28,8 +28,6 @@ uv sync                   # installs the 5 pyarnes-* packages from git URLs into
 uv run tasks check        # lint + typecheck
 ```
 
-No PyPI publishing, no copied source — your project picks up pyarnes as **dev-only** tooling via git URL. Shape-specific libs (`kreuzberg`, `boto3`, `httpx`, `pydantic`, …) are not installed into your venv; they live as PEP 723 inline deps inside `scripts/examples/<shape>/` and resolve only when you run one of those scripts. Later, `uv run tasks update` pulls template improvements into your project (wraps `copier update` under the hood).
-
 ### To build pyarnes
 
 If you're **contributing to pyarnes** (adding a new package, editing the template, writing a feature spec):

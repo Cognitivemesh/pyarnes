@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from pyarnes_core.observability import estimate_tokens
 from pyarnes_harness.compaction import (
     CompactionConfig,
     CompactionTransformer,
-    _estimate_tokens,
     _find_cut_index,
     compact,
 )
@@ -42,22 +42,34 @@ def _long_content(chars: int) -> str:
     return "x" * chars
 
 
-# ── Unit: _estimate_tokens ──────────────────────────────────────────────────
+# ── Unit: estimate_tokens ───────────────────────────────────────────────────
+#
+# The shared estimator now lives in ``pyarnes_core.observability.tokens`` and
+# uses ``len(json.dumps(obj)) // 4`` so JSON-serialisable objects (messages,
+# tool result dicts, audit graph fragments) all get the same approximation.
 
 
-def test_estimate_tokens_empty() -> None:
-    assert _estimate_tokens([]) == 0
+def test_estimate_tokens_empty_list() -> None:
+    # `[]` → "[]" → 2 chars → 0 tokens.
+    assert estimate_tokens([]) == 0
 
 
-def test_estimate_tokens_proportional() -> None:
+def test_estimate_tokens_grows_with_content() -> None:
+    # A 100-char user message dumps to roughly 130 chars (envelope + content),
+    # which is ~32 tokens with the //4 rule. Keep the assertion loose so we are
+    # robust to JSON whitespace/encoding tweaks.
     msgs = [_make_user("a" * 100)]
-    # 100 chars * 0.25 = 25 tokens
-    assert _estimate_tokens(msgs) == 25
+    assert estimate_tokens(msgs) >= 25
+    # A 1000-char message must be markedly larger than the 100-char one.
+    big = [_make_user("a" * 1000)]
+    assert estimate_tokens(big) > estimate_tokens(msgs) * 5
 
 
-def test_estimate_tokens_non_string_content_skipped() -> None:
+def test_estimate_tokens_includes_non_string_content() -> None:
+    # Unlike the old harness-private helper, the JSON-based estimator counts
+    # the envelope of every message — including `None` / dict tool results.
     msgs = [{"role": "tool", "tool_call_id": "x", "content": None}]
-    assert _estimate_tokens(msgs) == 0
+    assert estimate_tokens(msgs) > 0
 
 
 # ── Unit: _find_cut_index ──────────────────────────────────────────────────
@@ -71,37 +83,32 @@ def test_find_cut_index_no_cut_needed() -> None:
 
 
 def test_find_cut_index_cuts_at_turn_boundary() -> None:
-    """Cut must land on a user message, not mid-assistant or mid-tool."""
-    # Build: user0/assistant0 | user1/assistant1 — keep only user1 onwards
+    """Cut moves work older once the per-message budget is breached."""
     msgs = [
-        _make_user(_long_content(400)),  # 100 tokens — old
-        _make_assistant(_long_content(400)),  # 100 tokens — old
-        _make_user(_long_content(400)),  # 100 tokens — keep
-        _make_assistant(_long_content(400)),  # 100 tokens — keep
+        _make_user(_long_content(4_000)),  # heavy — old
+        _make_assistant(_long_content(4_000)),  # heavy — old
+        _make_user(_long_content(4_000)),  # heavy — keep
+        _make_assistant(_long_content(4_000)),  # heavy — keep
     ]
-    # keep_tokens=200 → keep last two messages (200 tokens); cut after idx 1
-    idx = _find_cut_index(msgs, keep_tokens=200)
+    # Each ~4 000-char message is ~1 000 tokens; keep_tokens=2_500 keeps the
+    # last two and cuts after idx 1.
+    idx = _find_cut_index(msgs, keep_tokens=2_500)
     assert idx == 2
 
 
 def test_find_cut_index_never_splits_tool_pair() -> None:
-    """Cut must not separate a tool_call from its immediately following tool_result.
-
-    Natural cut with keep_tokens=100 lands at idx 3 (orphan tool_result).
-    The implementation must move it back to idx 2 so both pair members are kept.
-    """
+    """Cut must not separate a tool_call from its immediately following tool_result."""
     msgs = [
-        _make_user(_long_content(400)),  # 100 tok  idx 0
-        _make_assistant(_long_content(400)),  # 100 tok  idx 1
-        _make_tool_call(_long_content(400)),  # 100 tok  idx 2  ← pair member
-        _make_tool_result(content=_long_content(400)),  # 100 tok  idx 3  ← pair member
+        _make_user(_long_content(4_000)),
+        _make_assistant(_long_content(4_000)),
+        _make_tool_call(_long_content(4_000)),  # idx 2 — pair member
+        _make_tool_result(content=_long_content(4_000)),  # idx 3 — pair member
     ]
-    # Backward scan with keep_tokens=100:
-    #   tool_result(100) == 100, not > 100, continue
-    #   tool_call(100): 100+100=200 > 100 → natural cut = 3
-    # idx 3 is "tool" role → move back to 2 (include tool_call in kept segment)
-    idx = _find_cut_index(msgs, keep_tokens=100)
-    assert idx == 2  # both pair members preserved in kept segment
+    # keep_tokens just above one message worth → natural cut would land on
+    # the orphan tool result at idx 3; the helper backs it up to idx 2 so
+    # the call/result pair stays intact.
+    idx = _find_cut_index(msgs, keep_tokens=1_500)
+    assert idx == 2
 
 
 # ── Integration: compact ───────────────────────────────────────────────────

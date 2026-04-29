@@ -3,6 +3,10 @@ Feature: FACT citation trustworthiness of finished reports
   them, and verifies each one against an adopter-provided sources map,
   producing citation-accuracy and effective-citation metrics.
 
+  # This feature owns the adopter-visible FACT semantics.
+  # Keep extraction internals, dedupe edge cases, and prompt-shape tests in
+  # bench unit tests; keep the scoring contract and missing-source behavior here.
+
   Scenario: All claims supported yields accuracy 1.0
     Given a scripted FACT judge that supports every claim
     And a sources map covering every URL
