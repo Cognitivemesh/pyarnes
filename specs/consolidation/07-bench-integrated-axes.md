@@ -232,6 +232,8 @@ RACE and FACT are post-hoc, sequential evaluators. They do **not** subclass `Sco
 
 ### `RaceEvaluator` — `pyarnes_swarm.bench.race`
 
+> **Diagram:** [RACE four-dimension scoring](diagrams/07-race-scoring.html). Four dimensions (comprehensiveness · depth · instruction following · readability) feed into `internal_target` / `internal_reference`; the weighted aggregate is `final_score ∈ [0, 1]`.
+
 RACE (Reference-based Adaptive Criteria-driven Evaluation) scores a finished target report against a finished reference report across four dynamically weighted dimensions. It achieves ~71 % pairwise agreement with human judges.
 
 #### `RaceDimension` (enum)

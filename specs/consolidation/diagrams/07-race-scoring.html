@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RACE four-dimension scoring — pyarnes_swarm bench</title>
+<style>
+  :root {
+    --paper: #faf7f2;
+    --ink: #1c1917;
+    --muted: #6b6b6b;
+    --accent: #b5523a;
+    --hairline: #d4d0c8;
+    --tint: #f1ece2;
+  }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    padding: 32px;
+  }
+  .frame {
+    max-width: 980px;
+    margin: 0 auto;
+    border: 1px solid var(--hairline);
+    background: var(--paper);
+    padding: 28px 28px 16px 28px;
+  }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px 0; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 24px 0; font-size: 13px; }
+  svg { display: block; margin: 0 auto; }
+  .terminator { fill: var(--paper); stroke: var(--ink); stroke-width: 1.2; }
+  .step { fill: var(--tint); stroke: var(--ink); stroke-width: 1.2; }
+  .dim { fill: var(--tint); stroke: var(--ink); stroke-width: 1.2; }
+  .step-final { fill: var(--paper); stroke: var(--accent); stroke-width: 1.4; }
+  .step-label { font-size: 13px; font-weight: 600; fill: var(--ink); }
+  .step-label-accent { font-size: 13px; font-weight: 600; fill: var(--accent); }
+  .step-sublabel { font-size: 10.5px; font-family: ui-monospace, monospace; fill: var(--muted); }
+  .edge { stroke: var(--ink); stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
+  .edge-accent { stroke: var(--accent); stroke-width: 1.4; fill: none; marker-end: url(#arrow-accent); }
+  .edge-label-mono { font-size: 11px; font-family: ui-monospace, monospace; fill: var(--ink); }
+  .label-bg { fill: var(--paper); }
+  .callout-box { fill: var(--paper); stroke: var(--accent); stroke-width: 1.2; }
+  .callout-tag { fill: var(--accent); }
+  .callout-tag-text { fill: var(--paper); font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .callout-text { font-size: 12px; fill: var(--ink); }
+</style>
+</head>
+<body>
+<section class="frame">
+  <h1>RACE four-dimension scoring</h1>
+  <p class="sub">Owning spec: <code>07-bench-integrated-axes.md § RaceEvaluator</code>. Reference-based Adaptive Criteria-driven Evaluation. Each dimension generates criteria via judge call, scores both target and reference reports per criterion, and rolls up into <code>internal_target</code> / <code>internal_reference</code>. Final score is a weighted comparison; ~71 % pairwise agreement with human judges.</p>
+
+  <svg viewBox="0 0 940 600" width="940" height="600" role="img" aria-label="RACE scoring pipeline flowchart with four dimension branches">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#1c1917"/>
+      </marker>
+      <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#b5523a"/>
+      </marker>
+    </defs>
+
+    <!-- Input -->
+    <rect class="terminator" x="320" y="40" width="300" height="48" rx="22"/>
+    <text class="step-label" x="470" y="62" text-anchor="middle">target_report · reference_report</text>
+    <text class="step-sublabel" x="470" y="78" text-anchor="middle">RaceEvaluator.evaluate()</text>
+
+    <!-- Fan-out arrows: input → 4 dimensions -->
+    <path class="edge" d="M 470 88 C 470 110, 130 116, 130 156"/>
+    <path class="edge" d="M 470 88 C 470 110, 350 116, 350 156"/>
+    <path class="edge" d="M 470 88 C 470 110, 600 116, 600 156"/>
+    <path class="edge" d="M 470 88 C 470 110, 820 116, 820 156"/>
+
+    <!-- 4 dimension boxes at y=156 -->
+    <rect class="dim" x="40" y="156" width="180" height="76" rx="6"/>
+    <text class="step-label" x="130" y="178" text-anchor="middle">Comprehensiveness</text>
+    <text class="step-sublabel" x="130" y="196" text-anchor="middle">criteria → per-criterion</text>
+    <text class="step-sublabel" x="130" y="210" text-anchor="middle">target / reference</text>
+    <text class="step-sublabel" x="130" y="224" text-anchor="middle">internal score ∈ [0,1]</text>
+
+    <rect class="dim" x="260" y="156" width="180" height="76" rx="6"/>
+    <text class="step-label" x="350" y="178" text-anchor="middle">Depth</text>
+    <text class="step-sublabel" x="350" y="196" text-anchor="middle">criteria → per-criterion</text>
+    <text class="step-sublabel" x="350" y="210" text-anchor="middle">target / reference</text>
+    <text class="step-sublabel" x="350" y="224" text-anchor="middle">internal score ∈ [0,1]</text>
+
+    <rect class="dim" x="510" y="156" width="180" height="76" rx="6"/>
+    <text class="step-label" x="600" y="178" text-anchor="middle">Instruction following</text>
+    <text class="step-sublabel" x="600" y="196" text-anchor="middle">criteria → per-criterion</text>
+    <text class="step-sublabel" x="600" y="210" text-anchor="middle">target / reference</text>
+    <text class="step-sublabel" x="600" y="224" text-anchor="middle">internal score ∈ [0,1]</text>
+
+    <rect class="dim" x="730" y="156" width="180" height="76" rx="6"/>
+    <text class="step-label" x="820" y="178" text-anchor="middle">Readability</text>
+    <text class="step-sublabel" x="820" y="196" text-anchor="middle">criteria → per-criterion</text>
+    <text class="step-sublabel" x="820" y="210" text-anchor="middle">target / reference</text>
+    <text class="step-sublabel" x="820" y="224" text-anchor="middle">internal score ∈ [0,1]</text>
+
+    <!-- Per-dimension weight labels (edge labels — fan-in arrows) -->
+    <!-- Fan-in arrows: 4 dimensions → aggregator at y=380 -->
+    <path class="edge" d="M 130 232 C 130 280, 360 320, 410 360"/>
+    <rect class="label-bg" x="170" y="288" width="100" height="14"/>
+    <text class="edge-label-mono" x="220" y="298" text-anchor="middle">w_comp · score</text>
+
+    <path class="edge" d="M 350 232 C 350 280, 420 320, 446 360"/>
+    <rect class="label-bg" x="320" y="288" width="92" height="14"/>
+    <text class="edge-label-mono" x="366" y="298" text-anchor="middle">w_depth · score</text>
+
+    <path class="edge" d="M 600 232 C 600 280, 540 320, 504 360"/>
+    <rect class="label-bg" x="510" y="288" width="100" height="14"/>
+    <text class="edge-label-mono" x="560" y="298" text-anchor="middle">w_instr · score</text>
+
+    <path class="edge" d="M 820 232 C 820 280, 600 320, 540 360"/>
+    <rect class="label-bg" x="660" y="288" width="100" height="14"/>
+    <text class="edge-label-mono" x="710" y="298" text-anchor="middle">w_read · score</text>
+
+    <!-- Aggregator -->
+    <rect class="step" x="320" y="360" width="300" height="56" rx="6"/>
+    <text class="step-label" x="470" y="382" text-anchor="middle">Weighted aggregation</text>
+    <text class="step-sublabel" x="470" y="398" text-anchor="middle">RaceWeights — sums to 1, dynamically renormalised</text>
+    <text class="step-sublabel" x="470" y="412" text-anchor="middle">internal_target vs internal_reference</text>
+
+    <!-- arrow → final_score -->
+    <line class="edge-accent" x1="470" y1="416" x2="470" y2="460"/>
+
+    <!-- Final score (focal — accent) -->
+    <rect class="step-final" x="320" y="460" width="300" height="56" rx="22"/>
+    <text class="step-label-accent" x="470" y="486" text-anchor="middle">RaceScore.final_score</text>
+    <text class="step-sublabel" x="470" y="502" text-anchor="middle">∈ [0, 1]  ·  RaceScore.to_eval_result(scenario, threshold)</text>
+
+    <!-- callout: dynamic weights -->
+    <g>
+      <rect class="callout-box" x="36" y="540" width="448" height="48" rx="3"/>
+      <rect class="callout-tag" x="36" y="540" width="180" height="20"/>
+      <text class="callout-tag-text" x="44" y="554">DYNAMIC WEIGHTS</text>
+      <text class="callout-text" x="48" y="578">Per-dimension weights and per-criterion weights are produced by the judge — not fixed in the spec.</text>
+    </g>
+
+    <!-- callout: human agreement -->
+    <g>
+      <rect class="callout-box" x="504" y="540" width="404" height="48" rx="3" style="stroke: var(--muted);"/>
+      <rect class="callout-tag" x="504" y="540" width="180" height="20" style="fill: var(--muted);"/>
+      <text class="callout-tag-text" x="512" y="554">HUMAN AGREEMENT — 71 %</text>
+      <text class="callout-text" x="516" y="578">Pairwise agreement vs. human judges measured on long-form report comparisons.</text>
+    </g>
+  </svg>
+</section>
+</body>
+</html>
