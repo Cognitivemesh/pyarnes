@@ -36,3 +36,12 @@ jobs:
         # Runs: format:check + lint + typecheck + test:cov + security
         # (defined in plugins/ci.py — the CompositePlugin's `subtasks`)
         run: uv run tasks ci
+
+      - name: Code-audit gate (HIGH findings fail CI)
+        # `audit:build` parses the configured roots once; `audit:check` runs
+        # every detector and exits non-zero on any HIGH finding (god nodes
+        # only flag, but circular imports / unused dependencies / boundary
+        # violations / complexity hotspots / duplicate blocks all promote).
+        run: |
+          uv run tasks audit:build
+          uv run tasks audit:check
