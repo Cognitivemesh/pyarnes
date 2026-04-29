@@ -2,6 +2,10 @@ Feature: Agent harness error handling
   The harness routes tool failures through a four-error taxonomy
   so the agent loop stays running whenever possible.
 
+  # This feature is the readable contract for loop behavior that old
+  # procedural runtime tests expressed indirectly.
+  # The goal here is the observable outcome of each error class.
+
   Scenario: Transient error triggers retry
     Given a tool that raises a transient error
     When the harness executes the tool

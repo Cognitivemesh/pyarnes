@@ -2,6 +2,10 @@ Feature: User acceptance — core workflows
   As a developer using pyarnes, I want to verify the key user-facing
   workflows work end-to-end so that I can trust the harness in production.
 
+  # This feature owns behavior that reads naturally as a session story:
+  # runtime wiring, lifecycle progression, and end-to-end tool execution.
+  # Keep leaf helpers in unit tests; keep adopter-visible flows here.
+
   Scenario: Agent loop executes a tool and returns a final answer
     Given a registered echo tool and a model that calls it once
     When I run the agent loop

@@ -3,6 +3,10 @@ Feature: RACE evaluation of finished research reports
   using a post-hoc LLM-as-judge, returning a normalized final score
   in [0, 1] and integrating with EvalSuite.
 
+  # This feature owns the top-level RACE semantics that adopters care about:
+  # the normalization anchor, the better-than-reference outcome, and input
+  # rejection. Fine-grained weighting and criterion mechanics stay unit-level.
+
   Scenario: Identical target and reference yield a final score of 0.5
     Given a scripted judge with uniform weights and a constant score
     When the RACE evaluator scores an identical target and reference
