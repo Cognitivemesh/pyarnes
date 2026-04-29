@@ -338,6 +338,8 @@ Evaluation flow (one `await` at a time — no concurrent judge calls):
 
 ### `FactEvaluator` — `pyarnes_swarm.bench.fact`
 
+> **Diagram:** [FACT pipeline](diagrams/07-fact-pipeline.html). Serial four-stage flow: extraction · dedup · per-claim verification · aggregate. Per-claim abstains when `sources[url]` is missing.
+
 FACT (Factual Abundance and Citation Trustworthiness) evaluates whether citations in a long-form report actually support their attached claims. Two metrics:
 
 - **Citation accuracy** = supported / (supported + unsupported) over the deduplicated claim list.
