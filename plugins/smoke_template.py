@@ -41,12 +41,12 @@ REQUIRED_FILES = (
     "docs/getting-started/installation.md",
     "docs/getting-started/quickstart.md",
     "docs/development/tasks.md",
-    ".claude/skills/python-test/SKILL.md",
+    "plugins/lint.py",
+    "plugins/test.py",
 )
 
 FORBIDDEN_PATHS = (
     "packages",
-    "tests",
     "specs",
     "template",
     "copier.yml",
@@ -74,6 +74,7 @@ def _render(repo_root: Path, dest: Path, project_name: str, project_description:
     sh.copier(
         "copy",
         "--defaults",
+        "--trust",  # the template uses `_tasks:` (post-scaffold hook); requires opt-in
         "--data",
         f"project_name={project_name}",
         "--data",

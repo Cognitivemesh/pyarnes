@@ -1,0 +1,140 @@
+"""``tasks codeburn:kpis`` — per-session KPIs across CC sessions.
+
+Renders one row per (project, session) with the KPIs from
+:func:`pyarnes_bench.burn.compute_session_kpis`.
+
+Usage::
+
+    uv run tasks codeburn:kpis
+    uv run tasks codeburn:kpis -- --project pyarnes
+    uv run tasks codeburn:kpis -- --format json
+"""
+
+from __future__ import annotations
+
+import sys
+
+from pyarnes_tasks.plugin_base import ModulePlugin
+
+
+class CodeburnKpis(ModulePlugin):
+    """``uv run tasks codeburn:kpis`` — per-session KPIs across CC sessions."""
+
+    name = "codeburn:kpis"
+    description = "Per-session KPIs across CC sessions"
+
+    def call(self, argv: list[str]) -> int:
+        """Run the codeburn:kpis task in-process."""
+        import argparse  # noqa: PLC0415
+        import json  # noqa: PLC0415
+        import pathlib  # noqa: PLC0415
+        from collections.abc import Sequence  # noqa: PLC0415
+        from decimal import Decimal  # noqa: PLC0415
+        from typing import Any  # noqa: PLC0415
+
+        sys.path.insert(0, str(pathlib.Path(__file__).parent))
+        from _codeburn_common import (  # noqa: PLC0415
+            configure_codeburn_logging,
+            filter_by_project,
+            filter_excludes,
+            load_sessions,
+            render_table,
+        )
+
+        from pyarnes_bench.burn import (  # noqa: PLC0415
+            Cost,
+            LiteLLMCostCalculator,
+            TokenUsage,
+            compute_session_kpis,
+        )
+        from pyarnes_core.observability import log_event  # noqa: PLC0415
+        from pyarnes_core.observe.logger import get_logger  # noqa: PLC0415
+        from pyarnes_harness.capture.tool_log import ToolCallEntry  # noqa: PLC0415
+
+        parser = argparse.ArgumentParser(
+            prog="tasks codeburn:kpis",
+            description="Per-session KPIs across CC sessions.",
+        )
+        parser.add_argument("--base", type=pathlib.Path, default=None, help="Override session root.")
+        parser.add_argument("--project", default=None, help="Filter to a single project slug.")
+        parser.add_argument("--exclude", action="append", default=[], help="Glob patterns to drop.")
+        parser.add_argument("--currency", default="USD", help="ISO 4217 currency label.")
+        parser.add_argument("--format", choices=["table", "json"], default="table")
+        args = parser.parse_args(argv)
+
+        configure_codeburn_logging()
+        logger = get_logger(__name__)
+
+        def _session_cost(entries: Sequence[ToolCallEntry], calculator: LiteLLMCostCalculator) -> tuple[Decimal, str]:
+            inp = sum(e.token_in or 0 for e in entries)
+            out = sum(e.token_out or 0 for e in entries)
+            model = next((e.model for e in entries if e.model), "")
+            cost = calculator.calculate(model, TokenUsage(input_tokens=inp, output_tokens=out))
+            if cost is None:
+                return Decimal(0), ""
+            return cost.amount, cost.currency
+
+        sessions = filter_excludes(filter_by_project(load_sessions(args.base), args.project), args.exclude)
+        if not sessions:
+            print("No sessions found.", file=sys.stderr)  # noqa: T201
+            return 0
+
+        calculator = LiteLLMCostCalculator(currency=args.currency)
+        rows: list[dict[str, Any]] = []
+        grand_calls = 0
+        grand_cost = Decimal(0)
+        for s in sessions:
+            amount, currency = _session_cost(s.entries, calculator)
+            cost = Cost(amount=amount, currency=currency or args.currency)
+            kpis = compute_session_kpis(
+                list(s.entries),
+                session_id=s.session_id,
+                project=s.project,
+                cost=cost,
+            )
+            log_event(
+                logger,
+                "codeburn.kpis.computed",
+                session_id=kpis.session_id,
+                one_shot_rate=kpis.one_shot_rate,
+                retry_loops=kpis.retry_loops,
+                cache_hit_rate=kpis.cache_hit_rate,
+                cost_total=str(kpis.cost_total),
+            )
+            grand_calls += kpis.total_calls
+            grand_cost += kpis.cost_total
+            rows.append(
+                {
+                    "project": s.project,
+                    "session": s.session_id[:12],
+                    "calls": kpis.total_calls,
+                    "tools": kpis.unique_tools,
+                    "one-shot": f"{kpis.one_shot_rate:.2f}",
+                    "retries": kpis.retry_loops,
+                    "cache-hit": f"{kpis.cache_hit_rate:.2f}",
+                    "r/e": f"{kpis.read_edit_ratio:.2f}",
+                    "cost": f"{kpis.cost_total:.4f} {args.currency}",
+                }
+            )
+
+        totals = {
+            "project": "TOTAL",
+            "session": "",
+            "calls": str(grand_calls),
+            "tools": "",
+            "one-shot": "",
+            "retries": "",
+            "cache-hit": "",
+            "r/e": "",
+            "cost": f"{grand_cost:.4f} {args.currency}",
+        }
+
+        if args.format == "json":
+            payload = {"currency": args.currency, "sessions": rows, "totals": totals}
+            print(json.dumps(payload, indent=2))  # noqa: T201
+            return 0
+
+        print(f"\nSessions: {len(sessions)}  |  Currency: {args.currency}\n")  # noqa: T201
+        render_table(rows, totals)
+        print()  # noqa: T201
+        return 0
