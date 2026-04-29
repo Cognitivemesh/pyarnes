@@ -9,6 +9,7 @@ Missing paths are dropped from each command line, so a fresh project with no
 
 from __future__ import annotations
 
+import shutil
 import subprocess  # nosec B404
 import sys
 import tomllib
@@ -110,8 +111,8 @@ def _build_tasks() -> tuple[dict[str, list[str]], Path]:
         # Burn: token cost report across AI coding sessions.
         "burn:report": [py, "-m", "pyarnes_tasks.burn_report"],
         # Codeburn: KPIs, model comparison, and waste-detection scan.
-        "codeburn:kpis":     [py, "-m", "pyarnes_tasks.codeburn_kpis"],
-        "codeburn:compare":  [py, "-m", "pyarnes_tasks.codeburn_compare"],
+        "codeburn:kpis": [py, "-m", "pyarnes_tasks.codeburn_kpis"],
+        "codeburn:compare": [py, "-m", "pyarnes_tasks.codeburn_compare"],
         "codeburn:optimize": [py, "-m", "pyarnes_tasks.codeburn_optimize"],
         # Observer: stream and filter structured JSONL logs.
         "observer:tail": [py, "-m", "pyarnes_tasks.observer_tail"],
@@ -149,7 +150,7 @@ def _print_help(tasks: dict[str, list[str]]) -> None:
         print(f"  {comp:<16} -> {' + '.join(parts)}")  # noqa: T201
 
 
-def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: tuple[str, ...] = ()) -> int:
+def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: tuple[str, ...] = ()) -> int:  # noqa: PLR0911
     # Composite tasks ignore `extra` — they dispatch to sub-tasks that each take their own args.
     if name in COMPOSITE_TASKS:
         for sub in COMPOSITE_TASKS[name]:
@@ -164,7 +165,6 @@ def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: tuple[s
         _print_help(tasks)
         return 1
 
-    import shutil
     if name in {"graph:render", "graph:blast"} and not shutil.which(cmd[0]):
         print(f"\nMissing graph binary: {cmd[0]}", file=sys.stderr)  # noqa: T201
         print(f"To run {name}, you must install the optional graph tools.", file=sys.stderr)  # noqa: T201

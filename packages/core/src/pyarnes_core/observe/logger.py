@@ -76,9 +76,7 @@ def _json_sink(message: Any) -> None:
 _active_stream: ContextVar[TextIO] = ContextVar("_active_stream", default=sys.stderr)
 
 # Per-task scrub callable — isolated per asyncio Task via ContextVar.
-_active_scrub: ContextVar[Callable[[dict[str, Any]], dict[str, Any]] | None] = ContextVar(
-    "_active_scrub", default=None
-)
+_active_scrub: ContextVar[Callable[[dict[str, Any]], dict[str, Any]] | None] = ContextVar("_active_scrub", default=None)
 
 
 def configure_logging(  # noqa: PLR0913

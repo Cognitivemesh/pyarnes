@@ -188,14 +188,16 @@ def main() -> int:
     totals: dict[str, Any] = {"project": "TOTAL"}
     if args.by_model:
         totals["model_family"] = ""
-    totals.update({
-        "sessions": str(len(sessions_all)),
-        "input": f"{grand_usage.input_tokens:,}",
-        "output": f"{grand_usage.output_tokens:,}",
-        "cache-create": f"{grand_usage.cache_creation_tokens:,}",
-        "cache-read": f"{grand_usage.cache_read_tokens:,}",
-        "cost": f"{grand_cost:.4f} {args.currency}",
-    })
+    totals.update(
+        {
+            "sessions": str(len(sessions_all)),
+            "input": f"{grand_usage.input_tokens:,}",
+            "output": f"{grand_usage.output_tokens:,}",
+            "cache-create": f"{grand_usage.cache_creation_tokens:,}",
+            "cache-read": f"{grand_usage.cache_read_tokens:,}",
+            "cost": f"{grand_cost:.4f} {args.currency}",
+        }
+    )
 
     if args.format == "json":
         payload = {

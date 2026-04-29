@@ -116,6 +116,7 @@ class AgentRuntime:
             )
 
         from pyarnes_core.observe.logger import get_logger  # noqa: PLC0415 — deferred to avoid init-time side effects
+
         _log = get_logger(__name__)
 
         lifecycle = Lifecycle()

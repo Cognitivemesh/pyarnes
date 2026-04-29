@@ -122,11 +122,7 @@ def _classify_bash(entry: ToolCallEntry) -> TaskKind:
 
 def _classify_edit(entry: ToolCallEntry) -> TaskKind:
     args = entry.arguments if isinstance(entry.arguments, dict) else {}
-    blob = " ".join(
-        v.lower()
-        for v in args.values()
-        if isinstance(v, str)
-    )
+    blob = " ".join(v.lower() for v in args.values() if isinstance(v, str))
     if any(tok in blob for tok in _REFACTOR_TOKENS):
         return TaskKind.REFACTOR
     return TaskKind.CODING

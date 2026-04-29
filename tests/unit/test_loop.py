@@ -343,10 +343,7 @@ class TestRetryDelayPrecision:
                 call_count["n"] += 1
                 return "echo"
 
-        actions = [
-            {"type": "tool_call", "tool": "echo", "id": f"e{i}", "arguments": {}}
-            for i in range(max_iter + 5)
-        ]
+        actions = [{"type": "tool_call", "tool": "echo", "id": f"e{i}", "arguments": {}} for i in range(max_iter + 5)]
         model = FakeModel(actions=actions)
         loop = AgentLoop(
             tools={"echo": CountingEcho()},
@@ -570,9 +567,7 @@ class TestErrorRegistryIntegration:
         registry.register(_CustomHarnessError, bad_handler)  # type: ignore[arg-type]
 
         tool = FailingTool(exc=_CustomHarnessError(message="trigger"))
-        model = FakeModel(
-            actions=[{"type": "tool_call", "tool": "t", "id": "c4", "arguments": {}}]
-        )
+        model = FakeModel(actions=[{"type": "tool_call", "tool": "t", "id": "c4", "arguments": {}}])
         loop = AgentLoop(tools={"t": tool}, model=model, error_registry=registry)
         with pytest.raises(UnexpectedError, match=r"str.*expected ToolMessage"):
             await loop.run([])

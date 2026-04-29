@@ -55,7 +55,7 @@ class SessionKpis:
     cost_total: Decimal
     currency: str
     cost_by_bucket: dict[str, Decimal]  # TaskKind.value -> Decimal
-    cost_by_tool: dict[str, Decimal]    # canonical tool   -> Decimal
+    cost_by_tool: dict[str, Decimal]  # canonical tool   -> Decimal
 
     def as_dict(self) -> dict[str, Any]:
         """Serialise to a plain dict (suitable for JSON output).
@@ -137,9 +137,7 @@ def _one_shot_rate(
     if not edits:
         return 0.0
     one_shots = sum(
-        1
-        for i, edit in edits
-        if _is_one_shot(edit, entries[i + 1 : i + 1 + window], canonical[i + 1 : i + 1 + window])
+        1 for i, edit in edits if _is_one_shot(edit, entries[i + 1 : i + 1 + window], canonical[i + 1 : i + 1 + window])
     )
     return one_shots / len(edits)
 
@@ -153,9 +151,7 @@ def _is_one_shot(
     for j, tool in enumerate(follow_canonical):
         if tool in {"Edit", "Write"}:
             other = (
-                follow_entries[j].arguments.get("file_path")
-                if isinstance(follow_entries[j].arguments, dict)
-                else None
+                follow_entries[j].arguments.get("file_path") if isinstance(follow_entries[j].arguments, dict) else None
             )
             if other == target:
                 return False

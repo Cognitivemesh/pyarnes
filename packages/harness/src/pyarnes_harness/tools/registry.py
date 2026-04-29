@@ -37,6 +37,7 @@ class ToolSchema:
     description: str
     parameters: dict[str, Any]
 
+
 _T = TypeVar("_T")
 
 logger = get_logger(__name__)
@@ -160,9 +161,9 @@ def tool(name: str) -> type[_T]:  # type: ignore[return]
 
         @tool("read_file")
         class ReadFileTool:
-            async def execute(self, arguments):
-                ...
+            async def execute(self, arguments): ...
     """
+
     def decorator(cls: type[_T]) -> type[_T]:
         _global.register(name, cls())  # type: ignore[arg-type]
         return cls

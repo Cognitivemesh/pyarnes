@@ -83,14 +83,14 @@ def _kpis_for_session(
 
 def _render_comparison(comp: ModelComparison, currency: str) -> None:
     rows = [
-        ("model",            comp.a.model,                          comp.b.model),
-        ("sessions",         str(comp.a.sessions),                  str(comp.b.sessions)),
-        ("calls",            str(comp.a.total_calls),               str(comp.b.total_calls)),
-        ("avg one-shot",     f"{comp.a.avg_one_shot_rate:.2f}",     f"{comp.b.avg_one_shot_rate:.2f}"),
-        ("retry loops",      str(comp.a.total_retry_loops),         str(comp.b.total_retry_loops)),
-        ("avg cache-hit",    f"{comp.a.avg_cache_hit_rate:.2f}",    f"{comp.b.avg_cache_hit_rate:.2f}"),
-        ("cost total",       f"{comp.a.cost_total:.4f} {currency}", f"{comp.b.cost_total:.4f} {currency}"),
-        ("cost per call",    f"{comp.a.cost_per_call:.6f}",         f"{comp.b.cost_per_call:.6f}"),
+        ("model", comp.a.model, comp.b.model),
+        ("sessions", str(comp.a.sessions), str(comp.b.sessions)),
+        ("calls", str(comp.a.total_calls), str(comp.b.total_calls)),
+        ("avg one-shot", f"{comp.a.avg_one_shot_rate:.2f}", f"{comp.b.avg_one_shot_rate:.2f}"),
+        ("retry loops", str(comp.a.total_retry_loops), str(comp.b.total_retry_loops)),
+        ("avg cache-hit", f"{comp.a.avg_cache_hit_rate:.2f}", f"{comp.b.avg_cache_hit_rate:.2f}"),
+        ("cost total", f"{comp.a.cost_total:.4f} {currency}", f"{comp.b.cost_total:.4f} {currency}"),
+        ("cost per call", f"{comp.a.cost_per_call:.6f}", f"{comp.b.cost_per_call:.6f}"),
     ]
     width = max(len(r[0]) for r in rows)
     cola = max(len(r[1]) for r in rows)

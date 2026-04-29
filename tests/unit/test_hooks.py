@@ -26,17 +26,13 @@ async def _veto_pre(tool: str, arguments: dict[str, Any]) -> dict[str, Any] | No
     raise LLMRecoverableError(message="vetoed by pre-hook")
 
 
-async def _append_post(
-    tool: str, arguments: dict[str, Any], result: Any, is_error: bool
-) -> Any:
+async def _append_post(tool: str, arguments: dict[str, Any], result: Any, is_error: bool) -> Any:
     if isinstance(result, str):
         return result + "_appended"
     return result
 
 
-async def _error_override_post(
-    tool: str, arguments: dict[str, Any], result: Any, is_error: bool
-) -> Any:
+async def _error_override_post(tool: str, arguments: dict[str, Any], result: Any, is_error: bool) -> Any:
     if is_error:
         return "recovered"
     return result

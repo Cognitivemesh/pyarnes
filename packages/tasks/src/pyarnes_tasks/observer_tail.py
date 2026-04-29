@@ -23,11 +23,11 @@ from typing import Any
 
 # ANSI level colours — dim for debug, bold red for critical.
 _LEVEL_COLOUR: dict[str, str] = {
-    "debug": "\033[2m",       # dim
-    "info": "\033[36m",       # cyan
-    "warning": "\033[33m",    # yellow
-    "error": "\033[31m",      # red
-    "critical": "\033[1;31m", # bold red
+    "debug": "\033[2m",  # dim
+    "info": "\033[36m",  # cyan
+    "warning": "\033[33m",  # yellow
+    "error": "\033[31m",  # red
+    "critical": "\033[1;31m",  # bold red
 }
 _RESET = "\033[0m"
 

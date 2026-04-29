@@ -20,10 +20,7 @@ async def _prepend_system(messages: list[dict[str, Any]]) -> list[dict[str, Any]
 
 
 async def _uppercase_content(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [
-        {**m, "content": m["content"].upper()} if isinstance(m.get("content"), str) else m
-        for m in messages
-    ]
+    return [{**m, "content": m["content"].upper()} if isinstance(m.get("content"), str) else m for m in messages]
 
 
 # ── TransformChain tests ───────────────────────────────────────────────────
@@ -79,6 +76,7 @@ async def test_original_messages_not_mutated() -> None:
 @pytest.mark.asyncio
 async def test_callable_transformer_accepted() -> None:
     """Any async callable matching the transformer signature works."""
+
     async def noop(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return messages
 

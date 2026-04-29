@@ -106,9 +106,4 @@ def filter_excludes(
     """Drop sessions whose project slug matches any glob in *patterns*."""
     if not patterns:
         return list(sessions)
-    return [
-        s for s in sessions
-        if not any(fnmatch.fnmatchcase(s.project, pat) for pat in patterns)
-    ]
-
-
+    return [s for s in sessions if not any(fnmatch.fnmatchcase(s.project, pat) for pat in patterns)]

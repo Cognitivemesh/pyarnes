@@ -99,7 +99,7 @@ async def test_custom_config_passed_to_compact() -> None:
     model.next_action = AsyncMock(side_effect=fake_next_action)
 
     old = [_make_user("a" * 4000), _make_assistant("b" * 4000)]  # 2000 tok
-    recent = [_make_user("keep me")]                              # ~2 tok
+    recent = [_make_user("keep me")]  # ~2 tok
     msgs = old + recent
 
     compressor = ContextCompressor(

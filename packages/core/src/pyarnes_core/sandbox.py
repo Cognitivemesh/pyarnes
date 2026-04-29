@@ -77,8 +77,7 @@ class RestrictedPythonSandbox:
             import RestrictedPython  # noqa: PLC0415, F401
         except ImportError as exc:
             raise ImportError(
-                "RestrictedPythonSandbox requires 'restrictedpython': "
-                "pip install restrictedpython"
+                "RestrictedPythonSandbox requires 'restrictedpython': pip install restrictedpython"
             ) from exc
 
     async def enter(self) -> None:  # noqa: D102
@@ -113,9 +112,7 @@ class SeccompSandbox:
         try:
             import seccomp  # noqa: PLC0415, F401
         except ImportError as exc:
-            raise ImportError(
-                "SeccompSandbox requires 'seccomp' on Linux: pip install seccomp"
-            ) from exc
+            raise ImportError("SeccompSandbox requires 'seccomp' on Linux: pip install seccomp") from exc
 
     async def enter(self) -> None:  # noqa: D102
         if sys.platform != "linux":
