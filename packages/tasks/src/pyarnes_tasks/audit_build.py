@@ -9,6 +9,7 @@ from pyarnes_tasks._audit_common import bootstrap
 
 
 def main() -> int:
+    """Parse the configured roots and persist the audit graph to disk."""
     ctx = bootstrap("tasks audit:build")
     graph = build_graph(
         config=ctx.config,

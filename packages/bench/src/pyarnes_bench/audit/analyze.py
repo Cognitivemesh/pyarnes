@@ -53,7 +53,7 @@ def _node_community_map(communities: list[set[str]]) -> dict[str, int]:
 def surprising_connections(graph: nx.DiGraph, *, top_n: int = 10) -> list[dict[str, str | int]]:
     """Edges that bridge distinct communities — a proxy for unexpected coupling."""
     communities = _undirected_communities(graph)
-    if len(communities) < 2:
+    if len(communities) < 2:  # noqa: PLR2004  # need ≥2 communities to detect cross-community bridges
         return []
     membership = _node_community_map(communities)
     bridges: list[dict[str, str | int]] = []
@@ -91,7 +91,7 @@ def _bridge_nodes(graph: nx.DiGraph, *, top_n: int) -> list[tuple[str, float]]:
 def _isolated_components(graph: nx.DiGraph) -> Iterable[set[str]]:
     components = nx.weakly_connected_components(graph)
     for comp in components:
-        if 1 <= len(comp) <= 2:  # genuinely tiny — surface-able
+        if 1 <= len(comp) <= 2:  # noqa: PLR2004  # genuinely tiny — surface-able
             yield comp
 
 
@@ -103,21 +103,18 @@ def suggested_questions(graph: nx.DiGraph, *, top_n: int = 7) -> list[str]:
         name = graph.nodes[node].get("name", node)
         if score > 0:
             questions.append(
-                f"`{name}` sits on the highest-betweenness path "
-                f"(score {score:.3f}); is the coupling intentional?"
+                f"`{name}` sits on the highest-betweenness path (score {score:.3f}); is the coupling intentional?"
             )
 
     for entry in god_nodes(graph, top_n=3):
-        questions.append(
-            f"`{entry['name']}` has total degree {entry['total_degree']} — "
-            f"is it a god object that should be split?"
+        questions.append(  # noqa: PERF401  # the loop reads better than a comprehension here
+            f"`{entry['name']}` has total degree {entry['total_degree']} — is it a god object that should be split?"
         )
 
     isolated = list(_isolated_components(graph))
     if isolated:
         questions.append(
-            f"{len(isolated)} weakly-connected components have <= 2 nodes; "
-            "are they orphans that can be removed?"
+            f"{len(isolated)} weakly-connected components have <= 2 nodes; are they orphans that can be removed?"
         )
 
     return questions[:top_n]

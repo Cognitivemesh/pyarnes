@@ -74,7 +74,7 @@ def detect_duplicates(graph: nx.DiGraph, *, min_tokens: int) -> list[Finding]:
 
     findings: list[Finding] = []
     for digest, ids in by_hash.items():
-        if len(ids) < 2:
+        if len(ids) < 2:  # noqa: PLR2004  # need ≥2 nodes for a duplicate group
             continue
         # Report once per duplicate group keyed by the first id; the rest of
         # the group is in `detail.duplicates` so a fixer knows what to merge.

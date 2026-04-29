@@ -151,7 +151,7 @@ def global_registry() -> ToolRegistry:
     return _global
 
 
-def tool(name: str) -> type[_T]:  # type: ignore[return]
+def tool(name: str) -> type[_T]:  # type: ignore[return]  # ty: ignore[invalid-return-type]
     """Class decorator that registers the decorated class in the global registry.
 
     The class is instantiated with no arguments on decoration, so tool classes
@@ -165,7 +165,7 @@ def tool(name: str) -> type[_T]:  # type: ignore[return]
     """
 
     def decorator(cls: type[_T]) -> type[_T]:
-        _global.register(name, cls())  # type: ignore[arg-type]
+        _global.register(name, cls())  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
         return cls
 
-    return decorator  # type: ignore[return-value]
+    return decorator  # type: ignore[return-value]  # ty: ignore[invalid-return-type]

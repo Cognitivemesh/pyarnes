@@ -50,7 +50,7 @@ def summarize(findings: Iterable[Finding]) -> FindingSummary:
     by_severity = Counter(f.severity for f in findings)
     return FindingSummary(
         total=len(findings),
-        by_category=dict(by_category),
-        by_severity=dict(by_severity),
+        by_category=dict(by_category),  # ty: ignore[no-matching-overload]
+        by_severity=dict(by_severity),  # ty: ignore[no-matching-overload]
         has_high=by_severity.get("high", 0) > 0,
     )
