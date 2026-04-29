@@ -124,7 +124,7 @@ AgentLoop.run()
     │        │
     │        ▼
     │   GuardrailChain.check()
-    │        │ violation → UserFixableError (bubble up to human)
+    │        │ violation → varies per rule (e.g. InjectionGuardrail → LLMRecoverableError → ToolMessage; PathGuardrail → UserFixableError → interrupt)
     │        │
     │        ▼
     │   ToolHandler.execute()
