@@ -1,9 +1,8 @@
-"""Tests for the cli dispatch — registry takes precedence over the legacy dict."""
+"""Tests for the cli dispatch — registry-only path."""
 
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -22,32 +21,36 @@ def _isolate_global_registry():
         global_registry().register(name, plugin)
 
 
-def test_registry_takes_precedence_over_legacy_dict(tmp_path: Path) -> None:
+def test_dispatch_runs_registered_plugin(tmp_path: Path) -> None:
     calls: list[str] = []
 
-    class FakeLint(ModulePlugin):
+    class Lint(ModulePlugin):
         name = "lint"
 
         def call(self, argv: list[str]) -> int:
-            calls.append("plugin")
             _ = argv
+            calls.append("plugin")
             return 0
 
-    legacy = {"lint": ["echo", "legacy"]}
-    code = cli._dispatch("lint", legacy, tmp_path, extra=())
+    code = cli._dispatch("lint", tmp_path, extra=())
     assert code == 0
     assert calls == ["plugin"]
 
 
-def test_falls_back_to_legacy_dict_when_no_plugin(tmp_path: Path) -> None:
-    legacy = {"lint": ["echo", "legacy"]}
-    with patch("pyarnes_tasks.cli.subprocess.run") as run:
-        run.return_value.returncode = 0
-        code = cli._dispatch("lint", legacy, tmp_path, extra=())
-    assert code == 0
-    run.assert_called_once()
-
-
-def test_unknown_task_returns_nonzero(tmp_path: Path) -> None:
-    code = cli._dispatch("does-not-exist", {}, tmp_path, extra=())
+def test_dispatch_unknown_task_returns_nonzero(tmp_path: Path) -> None:
+    code = cli._dispatch("does-not-exist", tmp_path, extra=())
     assert code != 0
+
+
+def test_dispatch_forwards_extra_args(tmp_path: Path) -> None:
+    captured: dict = {}
+
+    class Lint(ModulePlugin):
+        name = "lint"
+
+        def call(self, argv: list[str]) -> int:
+            captured["argv"] = argv
+            return 0
+
+    cli._dispatch("lint", tmp_path, extra=("--fix", "x"))
+    assert captured["argv"] == ["--fix", "x"]
