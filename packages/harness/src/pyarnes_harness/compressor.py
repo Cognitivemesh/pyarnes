@@ -10,8 +10,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from pyarnes_core.observability import estimate_tokens
 from pyarnes_core.types import ModelClient
-from pyarnes_harness.compaction import CompactionConfig, _estimate_tokens, compact
+from pyarnes_harness.compaction import CompactionConfig, compact
 
 __all__ = ["ContextCompressor"]
 
@@ -35,7 +36,7 @@ class ContextCompressor:
 
     async def __call__(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Return compacted messages if above threshold, otherwise pass through."""
-        used = _estimate_tokens(messages, self.config.tokens_per_char)
+        used = estimate_tokens(messages)
         if used < self.context_window * self.capacity_threshold:
             return messages
         return await compact(messages, self.model, self.config)

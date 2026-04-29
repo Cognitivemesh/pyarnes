@@ -160,9 +160,9 @@ venv.bak/
 # mkdocs documentation
 /site
 
-# Graph tools (opt-in via `uv sync --group graph`)
+# Audit graph artefacts (pyarnes_bench.audit)
+.pyarnes/
 docs/assets/graph/
-.code-review-graph/
 
 # mypy
 .mypy_cache/

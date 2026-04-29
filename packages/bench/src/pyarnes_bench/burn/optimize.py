@@ -24,6 +24,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+from pyarnes_core.observability import estimate_tokens
+
 from pyarnes_bench.burn.normalize import normalize_tool
 from pyarnes_bench.burn.types import Cost
 from pyarnes_core.atomic_write import write_private
@@ -208,7 +210,7 @@ def detect_uncapped_bash(
                     severity=Severity.MEDIUM,
                     title=f"Bash output {len(result):,} bytes (no head/tail)",
                     detail="Large Bash outputs blow up context; cap with `| head -n 200` or pipe through `wc`.",
-                    est_tokens_saved=len(result) // 4,
+                    est_tokens_saved=estimate_tokens(result),
                     fix=f"Run `{cmd} | head -n 200` (or similar) instead.",
                     evidence=[s.session_id],
                 )

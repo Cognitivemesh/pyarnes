@@ -18,9 +18,11 @@ from pyarnes_core.observability.events import (
     log_tool_call,
 )
 from pyarnes_core.observability.jsonable import dumps, to_jsonable
+from pyarnes_core.observability.tokens import estimate_tokens
 
 __all__ = [
     "dumps",
+    "estimate_tokens",
     "iso_now",
     "log_error",
     "log_event",

@@ -17,6 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from pyarnes_core.observability import estimate_tokens
 from pyarnes_core.types import ModelClient
 
 __all__ = [
@@ -38,13 +39,11 @@ class CompactionConfig:
             the cut-finder; available for callers that compute context limits).
         min_savings_ratio: Skip compaction when the summary saves less than
             this fraction of the total token count.
-        tokens_per_char: Rough char-to-token ratio used by ``_estimate_tokens``.
     """
 
     keep_recent_tokens: int = 20_000
     reserve_tokens: int = 16_000
     min_savings_ratio: float = 0.10
-    tokens_per_char: float = 0.25
 
 
 @dataclass
@@ -67,21 +66,7 @@ class CompactionTransformer:
 # ── Internal helpers ────────────────────────────────────────────────────────
 
 
-def _estimate_tokens(messages: list[dict[str, Any]], tokens_per_char: float = 0.25) -> int:
-    """Estimate total token count from message content lengths."""
-    total = 0
-    for msg in messages:
-        content = msg.get("content")
-        if isinstance(content, str):
-            total += int(len(content) * tokens_per_char)
-    return total
-
-
-def _find_cut_index(
-    messages: list[dict[str, Any]],
-    keep_tokens: int,
-    tokens_per_char: float = 0.25,
-) -> int:
+def _find_cut_index(messages: list[dict[str, Any]], keep_tokens: int) -> int:
     """Backward scan returning the index of the first message to keep.
 
     Returns 0 when all messages fit within *keep_tokens* (no compaction needed).
@@ -91,7 +76,6 @@ def _find_cut_index(
     Args:
         messages: Full message history.
         keep_tokens: Maximum tokens to keep intact.
-        tokens_per_char: Char-to-token ratio for estimation.
 
     Returns:
         Index of the first message in the kept (recent) segment.
@@ -101,7 +85,7 @@ def _find_cut_index(
 
     accumulated = 0
     for i in range(len(messages) - 1, -1, -1):
-        msg_tokens = _estimate_tokens([messages[i]], tokens_per_char)
+        msg_tokens = estimate_tokens(messages[i])
         if accumulated + msg_tokens > keep_tokens:
             cut = i + 1
             # Maintain pair integrity: if the kept segment starts with an orphan
@@ -156,7 +140,7 @@ async def compact(
     Returns:
         Compacted message list, or the original if compaction is not beneficial.
     """
-    cut = _find_cut_index(messages, config.keep_recent_tokens, config.tokens_per_char)
+    cut = _find_cut_index(messages, config.keep_recent_tokens)
     if cut == 0:
         return messages
 
@@ -166,8 +150,8 @@ async def compact(
     summary = await _summarize_segment(old_segment, model)
     compacted = [summary, *recent_segment]
 
-    original_tokens = _estimate_tokens(messages, config.tokens_per_char)
-    compacted_tokens = _estimate_tokens(compacted, config.tokens_per_char)
+    original_tokens = estimate_tokens(messages)
+    compacted_tokens = estimate_tokens(compacted)
     if original_tokens == 0:
         return messages
     savings_ratio = (original_tokens - compacted_tokens) / original_tokens
