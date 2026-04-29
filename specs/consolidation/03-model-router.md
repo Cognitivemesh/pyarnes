@@ -83,7 +83,7 @@ router = RuleBasedRouter([
 ```
 
 ## `LLMCostRouter` — cost-aware via LiteLLM
-
+ 
 > **Diagram:** [LLMCostRouter pipeline](diagrams/03-router-pipeline.html). Two sequential filters narrow candidates; cost sort picks the cheapest survivor; `UserFixableError` if none remain.
 
 Uses `litellm.model_cost` to estimate cost **before dispatching**. Routing applies two sequential filters:

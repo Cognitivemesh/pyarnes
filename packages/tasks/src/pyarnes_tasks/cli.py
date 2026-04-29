@@ -1,7 +1,8 @@
 """Cross-platform task runner — replaces Make.
 
 Tasks are built dynamically from ``[tool.pyarnes-tasks]`` in the nearest
-``pyproject.toml``. See ``packages/tasks/README.md`` for the full reference.
+``pyproject.toml``. See ``packages/tasks/README.md`` for the package overview
+and run ``uv run tasks help`` for the current command list.
 
 Missing paths are dropped from each command line, so a fresh project with no
 ``tests/`` directory still gets a working ``uv run tasks check``.
