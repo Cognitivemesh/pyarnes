@@ -15,6 +15,7 @@ from pyarnes_tasks._audit_common import bootstrap
 
 
 def main() -> int:
+    """Print god nodes, surprising connections, and suggested review questions."""
     ctx = bootstrap("tasks audit:analyze")
     graph_path = ctx.config.graph_path
     if not graph_path.is_file():

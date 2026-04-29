@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-PreToolUse hook: block destructive shell commands.
+"""PreToolUse hook: block destructive shell commands.
 
 Reads a JSON hook payload from stdin. If the tool is Bash and the command
 matches a known-dangerous pattern, exits with code 2 to block execution.
@@ -45,7 +44,7 @@ if tool.lower() == "bash" and cmd:
                     ),
                 }
             }
-            print(json.dumps(result))
+            print(json.dumps(result))  # noqa: T201  # hook contract: emit JSON decision on stdout
             sys.exit(0)
 
 sys.exit(0)

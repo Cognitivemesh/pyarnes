@@ -81,7 +81,7 @@ def log_audit_indexed(  # noqa: PLR0913
     )
 
 
-def log_audit_analyzed(
+def log_audit_analyzed(  # noqa: PLR0913  # observability event: every kwarg is required for trace correlation
     logger: LoggerPort,
     kind: AuditAnalysisKind,
     *,

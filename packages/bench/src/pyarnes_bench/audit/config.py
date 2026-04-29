@@ -57,20 +57,20 @@ class AuditConfig:
         graph_path = root / graph_path_str
 
         roots_raw = table.get("roots", _DEFAULT_ROOTS)
-        roots = [str(r) for r in roots_raw if isinstance(r, str)] or list(_DEFAULT_ROOTS)
+        roots = [str(r) for r in roots_raw if isinstance(r, str)] or list(_DEFAULT_ROOTS)  # ty: ignore[not-iterable]
 
         exclude_raw = table.get("exclude", _DEFAULT_EXCLUDE)
-        exclude = [str(e) for e in exclude_raw if isinstance(e, str)] or list(_DEFAULT_EXCLUDE)
+        exclude = [str(e) for e in exclude_raw if isinstance(e, str)] or list(_DEFAULT_EXCLUDE)  # ty: ignore[not-iterable]
 
         forbidden_raw = table.get("forbidden_edges", [])
         forbidden_edges: list[tuple[str, str]] = [
             (str(pair[0]), str(pair[1]))
-            for pair in forbidden_raw
-            if isinstance(pair, (list, tuple)) and len(pair) == 2
+            for pair in forbidden_raw  # ty: ignore[not-iterable]
+            if isinstance(pair, (list, tuple)) and len(pair) == 2  # noqa: PLR2004  # forbidden_edges is a [src, dst] pair
         ]
 
         flag_pattern = str(table.get("flag_pattern", _DEFAULT_FLAG_PATTERN))
-        duplicate_min_tokens = int(table.get("duplicate_min_tokens", _DEFAULT_DUPLICATE_MIN_TOKENS))
+        duplicate_min_tokens = int(table.get("duplicate_min_tokens", _DEFAULT_DUPLICATE_MIN_TOKENS))  # ty: ignore[invalid-argument-type]
 
         return cls(
             project_root=root,

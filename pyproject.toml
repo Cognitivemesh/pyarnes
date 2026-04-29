@@ -219,6 +219,12 @@ python-version = "3.13"
 [tool.ty.src]
 include = ["packages"]
 
+[tool.ty.rules]
+# Optional deps (libcst, opentelemetry, anthropic, RestrictedPython, pywhat) are
+# imported behind runtime guards; ty cannot follow those, so demote the noisy
+# unresolved-import errors to warnings instead of failing CI.
+unresolved-import = "warn"
+
 # ---------------------------------------------------------------------------
 # pytest
 # ---------------------------------------------------------------------------

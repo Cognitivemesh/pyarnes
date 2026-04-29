@@ -24,9 +24,8 @@ from pyarnes_bench.audit.boundaries import check_boundaries
 from pyarnes_bench.audit.config import AuditConfig
 from pyarnes_bench.audit.duplicates import detect_duplicates
 from pyarnes_bench.audit.events import log_audit_finding
-from pyarnes_core.observability.ports import LoggerPort
-
 from pyarnes_bench.audit.findings import Finding
+from pyarnes_core.observability.ports import LoggerPort
 
 __all__ = ["audit_graph"]
 
@@ -114,7 +113,7 @@ def _circular_imports(graph: nx.DiGraph) -> list[Finding]:
     cycles = list(nx.simple_cycles(import_subgraph))
     findings: list[Finding] = []
     for cycle in cycles:
-        if len(cycle) < 2:
+        if len(cycle) < 2:  # noqa: PLR2004  # self-loops aren't real cycles
             continue
         findings.append(
             Finding(
@@ -130,7 +129,7 @@ def _circular_imports(graph: nx.DiGraph) -> list[Finding]:
 def _complexity_hotspots(config: AuditConfig) -> list[Finding]:
     cmd = [sys.executable, "-m", "radon", "cc", "--min", "C", "--json", *config.roots]
     try:
-        result = subprocess.run(  # nosec B603
+        result = subprocess.run(  # noqa: S603  # invokes pinned dev tooling (radon / vulture)
             cmd,
             cwd=str(config.project_root),
             check=False,
@@ -167,10 +166,10 @@ def _complexity_hotspots(config: AuditConfig) -> list[Finding]:
     return findings
 
 
-def _unused_exports(graph: nx.DiGraph, config: AuditConfig) -> list[Finding]:
+def _unused_exports(graph: nx.DiGraph, config: AuditConfig) -> list[Finding]:  # noqa: ARG001  # graph reserved for future graph-aware filtering
     cmd = [sys.executable, "-m", "vulture", "--min-confidence", "80", *config.roots]
     try:
-        result = subprocess.run(  # nosec B603
+        result = subprocess.run(  # noqa: S603  # invokes pinned dev tooling (radon / vulture)
             cmd,
             cwd=str(config.project_root),
             check=False,

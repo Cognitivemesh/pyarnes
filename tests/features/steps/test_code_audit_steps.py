@@ -8,7 +8,7 @@ from typing import Any
 
 from pytest_bdd import given, scenario, then, when
 
-from pyarnes_bench.audit import AuditConfig, audit_graph, build_graph, load_graph
+from pyarnes_bench.audit import AuditConfig, audit_graph, build_graph, load_graph, save_graph
 from pyarnes_bench.audit.findings import Finding
 from pyarnes_core.observe.logger import LogFormat, configure_logging, get_logger
 
@@ -87,8 +87,6 @@ def _synthetic_cycle(tmp_path: Path) -> dict[str, Any]:
 
 @given("the audit graph has been built")
 def _graph_already_built(project: dict[str, Any]) -> None:
-    from pyarnes_bench.audit import save_graph
-
     cfg: AuditConfig = project["config"]
     logger, _ = _logger()
     graph = build_graph(config=cfg, logger=logger, session_id="s", trace_id="t", step=0)
@@ -98,8 +96,6 @@ def _graph_already_built(project: dict[str, Any]) -> None:
 
 @when("I build the audit graph")
 def _build(project: dict[str, Any]) -> None:
-    from pyarnes_bench.audit import save_graph
-
     cfg: AuditConfig = project["config"]
     logger, _ = _logger()
     graph = build_graph(config=cfg, logger=logger, session_id="s", trace_id="t", step=0)

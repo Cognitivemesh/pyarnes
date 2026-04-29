@@ -14,10 +14,10 @@ swap in another grammar without rewriting the audits.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import tree_sitter_python as tsp
-from tree_sitter import Language, Node as TSNode, Parser
+from tree_sitter import Language, Parser
+from tree_sitter import Node as TSNode
 
 from pyarnes_bench.audit.schema import Edge, EdgeKind, Node, NodeKind, make_node_id
 
@@ -31,6 +31,7 @@ class PythonParser:
     """Parse a Python file and emit nodes + edges for the audit graph."""
 
     def __init__(self) -> None:
+        """Build a fresh parser bound to the embedded Python grammar."""
         self._parser = Parser(_PY_LANGUAGE)
 
     # ── Public API ────────────────────────────────────────────────────────
@@ -93,9 +94,8 @@ class PythonParser:
         # workspaces (`packages/<name>/src/<module>.py`), strip the
         # `<name>/src/` prefix so the qualname matches what callers actually
         # `import` from.
-        without_ext = rel_path[:-3] if rel_path.endswith(".py") else rel_path
-        if without_ext.endswith("/__init__"):
-            without_ext = without_ext[: -len("/__init__")]
+        without_ext = rel_path.removesuffix(".py")
+        without_ext = without_ext.removesuffix("/__init__")
         parts = without_ext.split("/")
         if "src" in parts:
             # Keep only the parts after the last `src` segment.
@@ -165,7 +165,7 @@ class PythonParser:
         # Inheritance — class C(Base): the superclass list lives in the
         # `superclasses` field as an `argument_list` node.
         for base in self._iter_argument_identifiers(ts_node.child_by_field_name("superclasses"), source):
-            edges.append(
+            edges.append(  # noqa: PERF401  # building Edges with positional fields; comprehension would obscure shape
                 Edge(
                     src=node_id,
                     dst=base,  # unresolved until link pass; left as a name
@@ -325,10 +325,10 @@ class PythonParser:
             return []
         out: list[str] = []
         for child in ts_node.children:
-            if child.type == "identifier":
-                out.append(source[child.start_byte : child.end_byte].decode("utf-8", errors="replace"))
-            elif child.type == "attribute":
-                out.append(source[child.start_byte : child.end_byte].decode("utf-8", errors="replace"))
+            if child.type in {"identifier", "attribute"}:
+                out.append(  # noqa: PERF401  # decode-and-collect; a comprehension would obscure the slice
+                    source[child.start_byte : child.end_byte].decode("utf-8", errors="replace")
+                )
         return out
 
     def _call_target(self, ts_node: TSNode, source: bytes) -> str | None:

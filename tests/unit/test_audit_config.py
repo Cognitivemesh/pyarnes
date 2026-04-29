@@ -18,13 +18,13 @@ def test_load_returns_defaults_when_table_missing(tmp_path: Path) -> None:
 
 def test_load_parses_full_table(tmp_path: Path) -> None:
     (tmp_path / "pyproject.toml").write_text(
-        '[tool.pyarnes-audit]\n'
+        "[tool.pyarnes-audit]\n"
         'graph_path = "build/audit/g.json"\n'
         'roots = ["src", "lib"]\n'
         'exclude = [".cache"]\n'
         'forbidden_edges = [["core", "harness"]]\n'
         'flag_pattern = "FLAG\\\\((\\\\w+)\\\\)"\n'
-        'duplicate_min_tokens = 80\n',
+        "duplicate_min_tokens = 80\n",
         encoding="utf-8",
     )
     cfg = AuditConfig.load(tmp_path)
