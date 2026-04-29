@@ -72,7 +72,10 @@ def build_graph(  # noqa: PLR0913
         for path in iter_python_files(root, exclude=config.exclude):
             try:
                 nodes, edges = parser.parse_file(path, project_root=config.project_root)
-            except Exception:  # noqa: S112  # best-effort parse: a single bad file must not tank the whole audit
+            except Exception as exc:
+                # Best-effort parse: a single bad file must not tank the whole audit.
+                # We log the failure (vs the previous silent continue) so the file path is recoverable.
+                logger.warning("audit.parse_failure", path=str(path), err=str(exc))
                 continue
             files += 1
             _add_nodes(graph, nodes)
