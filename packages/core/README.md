@@ -1,10 +1,13 @@
 # pyarnes-core
 
-Core abstractions for the pyarnes agentic harness — types, errors, lifecycle, and logging.
+Minimal package stub for the current multi-package pyarnes monorepo.
 
-## What's included
+Current scope: core abstractions for types, errors, lifecycle, and logging.
 
-- **types** — `ToolHandler` and `ModelClient` abstract base classes
-- **errors** — four-error taxonomy (transient, LLM-recoverable, user-fixable, unexpected)
-- **lifecycle** — `Phase` / `Lifecycle` finite-state machine
-- **observe** — structured JSONL logging via loguru
+Canonical docs:
+- [Root README](../../README.md)
+- [Consolidation overview](../../specs/consolidation/00-overview.md)
+- [Package structure](../../specs/consolidation/01-package-structure.md)
+- [Swarm API](../../specs/consolidation/04-swarm-api.md)
+
+This file stays intentionally short because `packages/core/pyproject.toml` still uses it as the package readme.

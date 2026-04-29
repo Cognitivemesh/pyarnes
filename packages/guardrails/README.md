@@ -1,11 +1,13 @@
 # pyarnes-guardrails
 
-Composable safety guardrails for the pyarnes agentic harness.
+Minimal package stub for the current multi-package pyarnes monorepo.
 
-## What's included
+Current scope: composable safety guardrails for tool execution.
 
-- **Guardrail ABC** — abstract base for custom guardrail checks
-- **PathGuardrail** — block tool calls referencing paths outside allowed roots
-- **CommandGuardrail** — block shell commands matching dangerous patterns
-- **ToolAllowlistGuardrail** — only permit pre-approved tool names
-- **GuardrailChain** — run a sequence of guardrails; fail on the first violation
+Canonical docs:
+- [Root README](../../README.md)
+- [Consolidation overview](../../specs/consolidation/00-overview.md)
+- [Swarm API](../../specs/consolidation/04-swarm-api.md)
+- [Message safety](../../specs/consolidation/20-message-safety.md)
+
+This file stays intentionally short because `packages/guardrails/pyproject.toml` still uses it as the package readme.

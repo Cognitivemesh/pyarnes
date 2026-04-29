@@ -13,7 +13,8 @@ Usage::
     uv run tasks yaml-lint   # yaml lint
 
 Configuration lives in ``pyproject.toml`` under ``[tool.pyarnes-tasks]``.
-See ``packages/tasks/README.md`` for the full reference.
+See ``packages/tasks/README.md`` for the package overview and
+``uv run tasks help`` for the current command list.
 """
 
 from __future__ import annotations

@@ -1,10 +1,13 @@
 # pyarnes-harness
 
-Runtime engine for the pyarnes agentic harness — agent loop, guardrails, tool registry, and capture.
+Minimal package stub for the current multi-package pyarnes monorepo.
 
-## What's included
+Current scope: runtime wiring for the loop, tool registry, guardrails, and capture.
 
-- **loop** — `AgentLoop` with structured error routing and retry logic
-- **guardrails** — composable safety checks (path, command, tool-allowlist)
-- **tools** — `ToolRegistry` for handler discovery and validation
-- **capture** — `OutputCapture` and `ToolCallLogger` for full observability
+Canonical docs:
+- [Root README](../../README.md)
+- [Consolidation overview](../../specs/consolidation/00-overview.md)
+- [Swarm API](../../specs/consolidation/04-swarm-api.md)
+- [Loop hooks](../../specs/consolidation/21-loop-hooks.md)
+
+This file stays intentionally short because `packages/harness/pyproject.toml` still uses it as the package readme.

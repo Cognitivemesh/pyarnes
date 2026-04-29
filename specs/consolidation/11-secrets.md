@@ -111,6 +111,8 @@ class EnvSecretStore:
 
 ### `ChainedSecretStore` — hybrid (recommended default)
 
+> **Diagram:** [ChainedSecretStore fallback](diagrams/11-secret-fallback.html). Local-dev keychain hit and CI env-fallback paths over the same `get()` call.
+
 ```python
 class ChainedSecretStore:
     """Tries stores in order; returns the first match.

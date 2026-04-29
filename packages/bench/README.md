@@ -1,11 +1,13 @@
 # pyarnes-bench
 
-Evaluation and benchmarking toolkit for the pyarnes agentic harness.
+Minimal package stub for the current multi-package pyarnes monorepo.
 
-## What's included
+Current scope: evaluation and benchmarking helpers for agent runs.
 
-- **EvalResult** — immutable record of a single evaluation run
-- **EvalSuite** — collect, run, and summarise evaluation scenarios
-- **Scorers** — pluggable scoring functions (exact match, fuzzy, LLM-as-judge)
-- **RaceEvaluator** — post-hoc RACE evaluator for Deep-Research Agents (LLM-as-judge, reference-normalized, 4 dimensions)
-- **FactEvaluator** — post-hoc FACT evaluator for citation trustworthiness (accuracy + effective citations; adopter-supplied sources)
+Canonical docs:
+- [Root README](../../README.md)
+- [Bench evaluation axes](../../specs/consolidation/07-bench-integrated-axes.md)
+- [Run logger](../../specs/consolidation/13-run-logger.md)
+- [Evaluation taxonomy](../../specs/consolidation/18-evaluation-taxonomy.md)
+
+This file stays intentionally short because `packages/bench/pyproject.toml` still uses it as the package readme.
