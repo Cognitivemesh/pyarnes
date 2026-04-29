@@ -6,26 +6,20 @@ import sys
 
 from pyarnes_bench.audit import (
     god_nodes,
-    load_graph,
     log_audit_analyzed,
     suggested_questions,
     surprising_connections,
 )
-from pyarnes_tasks._audit_common import bootstrap
+from pyarnes_tasks._audit_common import bootstrap, require_graph
 
 
 def main() -> int:
     """Print god nodes, surprising connections, and suggested review questions."""
     ctx = bootstrap("tasks audit:analyze")
-    graph_path = ctx.config.graph_path
-    if not graph_path.is_file():
-        print(  # noqa: T201
-            f"audit:analyze  graph file not found at {graph_path}; run `tasks audit:build` first.",
-            file=sys.stderr,
-        )
-        return 1
+    graph = require_graph(ctx, "audit:analyze")
+    if isinstance(graph, int):
+        return graph
 
-    graph = load_graph(graph_path)
     gods = god_nodes(graph, top_n=10)
     surprises = surprising_connections(graph, top_n=10)
     questions = suggested_questions(graph, top_n=7)

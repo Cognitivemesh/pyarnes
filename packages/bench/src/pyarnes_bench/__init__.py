@@ -26,109 +26,101 @@ Token burn (lite port of getagentseal/codeburn):
 * **BurnTracker** — orchestrates providers; surfaces token cost as an eval axis.
 * **CostCalculator** — protocol for pricing; **LiteLLMCostCalculator** default.
 * **ClaudeCodeProvider** — reads ``~/.claude/projects/`` JSONL sessions (v1).
+
+Audit subpackage (code-graph + audit, in-tree, LLM-free on the build path):
+
+* **build_graph** / **save_graph** / **load_graph** — tree-sitter-python parser
+  + JSON persistence.
+* **audit_graph** / **Finding** — eight detectors (unused / cycles / duplicates /
+  complexity / boundaries / flags).
+* **god_nodes** / **surprising_connections** / **suggested_questions** —
+  structural analyses.
+* **AuditConfig** — `[tool.pyarnes-audit]` loader.
+
+Names are exposed lazily via :pep:`562` ``__getattr__`` so importing
+``pyarnes_bench.audit.*`` does not force the litellm/pydantic-heavy
+evaluator stack into memory.
 """
 
 from __future__ import annotations
 
-from pyarnes_bench.audit import (
-    AuditConfig,
-    Finding,
-    audit_graph,
-    build_graph,
-    god_nodes,
-    load_graph,
-    save_graph,
-    suggested_questions,
-    surprising_connections,
-)
-from pyarnes_bench.burn import (
-    BurnTracker,
-    ClaudeCodeProvider,
-    Cost,
-    CostCalculator,
-    JsonlProvider,
-    LiteLLMCostCalculator,
-    Provider,
-    SessionBurn,
-    SessionMetadata,
-    TokenUsage,
-)
-from pyarnes_bench.eval import EvalResult, EvalSuite
-from pyarnes_bench.fact import (
-    CitationClaim,
-    FactEvaluator,
-    FactMetrics,
-    FactPrompts,
-    effective_citations_across,
-)
-from pyarnes_bench.race import (
-    RaceCriterion,
-    RaceDimension,
-    RaceEvaluator,
-    RacePrompts,
-    RaceScore,
-    RaceWeights,
-)
-from pyarnes_bench.regression import RegressionReport
-from pyarnes_bench.scorer import (
-    AsyncScorer,
-    CodeQualityScorer,
-    ExactMatchScorer,
-    LLMJudgeScorer,
-    Scorer,
-)
-from pyarnes_bench.scorers import (
-    GuardrailComplianceScorer,
-    ToolUseCorrectnessScorer,
-    TrajectoryLengthScorer,
-)
-from pyarnes_bench.swe_bench import SWEBenchScenario
-
-__all__ = [
-    "AsyncScorer",
-    "AuditConfig",
-    "BurnTracker",
-    "CitationClaim",
-    "ClaudeCodeProvider",
-    "CodeQualityScorer",
-    "Cost",
-    "CostCalculator",
-    "EvalResult",
-    "EvalSuite",
-    "ExactMatchScorer",
-    "FactEvaluator",
-    "FactMetrics",
-    "FactPrompts",
-    "Finding",
-    "GuardrailComplianceScorer",
-    "JsonlProvider",
-    "LLMJudgeScorer",
-    "LiteLLMCostCalculator",
-    "Provider",
-    "RaceCriterion",
-    "RaceDimension",
-    "RaceEvaluator",
-    "RacePrompts",
-    "RaceScore",
-    "RaceWeights",
-    "RegressionReport",
-    "SWEBenchScenario",
-    "Scorer",
-    "SessionBurn",
-    "SessionMetadata",
-    "TokenUsage",
-    "ToolUseCorrectnessScorer",
-    "TrajectoryLengthScorer",
-    "audit_graph",
-    "build_graph",
-    "effective_citations_across",
-    "god_nodes",
-    "load_graph",
-    "save_graph",
-    "suggested_questions",
-    "surprising_connections",
-]
+from typing import Any
 
 from pyarnes_core.packaging import version_of
 
 __version__ = version_of("pyarnes-bench")
+
+# Map of name → ``(submodule, attribute)``. Each pair is resolved lazily on
+# first attribute access. Adopters keep `from pyarnes_bench import EvalSuite`
+# working without paying the import cost on every audit-only CLI invocation.
+_LAZY_EXPORTS: dict[str, tuple[str, str]] = {
+    # Audit surface — networkx + tree-sitter only, no LLM deps.
+    "AuditConfig": ("pyarnes_bench.audit", "AuditConfig"),
+    "Finding": ("pyarnes_bench.audit", "Finding"),
+    "audit_graph": ("pyarnes_bench.audit", "audit_graph"),
+    "build_graph": ("pyarnes_bench.audit", "build_graph"),
+    "god_nodes": ("pyarnes_bench.audit", "god_nodes"),
+    "load_graph": ("pyarnes_bench.audit", "load_graph"),
+    "save_graph": ("pyarnes_bench.audit", "save_graph"),
+    "suggested_questions": ("pyarnes_bench.audit", "suggested_questions"),
+    "surprising_connections": ("pyarnes_bench.audit", "surprising_connections"),
+    # Burn — relatively light.
+    "BurnTracker": ("pyarnes_bench.burn", "BurnTracker"),
+    "ClaudeCodeProvider": ("pyarnes_bench.burn", "ClaudeCodeProvider"),
+    "Cost": ("pyarnes_bench.burn", "Cost"),
+    "CostCalculator": ("pyarnes_bench.burn", "CostCalculator"),
+    "JsonlProvider": ("pyarnes_bench.burn", "JsonlProvider"),
+    "LiteLLMCostCalculator": ("pyarnes_bench.burn", "LiteLLMCostCalculator"),
+    "Provider": ("pyarnes_bench.burn", "Provider"),
+    "SessionBurn": ("pyarnes_bench.burn", "SessionBurn"),
+    "SessionMetadata": ("pyarnes_bench.burn", "SessionMetadata"),
+    "TokenUsage": ("pyarnes_bench.burn", "TokenUsage"),
+    # Eval / regression / scorers — pull pydantic/litellm transitively.
+    "EvalResult": ("pyarnes_bench.eval", "EvalResult"),
+    "EvalSuite": ("pyarnes_bench.eval", "EvalSuite"),
+    "RegressionReport": ("pyarnes_bench.regression", "RegressionReport"),
+    "AsyncScorer": ("pyarnes_bench.scorer", "AsyncScorer"),
+    "CodeQualityScorer": ("pyarnes_bench.scorer", "CodeQualityScorer"),
+    "ExactMatchScorer": ("pyarnes_bench.scorer", "ExactMatchScorer"),
+    "LLMJudgeScorer": ("pyarnes_bench.scorer", "LLMJudgeScorer"),
+    "Scorer": ("pyarnes_bench.scorer", "Scorer"),
+    "GuardrailComplianceScorer": ("pyarnes_bench.scorers", "GuardrailComplianceScorer"),
+    "ToolUseCorrectnessScorer": ("pyarnes_bench.scorers", "ToolUseCorrectnessScorer"),
+    "TrajectoryLengthScorer": ("pyarnes_bench.scorers", "TrajectoryLengthScorer"),
+    # Citation / report evaluators — heaviest, defer aggressively.
+    "CitationClaim": ("pyarnes_bench.fact", "CitationClaim"),
+    "FactEvaluator": ("pyarnes_bench.fact", "FactEvaluator"),
+    "FactMetrics": ("pyarnes_bench.fact", "FactMetrics"),
+    "FactPrompts": ("pyarnes_bench.fact", "FactPrompts"),
+    "effective_citations_across": ("pyarnes_bench.fact", "effective_citations_across"),
+    "RaceCriterion": ("pyarnes_bench.race", "RaceCriterion"),
+    "RaceDimension": ("pyarnes_bench.race", "RaceDimension"),
+    "RaceEvaluator": ("pyarnes_bench.race", "RaceEvaluator"),
+    "RacePrompts": ("pyarnes_bench.race", "RacePrompts"),
+    "RaceScore": ("pyarnes_bench.race", "RaceScore"),
+    "RaceWeights": ("pyarnes_bench.race", "RaceWeights"),
+    "SWEBenchScenario": ("pyarnes_bench.swe_bench", "SWEBenchScenario"),
+}
+
+
+import importlib  # noqa: E402  # below the lazy-loader table on purpose so cold-import paths stay minimal
+
+
+def __getattr__(name: str) -> Any:
+    """Resolve a public symbol lazily on first access."""
+    try:
+        module_path, attr = _LAZY_EXPORTS[name]
+    except KeyError as exc:
+        msg = f"module 'pyarnes_bench' has no attribute {name!r}"
+        raise AttributeError(msg) from exc
+    module = importlib.import_module(module_path)
+    value = getattr(module, attr)
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    return sorted({*globals(), *_LAZY_EXPORTS})
+
+
+__all__ = tuple(sorted(_LAZY_EXPORTS))

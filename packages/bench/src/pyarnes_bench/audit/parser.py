@@ -59,7 +59,6 @@ class PythonParser:
 
         nodes: list[Node] = []
         edges: list[Edge] = []
-        defined: set[str] = set()  # qualnames defined in this file
 
         # Module + file nodes — every file contributes both so unused-file
         # detection can compare imports against MODULE nodes specifically.
@@ -77,7 +76,7 @@ class PythonParser:
             )
         )
 
-        self._walk(root, source, rel, module_id, [], nodes, edges, defined)
+        self._walk(root, source, rel, module_id, [], nodes, edges)
         return nodes, edges
 
     # ── Internals ─────────────────────────────────────────────────────────
@@ -111,21 +110,20 @@ class PythonParser:
         parent_qual: list[str],
         nodes: list[Node],
         edges: list[Edge],
-        defined: set[str],
     ) -> None:
         for child in ts_node.children:
             kind = child.type
             if kind == "class_definition":
-                self._handle_class(child, source, file_path, parent_id, parent_qual, nodes, edges, defined)
+                self._handle_class(child, source, file_path, parent_id, parent_qual, nodes, edges)
             elif kind == "function_definition":
-                self._handle_function(child, source, file_path, parent_id, parent_qual, nodes, edges, defined)
+                self._handle_function(child, source, file_path, parent_id, parent_qual, nodes, edges)
             elif kind == "import_statement":
                 self._handle_import(child, source, file_path, parent_id, edges)
             elif kind == "import_from_statement":
                 self._handle_import_from(child, source, file_path, parent_id, edges)
             else:
                 # Drill into anything else — calls etc. live deeper in the AST.
-                self._walk(child, source, file_path, parent_id, parent_qual, nodes, edges, defined)
+                self._walk(child, source, file_path, parent_id, parent_qual, nodes, edges)
 
     def _handle_class(  # noqa: PLR0913
         self,
@@ -136,7 +134,6 @@ class PythonParser:
         parent_qual: list[str],
         nodes: list[Node],
         edges: list[Edge],
-        defined: set[str],
     ) -> None:
         name = self._field_text(ts_node, "name", source) or "<anonymous>"
         qual = ".".join([*parent_qual, name])
@@ -152,7 +149,6 @@ class PythonParser:
                 qualname=qual,
             )
         )
-        defined.add(qual)
         edges.append(
             Edge(
                 src=parent_id,
@@ -177,7 +173,7 @@ class PythonParser:
             )
         body = ts_node.child_by_field_name("body")
         if body is not None:
-            self._walk(body, source, file_path, node_id, [*parent_qual, name], nodes, edges, defined)
+            self._walk(body, source, file_path, node_id, [*parent_qual, name], nodes, edges)
 
     def _handle_function(  # noqa: PLR0913
         self,
@@ -188,7 +184,6 @@ class PythonParser:
         parent_qual: list[str],
         nodes: list[Node],
         edges: list[Edge],
-        defined: set[str],
     ) -> None:
         name = self._field_text(ts_node, "name", source) or "<anonymous>"
         qual = ".".join([*parent_qual, name])
@@ -207,7 +202,6 @@ class PythonParser:
                 extra={"body": body_text},
             )
         )
-        defined.add(qual)
         edges.append(
             Edge(
                 src=parent_id,
@@ -223,7 +217,7 @@ class PythonParser:
             # calls inside conditionals are picked up).
             self._collect_calls(body, source, file_path, node_id, edges)
             # Recurse so nested functions / classes get their own nodes too.
-            self._walk(body, source, file_path, node_id, [*parent_qual, name], nodes, edges, defined)
+            self._walk(body, source, file_path, node_id, [*parent_qual, name], nodes, edges)
 
     def _collect_calls(
         self,

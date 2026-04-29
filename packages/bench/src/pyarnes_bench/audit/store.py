@@ -21,7 +21,9 @@ def save_graph(graph: nx.DiGraph, path: Path) -> None:
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = nx.node_link_data(graph, edges="edges")
-    write_private(path, json.dumps(payload, default=str, indent=2))
+    # No `indent` — the file is loaded programmatically; a 1949-node project
+    # graph is ~16 % smaller without pretty-printing.
+    write_private(path, json.dumps(payload, default=str))
 
 
 def load_graph(path: Path) -> nx.DiGraph:

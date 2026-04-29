@@ -13,8 +13,11 @@ from collections.abc import Iterable
 import networkx as nx
 
 from pyarnes_bench.audit.findings import Finding
+from pyarnes_bench.audit.schema import EdgeKind
 
 __all__ = ["check_boundaries"]
+
+_IMPORT_EDGE_KINDS = {EdgeKind.IMPORTS.value, EdgeKind.IMPORTS_FROM.value}
 
 
 def _src_module(graph: nx.DiGraph, src_id: str) -> str:
@@ -37,8 +40,7 @@ def check_boundaries(
         return []
     findings: list[Finding] = []
     for src, dst, attrs in graph.edges(data=True):
-        kind = attrs.get("kind", "")
-        if kind not in {"imports", "imports_from"}:
+        if attrs.get("kind") not in _IMPORT_EDGE_KINDS:
             continue
         src_module = _src_module(graph, src)
         target = str(dst)

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
@@ -12,11 +11,14 @@ import networkx as nx
 from pyarnes_bench.audit.config import AuditConfig
 from pyarnes_bench.audit.events import log_audit_indexed
 from pyarnes_bench.audit.parser import PythonParser
-from pyarnes_bench.audit.schema import Edge, Node
-from pyarnes_core.observability import iso_now
+from pyarnes_bench.audit.schema import Edge, EdgeKind, Node, NodeKind
+from pyarnes_core.observability import iso_now, monotonic_duration, start_timer
 from pyarnes_core.observability.ports import LoggerPort
 
 __all__ = ["build_graph", "iter_python_files"]
+
+_KIND_MODULE = NodeKind.MODULE.value
+_IMPORT_EDGE_KINDS = {EdgeKind.IMPORTS.value, EdgeKind.IMPORTS_FROM.value}
 
 
 def iter_python_files(root: Path, *, exclude: Iterable[str]) -> Iterable[Path]:
@@ -60,7 +62,7 @@ def build_graph(  # noqa: PLR0913
     parser = parser or PythonParser()
     graph: nx.DiGraph = nx.DiGraph()
     started = iso_now()
-    started_mono = time.monotonic()
+    _, start_mono = start_timer()
     files = 0
 
     for root_str in config.roots:
@@ -78,7 +80,8 @@ def build_graph(  # noqa: PLR0913
 
     _resolve_imports(graph)
 
-    duration_ms = (time.monotonic() - started_mono) * 1000.0
+    _, duration_seconds = monotonic_duration(start_mono)
+    duration_ms = duration_seconds * 1000.0
     log_audit_indexed(
         logger,
         str(config.project_root),
@@ -134,7 +137,7 @@ def _resolve_imports(graph: nx.DiGraph) -> None:  # noqa: C901  # orchestration 
     """
     qual_to_id: dict[str, str] = {}
     for node_id, attrs in graph.nodes(data=True):
-        if attrs.get("kind") == "module":
+        if attrs.get("kind") == _KIND_MODULE:
             qualname = attrs.get("qualname", "")
             if qualname:
                 qual_to_id[qualname] = node_id
@@ -144,7 +147,7 @@ def _resolve_imports(graph: nx.DiGraph) -> None:  # noqa: C901  # orchestration 
 
     rewrites: list[tuple[str, str, str, dict[str, Any]]] = []
     for src, dst, attrs in graph.edges(data=True):
-        if attrs.get("kind") not in {"imports", "imports_from"}:
+        if attrs.get("kind") not in _IMPORT_EDGE_KINDS:
             continue
         target = str(dst)
         if target in qual_to_id:

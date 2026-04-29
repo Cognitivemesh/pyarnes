@@ -13,11 +13,13 @@ import uuid
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from pyarnes_bench.audit import AuditConfig
+import networkx as nx
+
+from pyarnes_bench.audit import AuditConfig, load_graph
 from pyarnes_core.observability.ports import LoggerPort
 from pyarnes_core.observe.logger import LogFormat, configure_logging, get_logger
 
-__all__ = ["AuditTaskContext", "bootstrap"]
+__all__ = ["AuditTaskContext", "bootstrap", "require_graph"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,28 +32,16 @@ class AuditTaskContext:
     trace_id: str
 
 
-def bootstrap(prog: str, *, default_step: int = 0) -> AuditTaskContext:
-    """Parse ``--root`` / ``--graph``, build :class:`AuditConfig`, return context.
-
-    Args:
-        prog: ``argparse`` program name (e.g. ``"tasks audit:build"``).
-        default_step: Reserved for callers that want to start their step
-            counter somewhere other than zero; kept here so the dataclass
-            stays immutable while still giving each task control.
-    """
+def bootstrap(prog: str) -> AuditTaskContext:
+    """Parse ``--root`` / ``--graph``, build :class:`AuditConfig`, return context."""
     parser = argparse.ArgumentParser(prog=prog)
-    parser.add_argument(
-        "--root",
-        default=".",
-        help="Project root containing pyproject.toml (defaults to cwd).",
-    )
+    parser.add_argument("--root", default=".", help="Project root (defaults to cwd).")
     parser.add_argument(
         "--graph",
         default=None,
         help="Override the graph path (defaults to [tool.pyarnes-audit].graph_path).",
     )
     args = parser.parse_args()
-    _ = default_step  # accepted for API stability; unused today
 
     config = AuditConfig.load(args.root)
     if args.graph is not None:
@@ -67,3 +57,19 @@ def bootstrap(prog: str, *, default_step: int = 0) -> AuditTaskContext:
         session_id=uuid.uuid4().hex,
         trace_id=uuid.uuid4().hex,
     )
+
+
+def require_graph(ctx: AuditTaskContext, prog: str) -> nx.DiGraph | int:
+    """Load the persisted graph or print a friendly hint and return exit code 1.
+
+    Centralises the "graph file not found, run `tasks audit:build` first" guard
+    that every audit task except ``audit:build`` needs.
+    """
+    graph_path = ctx.config.graph_path
+    if not graph_path.is_file():
+        print(  # noqa: T201
+            f"{prog}  graph file not found at {graph_path}; run `tasks audit:build` first.",
+            file=sys.stderr,
+        )
+        return 1
+    return load_graph(graph_path)

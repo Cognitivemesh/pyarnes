@@ -15,7 +15,6 @@ import subprocess  # nosec B404
 import sys
 import tomllib
 from collections import defaultdict
-from collections.abc import Iterable
 from pathlib import Path
 
 import networkx as nx
@@ -25,7 +24,16 @@ from pyarnes_bench.audit.config import AuditConfig
 from pyarnes_bench.audit.duplicates import detect_duplicates
 from pyarnes_bench.audit.events import log_audit_finding
 from pyarnes_bench.audit.findings import Finding
+from pyarnes_bench.audit.schema import EdgeKind, NodeKind
 from pyarnes_core.observability.ports import LoggerPort
+
+# Module-level enum value constants — graph nodes/edges store kinds as strings
+# (the StrEnum value), so detectors compare against these constants rather than
+# string literals so a rename of an enum value can't silently miss a detector.
+_KIND_MODULE = NodeKind.MODULE.value
+_EDGE_IMPORTS = EdgeKind.IMPORTS.value
+_EDGE_IMPORTS_FROM = EdgeKind.IMPORTS_FROM.value
+_IMPORT_EDGE_KINDS = {_EDGE_IMPORTS, _EDGE_IMPORTS_FROM}
 
 __all__ = ["audit_graph"]
 
@@ -82,7 +90,7 @@ def _unused_files(graph: nx.DiGraph) -> list[Finding]:
     """
     findings: list[Finding] = []
     for node_id, attrs in graph.nodes(data=True):
-        if attrs.get("kind") != "module":
+        if attrs.get("kind") != _KIND_MODULE:
             continue
         if not _has_inbound_import(graph, node_id):
             findings.append(
@@ -100,15 +108,12 @@ def _unused_files(graph: nx.DiGraph) -> list[Finding]:
 
 
 def _has_inbound_import(graph: nx.DiGraph, node_id: str) -> bool:
-    for _src, _dst, attrs in graph.in_edges(node_id, data=True):
-        if attrs.get("kind") in {"imports", "imports_from"}:
-            return True
-    return False
+    return any(attrs.get("kind") in _IMPORT_EDGE_KINDS for _src, _dst, attrs in graph.in_edges(node_id, data=True))
 
 
 def _circular_imports(graph: nx.DiGraph) -> list[Finding]:
     import_subgraph = nx.DiGraph(
-        (u, v) for u, v, attrs in graph.edges(data=True) if attrs.get("kind") in {"imports", "imports_from"}
+        (u, v) for u, v, attrs in graph.edges(data=True) if attrs.get("kind") in _IMPORT_EDGE_KINDS
     )
     cycles = list(nx.simple_cycles(import_subgraph))
     findings: list[Finding] = []
@@ -242,7 +247,7 @@ def _dep_name(raw: str) -> str:
 def _imported_top_levels(graph: nx.DiGraph) -> set[str]:
     imports: set[str] = set()
     for _src, dst, attrs in graph.edges(data=True):
-        if attrs.get("kind") not in {"imports", "imports_from"}:
+        if attrs.get("kind") not in _IMPORT_EDGE_KINDS:
             continue
         top = str(dst).split(".", 1)[0].replace("_", "-").lower()
         imports.add(top)
@@ -275,17 +280,7 @@ def _feature_flag_usage(graph: nx.DiGraph, config: AuditConfig) -> list[Finding]
                 category="feature_flag",
                 target=flag,
                 severity="low",
-                detail={"hit_count": len(files), "files": _unique(files)},
+                detail={"hit_count": len(files), "files": list(dict.fromkeys(files))},
             )
         )
     return findings
-
-
-def _unique(items: Iterable[str]) -> list[str]:
-    seen: list[str] = []
-    seen_set: set[str] = set()
-    for item in items:
-        if item not in seen_set:
-            seen.append(item)
-            seen_set.add(item)
-    return seen

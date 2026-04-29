@@ -7,23 +7,17 @@ from collections import Counter
 
 import networkx as nx
 
-from pyarnes_bench.audit import load_graph
 from pyarnes_core.observability import estimate_tokens
-from pyarnes_tasks._audit_common import bootstrap
+from pyarnes_tasks._audit_common import bootstrap, require_graph
 
 
 def main() -> int:
     """Print a human-readable summary of the persisted audit graph."""
     ctx = bootstrap("tasks audit:show")
-    graph_path = ctx.config.graph_path
-    if not graph_path.is_file():
-        print(  # noqa: T201
-            f"audit:show  graph file not found at {graph_path}; run `tasks audit:build` first.",
-            file=sys.stderr,
-        )
-        return 1
+    graph = require_graph(ctx, "audit:show")
+    if isinstance(graph, int):
+        return graph
 
-    graph = load_graph(graph_path)
     kind_counts = Counter(attrs.get("kind", "?") for _, attrs in graph.nodes(data=True))
     edge_counts = Counter(attrs.get("kind", "?") for _, _, attrs in graph.edges(data=True))
     file_counts = Counter(attrs.get("file_path", "?") for _, attrs in graph.nodes(data=True))
@@ -31,7 +25,7 @@ def main() -> int:
     token_estimate = estimate_tokens(payload)
 
     print("audit:show")  # noqa: T201
-    print(f"  graph        : {graph_path}")  # noqa: T201
+    print(f"  graph        : {ctx.config.graph_path}")  # noqa: T201
     print(f"  nodes        : {graph.number_of_nodes()}  edges: {graph.number_of_edges()}")  # noqa: T201
     print(f"  token estimate: {token_estimate}")  # noqa: T201
     print("  node kinds   :")  # noqa: T201
