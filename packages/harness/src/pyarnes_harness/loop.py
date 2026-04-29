@@ -267,6 +267,7 @@ class AgentLoop:
 
     async def _call_batch(self, calls: list[dict[str, Any]]) -> list[ToolMessage]:
         """Dispatch a batch of tool calls, parallelizing when path-independent."""
+
         async def dispatch(name: str, call_id: str, arguments: dict[str, Any]) -> ToolMessage:
             return await self._call_tool(name, call_id, arguments)
 
@@ -418,7 +419,9 @@ class AgentLoop:
                 if self.hook_chain is not None:
                     result = await self.hook_chain.run_post(name, arguments, result, is_error=False)
                 terminate = isinstance(result, dict) and bool(result.get("terminate"))
-                content = redact(str(result.get("content", result) if isinstance(result, dict) and terminate else result))  # noqa: E501
+                content = redact(
+                    str(result.get("content", result) if isinstance(result, dict) and terminate else result)
+                )  # noqa: E501
                 msg = ToolMessage(
                     tool_call_id=tool_call_id,
                     content=content,

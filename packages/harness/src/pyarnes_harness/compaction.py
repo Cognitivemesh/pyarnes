@@ -116,9 +116,7 @@ def _find_cut_index(
     return 0  # all messages fit within keep_tokens
 
 
-async def _summarize_segment(
-    segment: list[dict[str, Any]], model: ModelClient
-) -> dict[str, Any]:
+async def _summarize_segment(segment: list[dict[str, Any]], model: ModelClient) -> dict[str, Any]:
     """Ask *model* to summarize *segment* and return a single user-role message."""
     lines = []
     for msg in segment:

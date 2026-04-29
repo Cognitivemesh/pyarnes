@@ -241,9 +241,7 @@ class TestHypothesisInvariants:
     )
     @settings(max_examples=300, deadline=None)
     @pytest.mark.asyncio
-    async def test_equal_scores_always_yield_half(
-        self, score_a: float, score_b: float
-    ) -> None:
+    async def test_equal_scores_always_yield_half(self, score_a: float, score_b: float) -> None:
         """When both target and reference are judged identically, final_score == 0.5."""
         same = score_a  # noqa: F841 — both sides use the same score value
 

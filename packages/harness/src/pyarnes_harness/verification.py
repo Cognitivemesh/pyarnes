@@ -128,9 +128,7 @@ class VerificationLoop:
         last_reason = ""
 
         while True:
-            result, last_reason = await self._attempt(
-                generate, test, benchmark, benchmark_threshold, fix_attempts
-            )
+            result, last_reason = await self._attempt(generate, test, benchmark, benchmark_threshold, fix_attempts)
             if result is not None:
                 log_event(
                     logger,
@@ -145,9 +143,7 @@ class VerificationLoop:
             fix_attempts += 1
             if fix_attempts > self.max_fix_attempts:
                 self._escalate(task, fix_attempts, last_reason)
-            log_event(
-                logger, "verification.fix", fix_attempts=fix_attempts, reason=last_reason
-            )
+            log_event(logger, "verification.fix", fix_attempts=fix_attempts, reason=last_reason)
 
     def _escalate(self, task: str, fix_attempts: int, reason: str) -> None:
         """Log and raise ``UserFixableError`` after all fix attempts are exhausted.
@@ -168,13 +164,8 @@ class VerificationLoop:
             reason=reason,
         )
         raise UserFixableError(
-            message=(
-                f"Verification failed for task {task!r} after "
-                f"{fix_attempts} fix attempt(s): {reason}"
-            ),
-            prompt_hint=(
-                f"Review and fix the output for task {task!r}. Reason: {reason}"
-            ),
+            message=(f"Verification failed for task {task!r} after {fix_attempts} fix attempt(s): {reason}"),
+            prompt_hint=(f"Review and fix the output for task {task!r}. Reason: {reason}"),
         )
 
     async def _attempt(

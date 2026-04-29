@@ -76,10 +76,7 @@ def main() -> int:
         print(f"error: {exc}", file=sys.stderr)  # noqa: T201
         return 2
 
-    inputs = [
-        SessionInput(session_id=s.session_id, project=s.project, entries=list(s.entries))
-        for s in sessions
-    ]
+    inputs = [SessionInput(session_id=s.session_id, project=s.project, entries=list(s.entries)) for s in sessions]
     report = run_optimize(inputs)
 
     for f in report.findings:

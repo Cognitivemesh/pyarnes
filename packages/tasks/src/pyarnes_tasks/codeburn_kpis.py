@@ -96,17 +96,19 @@ def main() -> int:
         )
         grand_calls += kpis.total_calls
         grand_cost += kpis.cost_total
-        rows.append({
-            "project": s.project,
-            "session": s.session_id[:12],
-            "calls": kpis.total_calls,
-            "tools": kpis.unique_tools,
-            "one-shot": f"{kpis.one_shot_rate:.2f}",
-            "retries": kpis.retry_loops,
-            "cache-hit": f"{kpis.cache_hit_rate:.2f}",
-            "r/e": f"{kpis.read_edit_ratio:.2f}",
-            "cost": f"{kpis.cost_total:.4f} {args.currency}",
-        })
+        rows.append(
+            {
+                "project": s.project,
+                "session": s.session_id[:12],
+                "calls": kpis.total_calls,
+                "tools": kpis.unique_tools,
+                "one-shot": f"{kpis.one_shot_rate:.2f}",
+                "retries": kpis.retry_loops,
+                "cache-hit": f"{kpis.cache_hit_rate:.2f}",
+                "r/e": f"{kpis.read_edit_ratio:.2f}",
+                "cost": f"{kpis.cost_total:.4f} {args.currency}",
+            }
+        )
 
     totals = {
         "project": "TOTAL",

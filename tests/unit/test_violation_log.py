@@ -92,9 +92,7 @@ class TestViolationLogConcurrent:
     """Concurrent appends must produce exactly N complete JSONL records."""
 
     @pytest.mark.asyncio
-    async def test_concurrent_thread_appends_all_records_present(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_concurrent_thread_appends_all_records_present(self, tmp_path: Path) -> None:
         path = tmp_path / "violations.jsonl"
         n = 20
 

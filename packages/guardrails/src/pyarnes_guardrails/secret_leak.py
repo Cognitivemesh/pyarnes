@@ -75,9 +75,7 @@ _INVISIBLE_TABLE = dict.fromkeys(
 )
 
 
-_SECRET_TAGS: frozenset[str] = frozenset(
-    {"Credentials", "Password", "Secret", "API", "Private Key", "Token"}
-)
+_SECRET_TAGS: frozenset[str] = frozenset({"Credentials", "Password", "Secret", "API", "Private Key", "Token"})
 
 
 @dataclass(frozen=True, slots=True)

@@ -110,8 +110,8 @@ def _build_tasks() -> tuple[dict[str, list[str]], Path]:
         # Burn: token cost report across AI coding sessions.
         "burn:report": [py, "-m", "pyarnes_tasks.burn_report"],
         # Codeburn: KPIs, model comparison, and waste-detection scan.
-        "codeburn:kpis":     [py, "-m", "pyarnes_tasks.codeburn_kpis"],
-        "codeburn:compare":  [py, "-m", "pyarnes_tasks.codeburn_compare"],
+        "codeburn:kpis": [py, "-m", "pyarnes_tasks.codeburn_kpis"],
+        "codeburn:compare": [py, "-m", "pyarnes_tasks.codeburn_compare"],
         "codeburn:optimize": [py, "-m", "pyarnes_tasks.codeburn_optimize"],
         # Observer: stream and filter structured JSONL logs.
         "observer:tail": [py, "-m", "pyarnes_tasks.observer_tail"],
@@ -165,6 +165,7 @@ def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: tuple[s
         return 1
 
     import shutil
+
     if name in {"graph:render", "graph:blast"} and not shutil.which(cmd[0]):
         print(f"\nMissing graph binary: {cmd[0]}", file=sys.stderr)  # noqa: T201
         print(f"To run {name}, you must install the optional graph tools.", file=sys.stderr)  # noqa: T201

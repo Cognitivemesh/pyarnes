@@ -26,9 +26,7 @@ class TestBudgetRoundtripHypothesis:
 
     @given(calls=_calls, tokens=_tokens, seconds=_seconds)
     @settings(max_examples=500)
-    def test_roundtrip_preserves_counters(
-        self, calls: int, tokens: int, seconds: float
-    ) -> None:
+    def test_roundtrip_preserves_counters(self, calls: int, tokens: int, seconds: float) -> None:
         original = Budget(calls=calls, tokens=tokens, seconds=seconds)
         restored = Budget.from_dict(original.as_dict())
         assert restored.calls == calls
@@ -74,9 +72,7 @@ class TestBudgetCapEnforcementHypothesis:
 
     @given(tokens=_tokens, cap=st.integers(min_value=1, max_value=10_000_000))
     @settings(max_examples=500)
-    def test_tokens_cap_exhausted_exactly_at_boundary(
-        self, tokens: int, cap: int
-    ) -> None:
+    def test_tokens_cap_exhausted_exactly_at_boundary(self, tokens: int, cap: int) -> None:
         b = Budget(max_tokens=cap, tokens=tokens)
         if tokens >= cap:
             assert b.is_exhausted()
@@ -85,9 +81,7 @@ class TestBudgetCapEnforcementHypothesis:
 
     @given(calls=_calls, seconds=_seconds)
     @settings(max_examples=500)
-    def test_calls_cap_checked_before_seconds_cap(
-        self, calls: int, seconds: float
-    ) -> None:
+    def test_calls_cap_checked_before_seconds_cap(self, calls: int, seconds: float) -> None:
         """exceeded_cap returns 'calls' when both calls and seconds caps are hit."""
         b = Budget(max_calls=calls, max_seconds=seconds, calls=calls, seconds=seconds)
         # Both caps are exhausted — calls is checked first.
@@ -99,9 +93,7 @@ class TestBudgetCapEnforcementHypothesis:
         seconds=st.floats(min_value=0.0, max_value=100.0, allow_nan=False, allow_infinity=False),
     )
     @settings(max_examples=300)
-    def test_consume_returns_new_instance(
-        self, calls: int, tokens: int, seconds: float
-    ) -> None:
+    def test_consume_returns_new_instance(self, calls: int, tokens: int, seconds: float) -> None:
         original = Budget()
         updated = original.consume(calls=calls, tokens=tokens, seconds=seconds)
         # consume is pure / returns a new object.
@@ -115,9 +107,7 @@ class TestBudgetCapEnforcementHypothesis:
         cap=st.integers(min_value=1, max_value=1_000_000),
     )
     @settings(max_examples=300)
-    def test_raise_if_exhausted_only_raises_when_cap_hit(
-        self, calls: int, cap: int
-    ) -> None:
+    def test_raise_if_exhausted_only_raises_when_cap_hit(self, calls: int, cap: int) -> None:
         b = Budget(max_calls=cap, calls=calls)
         if calls >= cap:
             with pytest.raises(UserFixableError):

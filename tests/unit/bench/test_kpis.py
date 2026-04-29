@@ -111,5 +111,3 @@ class TestSessionKpis:
         data = json.loads(line)
         assert data["event"] == "codeburn.kpis.computed"
         assert data["session_id"] == "abc"
-
-

@@ -71,10 +71,7 @@ class TestSafeSessionIdHypothesis:
     def test_non_string_always_returns_default(self, raw: object) -> None:
         assert safe_session_id(raw) == "default"
 
-    @given(
-        st.from_regex(r"[A-Za-z0-9._\-]{1,64}", fullmatch=True)
-        .filter(lambda s: not re.fullmatch(r"\.+", s))
-    )
+    @given(st.from_regex(r"[A-Za-z0-9._\-]{1,64}", fullmatch=True).filter(lambda s: not re.fullmatch(r"\.+", s)))
     @settings(max_examples=300)
     def test_valid_ids_pass_through_unchanged(self, good: str) -> None:
         assert safe_session_id(good) == good

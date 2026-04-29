@@ -64,16 +64,12 @@ class TestRestrictedPythonSandbox:
             RestrictedPythonSandbox()
 
     def test_policy_default(self, monkeypatch) -> None:
-        monkeypatch.setattr(
-            "pyarnes_core.sandbox.RestrictedPythonSandbox.__post_init__", lambda self: None
-        )
+        monkeypatch.setattr("pyarnes_core.sandbox.RestrictedPythonSandbox.__post_init__", lambda self: None)
         sb = RestrictedPythonSandbox()
         assert sb.policy == "default"
 
     def test_enter_and_exit_are_no_ops(self, monkeypatch) -> None:
-        monkeypatch.setattr(
-            "pyarnes_core.sandbox.RestrictedPythonSandbox.__post_init__", lambda self: None
-        )
+        monkeypatch.setattr("pyarnes_core.sandbox.RestrictedPythonSandbox.__post_init__", lambda self: None)
         sb = RestrictedPythonSandbox()
         asyncio.run(sb.enter())
         asyncio.run(sb.exit(None))

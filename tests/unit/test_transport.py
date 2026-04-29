@@ -64,9 +64,7 @@ def test_normalized_response_stop() -> None:
 
 
 def test_normalized_response_with_usage() -> None:
-    resp = NormalizedResponse(
-        content="", tool_calls=[], finish_reason="stop", usage={"input": 10, "output": 5}
-    )
+    resp = NormalizedResponse(content="", tool_calls=[], finish_reason="stop", usage={"input": 10, "output": 5})
     assert resp.usage == {"input": 10, "output": 5}
 
 
@@ -151,9 +149,7 @@ async def test_transport_client_repairs_malformed_arguments() -> None:
 async def test_transport_client_passes_tools_to_transport() -> None:
     """Registered schemas are forwarded as tool defs to transport.complete()."""
     transport = MagicMock()
-    transport.complete = AsyncMock(
-        return_value=NormalizedResponse(content="ok", tool_calls=[], finish_reason="stop")
-    )
+    transport.complete = AsyncMock(return_value=NormalizedResponse(content="ok", tool_calls=[], finish_reason="stop"))
     registry = ToolRegistry()
     registry.register_schema(
         "my_tool",

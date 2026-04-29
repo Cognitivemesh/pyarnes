@@ -80,6 +80,7 @@ def test_scaffold_generates(shape: str, run_copy, tmp_path: Path) -> None:
     # for the shape-specific guardrails and tools.
     import sys
     import importlib.util
+
     pipeline_path = agent_kit / "pipeline.py"
     spec = importlib.util.spec_from_file_location("pipeline", pipeline_path)
     pipeline_mod = importlib.util.module_from_spec(spec)

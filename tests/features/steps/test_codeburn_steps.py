@@ -87,10 +87,7 @@ def _then_grade_in_range(codeburn_ctx: dict[str, Any]) -> None:
 
 @then('a "codeburn.optimize.report" event is emitted')
 def _then_event_emitted(codeburn_ctx: dict[str, Any]) -> None:
-    lines = [
-        line for line in codeburn_ctx["log_buf"].getvalue().splitlines()
-        if line.strip()
-    ]
+    lines = [line for line in codeburn_ctx["log_buf"].getvalue().splitlines() if line.strip()]
     events = [json.loads(line) for line in lines]
     assert any(e.get("event") == "codeburn.optimize.report" for e in events)
 

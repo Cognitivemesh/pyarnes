@@ -18,10 +18,10 @@ __all__ = ["sanitize_messages", "sanitize_str"]
 # Surrogates (U+D800-U+DFFF) - invalid in UTF-8 streams.
 # C0 controls except HT/LF/CR, plus DEL (U+007F) and C1 block (U+0080-U+009F).
 _STRIP = re.compile(
-    r"[\ud800-\udfff"          # surrogates
+    r"[\ud800-\udfff"  # surrogates
     r"\x00-\x08\x0b\x0c\x0e-\x1f"  # C0 except HT(\x09) LF(\x0a) CR(\x0d)
-    r"\x7f"                    # DEL
-    r"\x80-\x9f]",             # C1 block
+    r"\x7f"  # DEL
+    r"\x80-\x9f]",  # C1 block
     re.UNICODE,
 )
 

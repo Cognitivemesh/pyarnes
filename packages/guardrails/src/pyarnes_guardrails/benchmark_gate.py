@@ -11,10 +11,12 @@ Usage::
     from pyarnes_bench.eval import EvalSuite, EvalResult
     from pyarnes_guardrails.benchmark_gate import BenchmarkGateGuardrail
 
+
     async def run_my_suite() -> EvalSuite:
         suite = EvalSuite(name="smoke")
         suite.add(EvalResult(scenario="s1", score=0.9, passed=True))
         return suite
+
 
     gate = BenchmarkGateGuardrail(suite_factory=run_my_suite, threshold=0.8)
     chain = GuardrailChain(guardrails=[gate])
@@ -37,8 +39,7 @@ class _HasScore(Protocol):
     """Minimal interface required from the factory return value."""
 
     @property
-    def average_score(self) -> float:
-        ...
+    def average_score(self) -> float: ...
 
 
 @dataclass(frozen=True, slots=True)

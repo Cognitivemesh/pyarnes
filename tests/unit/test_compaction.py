@@ -74,9 +74,9 @@ def test_find_cut_index_cuts_at_turn_boundary() -> None:
     """Cut must land on a user message, not mid-assistant or mid-tool."""
     # Build: user0/assistant0 | user1/assistant1 — keep only user1 onwards
     msgs = [
-        _make_user(_long_content(400)),    # 100 tokens — old
+        _make_user(_long_content(400)),  # 100 tokens — old
         _make_assistant(_long_content(400)),  # 100 tokens — old
-        _make_user(_long_content(400)),    # 100 tokens — keep
+        _make_user(_long_content(400)),  # 100 tokens — keep
         _make_assistant(_long_content(400)),  # 100 tokens — keep
     ]
     # keep_tokens=200 → keep last two messages (200 tokens); cut after idx 1
@@ -91,9 +91,9 @@ def test_find_cut_index_never_splits_tool_pair() -> None:
     The implementation must move it back to idx 2 so both pair members are kept.
     """
     msgs = [
-        _make_user(_long_content(400)),               # 100 tok  idx 0
-        _make_assistant(_long_content(400)),          # 100 tok  idx 1
-        _make_tool_call(_long_content(400)),          # 100 tok  idx 2  ← pair member
+        _make_user(_long_content(400)),  # 100 tok  idx 0
+        _make_assistant(_long_content(400)),  # 100 tok  idx 1
+        _make_tool_call(_long_content(400)),  # 100 tok  idx 2  ← pair member
         _make_tool_result(content=_long_content(400)),  # 100 tok  idx 3  ← pair member
     ]
     # Backward scan with keep_tokens=100:
@@ -188,9 +188,7 @@ async def test_compact_never_splits_tool_pair() -> None:
     result = await compact(msgs, model, config)
 
     # Find tool_call index in result — there must be a paired tool result immediately after
-    tool_call_indices = [
-        i for i, m in enumerate(result) if m.get("tool_calls")
-    ]
+    tool_call_indices = [i for i, m in enumerate(result) if m.get("tool_calls")]
     for tc_idx in tool_call_indices:
         assert tc_idx + 1 < len(result), "tool_call at end with no paired result"
         assert result[tc_idx + 1]["role"] == "tool", "tool_call not paired with tool result"

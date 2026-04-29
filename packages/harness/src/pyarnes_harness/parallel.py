@@ -61,10 +61,7 @@ async def execute_batch(
         Results in the same order as *calls*.
     """
     if can_parallelize(calls):
-        tasks = [
-            handler_fn(c["tool"], c.get("id", ""), c.get("arguments") or {})
-            for c in calls
-        ]
+        tasks = [handler_fn(c["tool"], c.get("id", ""), c.get("arguments") or {}) for c in calls]
         return list(await asyncio.gather(*tasks))
 
     results: list[Any] = []
