@@ -21,6 +21,10 @@ dependencies = [
     "litellm>=1.0",
     "more-itertools>=10.5",
     "pydantic>=2.6",
+    # Audit subpackage (pyarnes_bench.audit) — Python-only code-graph + audit.
+    "tree-sitter>=0.22",
+    "tree-sitter-python>=0.21",
+    "networkx>=3.2",
 ]
 
 [build-system]

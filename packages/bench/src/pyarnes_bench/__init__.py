@@ -30,6 +30,17 @@ Token burn (lite port of getagentseal/codeburn):
 
 from __future__ import annotations
 
+from pyarnes_bench.audit import (
+    AuditConfig,
+    Finding,
+    audit_graph,
+    build_graph,
+    god_nodes,
+    load_graph,
+    save_graph,
+    suggested_questions,
+    surprising_connections,
+)
 from pyarnes_bench.burn import (
     BurnTracker,
     ClaudeCodeProvider,
@@ -75,6 +86,7 @@ from pyarnes_bench.swe_bench import SWEBenchScenario
 
 __all__ = [
     "AsyncScorer",
+    "AuditConfig",
     "BurnTracker",
     "CitationClaim",
     "ClaudeCodeProvider",
@@ -87,6 +99,7 @@ __all__ = [
     "FactEvaluator",
     "FactMetrics",
     "FactPrompts",
+    "Finding",
     "GuardrailComplianceScorer",
     "JsonlProvider",
     "LLMJudgeScorer",
@@ -106,7 +119,14 @@ __all__ = [
     "TokenUsage",
     "ToolUseCorrectnessScorer",
     "TrajectoryLengthScorer",
+    "audit_graph",
+    "build_graph",
     "effective_citations_across",
+    "god_nodes",
+    "load_graph",
+    "save_graph",
+    "suggested_questions",
+    "surprising_connections",
 ]
 
 from pyarnes_core.packaging import version_of
