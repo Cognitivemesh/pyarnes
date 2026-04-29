@@ -164,6 +164,11 @@ venv.bak/
 .pyarnes/
 docs/assets/graph/
 
+# macOS Finder duplicates ("filename 2.ext", "filename 3.ext", ...) — the
+# Finder generates these whenever a file is duplicated locally; they should
+# never end up in the index.
+* [0-9].*
+
 # mypy
 .mypy_cache/
 .dmypy.json
