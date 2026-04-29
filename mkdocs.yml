@@ -1,0 +1,24 @@
+site_name: pyarnes
+site_description: Minimal agentic harness engineering template
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Adopter:
+      - Build:
+          - Quickstart: adopter/build/quickstart.md
