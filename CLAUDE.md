@@ -101,6 +101,8 @@ uv run tasks complexity  # radon:cc + radon:mi
 - `packages/guardrails/` — **pyarnes-guardrails**: composable safety guardrails
 - `packages/bench/` — **pyarnes-bench**: evaluation and benchmarking toolkit
 - `packages/tasks/` — **pyarnes-tasks**: cross-platform task runner (the `tasks` CLI)
+- `plugins/` — task plugins discovered by `pyarnes-tasks` at startup
+  (one Python file per task; subclass `Plugin`/`ShellPlugin`/`ScriptPlugin`/etc.)
 - `tests/unit/` — unit tests
 - `tests/features/` — BDD feature files (pytest-bdd / Gherkin)
 - `specs/consolidation/` — canonical specs for `pyarnes_swarm` (replaces docs/)

@@ -106,4 +106,4 @@ current_year:
 # Post-scaffold hook
 # ---------------------------------------------------------------------------
 _tasks:
-  - uv run --no-sync python -m pyarnes_tasks post_scaffold
+  - uv run --no-sync tasks post_scaffold

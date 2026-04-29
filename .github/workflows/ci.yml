@@ -34,5 +34,5 @@ jobs:
 
       - name: Run composite CI task
         # Runs: format:check + lint + typecheck + test:cov + security
-        # (defined in packages/tasks/src/pyarnes_tasks/cli.py COMPOSITE_TASKS)
+        # (defined in plugins/ci.py — the CompositePlugin's `subtasks`)
         run: uv run tasks ci
