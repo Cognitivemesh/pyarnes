@@ -103,21 +103,18 @@ def suggested_questions(graph: nx.DiGraph, *, top_n: int = 7) -> list[str]:
         name = graph.nodes[node].get("name", node)
         if score > 0:
             questions.append(
-                f"`{name}` sits on the highest-betweenness path "
-                f"(score {score:.3f}); is the coupling intentional?"
+                f"`{name}` sits on the highest-betweenness path (score {score:.3f}); is the coupling intentional?"
             )
 
     for entry in god_nodes(graph, top_n=3):
         questions.append(
-            f"`{entry['name']}` has total degree {entry['total_degree']} — "
-            f"is it a god object that should be split?"
+            f"`{entry['name']}` has total degree {entry['total_degree']} — is it a god object that should be split?"
         )
 
     isolated = list(_isolated_components(graph))
     if isolated:
         questions.append(
-            f"{len(isolated)} weakly-connected components have <= 2 nodes; "
-            "are they orphans that can be removed?"
+            f"{len(isolated)} weakly-connected components have <= 2 nodes; are they orphans that can be removed?"
         )
 
     return questions[:top_n]

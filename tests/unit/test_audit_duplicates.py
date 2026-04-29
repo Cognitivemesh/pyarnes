@@ -20,7 +20,7 @@ _LONG_BODY_A = (
     "    return total\n"
 )
 _LONG_BODY_B_SAME_LOGIC = (
-    'def g(x):\n'
+    "def g(x):\n"
     '    """Different docstring."""\n'
     "    total = 0\n"
     "    for i in range(x):\n"
