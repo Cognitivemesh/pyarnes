@@ -191,6 +191,26 @@ ignore = [
     "FBT",    # Boolean params fine in tests
     "PLR2004", # Magic values fine in tests
 ]
+"plugins/serve_specs.py" = [
+    # Single-purpose dev docs server: HTML/JSON template strings, pinned
+    # subprocess invocations, and many small render helpers. The rules below
+    # don't fit a 1500-line server-template file.
+    "E501",   # Long HTML / inline-style lines
+    "S603",   # Pinned subprocess invocations (mkdocs / python -m http.server)
+    "S607",   # Same — partial executable paths to `python` / `mkdocs`
+    "PERF401", # Loop append patterns are clearer than comprehensions for HTML emit
+    "RUF001",  # En-dash usage in user-facing strings is intentional
+    "RUF002",  # En-dash in docstrings — ditto
+    "PLR0911", # Many small early-returns in URL routing
+    "PLR0915", # Big render functions match the size of the rendered template
+    "PLR2004", # Display thresholds (30/90) are local one-shots
+    "C901",    # Render orchestrator complexity — readable as one pass
+    "A002",    # `format` arg name mirrors HTTP query param
+    "ARG002",  # Unused method args are required by the SimpleHTTPRequestHandler interface
+    "F841",    # `in_block` parser flag retained for readability
+    "SIM105",  # try/except/pass on ProcessLookupError is intentional and short
+    "D107",    # __init__ docstring optional in this script
+]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Three-layer token budget — pyarnes_swarm</title>
+<style>
+  :root {
+    --paper: #faf7f2;
+    --ink: #1c1917;
+    --muted: #6b6b6b;
+    --accent: #b5523a;
+    --hairline: #d4d0c8;
+    --tint: #f1ece2;
+    --warn: #c69b3a;
+    --baseline: #4a6b8a;
+  }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    padding: 32px;
+  }
+  .frame {
+    max-width: 940px;
+    margin: 0 auto;
+    border: 1px solid var(--hairline);
+    background: var(--paper);
+    padding: 28px 28px 16px 28px;
+  }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px 0; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 24px 0; font-size: 13px; }
+  svg { display: block; margin: 0 auto; }
+  .ring-outer { fill: #fbeeea; stroke: var(--accent); stroke-width: 1.4; }
+  .ring-mid   { fill: #fbf3df; stroke: var(--warn); stroke-width: 1.4; }
+  .ring-inner { fill: #e9eef4; stroke: var(--baseline); stroke-width: 1.4; }
+  .ring-label { font-size: 13px; font-weight: 600; }
+  .ring-label-mono { font-family: ui-monospace, "JetBrains Mono", monospace; font-size: 12px; }
+  .layer-tag-outer  { fill: var(--accent); }
+  .layer-tag-mid    { fill: var(--warn); }
+  .layer-tag-inner  { fill: var(--baseline); }
+  .layer-tag-text { fill: var(--paper); font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .ring-text { font-size: 11.5px; fill: var(--ink); }
+  .ring-text-muted { font-size: 11px; fill: var(--muted); }
+  .gauge-arrow { stroke: var(--accent); stroke-width: 1.4; fill: none; marker-end: url(#arrow-accent); }
+  .gauge-label { font-size: 11px; fill: var(--accent); font-weight: 600; }
+  .top-label { font-size: 13px; fill: var(--ink); font-weight: 500; text-anchor: middle; }
+  .top-label-mono { font-size: 12px; font-family: ui-monospace, monospace; }
+  .footer-note { font-size: 11.5px; fill: var(--muted); }
+</style>
+</head>
+<body>
+<section class="frame">
+  <h1>Three-layer token budget — concentric capacity model</h1>
+  <p class="sub">Owning spec: <code>08-token-budget.md</code>. Three complementary token controls — all measured via <code>litellm.token_counter()</code>. The outer ring is the largest (session-cumulative cap); the inner ring is the smallest (unavoidable system overhead).</p>
+
+  <svg viewBox="0 0 880 580" width="880" height="580" role="img" aria-label="Three concentric layers showing token-budget controls">
+    <defs>
+      <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#b5523a"/>
+      </marker>
+    </defs>
+
+    <!-- top label -->
+    <text class="top-label" x="440" y="32">All three layers measured via
+      <tspan class="top-label-mono">litellm.token_counter()</tspan>
+    </text>
+
+    <!-- Outer ring: Budget.max_tokens — large -->
+    <rect class="ring-outer" x="80" y="64" width="720" height="460" rx="8"/>
+    <rect class="layer-tag-outer" x="96" y="76" width="240" height="22"/>
+    <text class="layer-tag-text" x="106" y="91">OUTERMOST · SESSION HARD CAP</text>
+    <text class="ring-label" x="106" y="124">
+      <tspan class="ring-label-mono" style="font-weight: 600;">Budget.max_tokens</tspan>
+    </text>
+    <text class="ring-text" x="106" y="142">Cumulative cap across the entire session.</text>
+    <text class="ring-text" x="106" y="158">When total tokens hit this, the loop stops.</text>
+    <text class="ring-text-muted" x="106" y="176">Failure mode: runaway iterations, recursive tool calls, infinite agent loops.</text>
+
+    <!-- Middle ring: capacity_threshold -->
+    <rect class="ring-mid" x="148" y="200" width="584" height="280" rx="6"/>
+    <rect class="layer-tag-mid" x="164" y="212" width="252" height="22"/>
+    <text class="layer-tag-text" x="174" y="227">MIDDLE · PER-REQUEST SOFT TRIGGER</text>
+    <text class="ring-label" x="174" y="260">
+      <tspan class="ring-label-mono" style="font-weight: 600;">MessageCompactorConfig.capacity_threshold</tspan>
+    </text>
+    <text class="ring-text" x="174" y="278">When <tspan style="font-family: ui-monospace, monospace;">tokens / context_window ≥ threshold</tspan>,</text>
+    <text class="ring-text" x="174" y="294"><tspan style="font-family: ui-monospace, monospace;">MessageCompactor.compact()</tspan> runs to summarise old messages.</text>
+    <text class="ring-text-muted" x="174" y="312">Failure mode: O(n²) context growth across iterations.</text>
+
+    <!-- Inner ring: system overhead -->
+    <rect class="ring-inner" x="220" y="340" width="440" height="120" rx="4"/>
+    <rect class="layer-tag-inner" x="236" y="352" width="240" height="22"/>
+    <text class="layer-tag-text" x="246" y="367">INNERMOST · BASELINE FLOOR</text>
+    <text class="ring-label" x="246" y="400">System overhead</text>
+    <text class="ring-text" x="246" y="418">System prompt + tool schemas. Measured once at startup</text>
+    <text class="ring-text" x="246" y="434">via <tspan style="font-family: ui-monospace, monospace;">acount_tokens(system_prompt + tool_schemas)</tspan>.</text>
+    <text class="ring-text-muted" x="246" y="450">Compaction cannot cut below this floor.</text>
+
+    <!-- Compaction zone arrow between mid and inner -->
+    <g>
+      <line class="gauge-arrow" x1="700" y1="342" x2="660" y2="342"/>
+      <line class="gauge-arrow" x1="700" y1="458" x2="660" y2="458"/>
+      <text class="gauge-label" x="708" y="346">compaction</text>
+      <text class="gauge-label" x="708" y="360">operates</text>
+      <text class="gauge-label" x="708" y="374">between</text>
+      <text class="gauge-label" x="708" y="388">these layers</text>
+    </g>
+
+    <!-- footer note -->
+    <text class="footer-note" x="80" y="544">Output token estimation heuristics are separate — see <tspan style="font-family: ui-monospace, monospace;">## Output Token Heuristics Table</tspan> and <tspan style="font-family: ui-monospace, monospace;">## TALE Self-Estimation Technique</tspan> sections of this spec.</text>
+    <text class="footer-note" x="80" y="562">Orientation: concentric (Russian doll), not stacked (cake layers). Outer ring = largest budget; inner ring = irreducible baseline.</text>
+  </svg>
+</section>
+</body>
+</html>

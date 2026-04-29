@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lifecycle FSM — pyarnes_swarm AgentRuntime</title>
+<style>
+  :root {
+    --paper: #faf7f2;
+    --ink: #1c1917;
+    --muted: #6b6b6b;
+    --accent: #b5523a;
+    --hairline: #d4d0c8;
+    --tint: #f1ece2;
+  }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    padding: 32px;
+  }
+  .frame {
+    max-width: 940px;
+    margin: 0 auto;
+    border: 1px solid var(--hairline);
+    background: var(--paper);
+    padding: 28px 28px 16px 28px;
+  }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px 0; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 24px 0; font-size: 13px; }
+  svg { display: block; margin: 0 auto; }
+  .state { fill: var(--tint); stroke: var(--ink); stroke-width: 1.2; }
+  .state-initial { fill: var(--paper); stroke: var(--ink); stroke-width: 1.2; }
+  .state-terminal-outer { fill: none; stroke: var(--ink); stroke-width: 1.2; }
+  .state-cluster { fill: none; stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+  .state-label { font-size: 13px; font-weight: 600; fill: var(--ink); }
+  .state-label-terminal { font-size: 13px; font-weight: 600; fill: var(--accent); }
+  .edge { stroke: var(--ink); stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
+  .edge-accent { stroke: var(--accent); stroke-width: 1.4; fill: none; marker-end: url(#arrow-accent); }
+  .edge-label { font-size: 11.5px; fill: var(--ink); }
+  .edge-label-mono { font-size: 11px; font-family: ui-monospace, "JetBrains Mono", monospace; fill: var(--ink); }
+  .label-bg { fill: var(--paper); }
+  .cluster-label { font-size: 11px; font-weight: 600; fill: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
+  .callout-box { fill: var(--paper); stroke: var(--accent); stroke-width: 1.2; }
+  .callout-tag { fill: var(--accent); }
+  .callout-tag-text { fill: var(--paper); font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .callout-text { font-size: 12px; fill: var(--ink); }
+  .start-dot { fill: var(--ink); }
+</style>
+</head>
+<body>
+<section class="frame">
+  <h1>Lifecycle FSM — <span style="font-family: ui-monospace, monospace; font-weight: 500;">AgentRuntime</span></h1>
+  <p class="sub">Owning spec: <code>07-swarm-api.md § Lifecycle FSM</code>. Six states; the three terminal states are mutually exclusive — exactly one is reached per run.</p>
+
+  <svg viewBox="0 0 880 540" width="880" height="540" role="img" aria-label="Lifecycle state machine diagram">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#1c1917"/>
+      </marker>
+      <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#b5523a"/>
+      </marker>
+    </defs>
+
+    <!-- start dot + initial -->
+    <circle class="start-dot" cx="60" cy="80" r="6"/>
+    <line class="edge" x1="66" y1="80" x2="148" y2="80"/>
+
+    <!-- created (initial) -->
+    <rect class="state-initial" x="150" y="58" width="120" height="44" rx="6"/>
+    <text class="state-label" x="210" y="84" text-anchor="middle">created</text>
+
+    <!-- running -->
+    <rect class="state" x="380" y="58" width="120" height="44" rx="6"/>
+    <text class="state-label" x="440" y="84" text-anchor="middle">running</text>
+
+    <!-- paused -->
+    <rect class="state" x="380" y="220" width="120" height="44" rx="6"/>
+    <text class="state-label" x="440" y="246" text-anchor="middle">paused</text>
+
+    <!-- terminal cluster -->
+    <rect class="state-cluster" x="610" y="36" width="240" height="486" rx="6"/>
+    <text class="cluster-label" x="730" y="54" text-anchor="middle">RUN END (TERMINAL)</text>
+
+    <!-- done -->
+    <rect class="state" x="660" y="86" width="140" height="56" rx="6"/>
+    <rect class="state-terminal-outer" x="654" y="80" width="152" height="68" rx="9"/>
+    <text class="state-label-terminal" x="730" y="120" text-anchor="middle">done</text>
+
+    <!-- failed -->
+    <rect class="state" x="660" y="234" width="140" height="56" rx="6"/>
+    <rect class="state-terminal-outer" x="654" y="228" width="152" height="68" rx="9"/>
+    <text class="state-label-terminal" x="730" y="268" text-anchor="middle">failed</text>
+
+    <!-- interrupted -->
+    <rect class="state" x="660" y="382" width="140" height="56" rx="6"/>
+    <rect class="state-terminal-outer" x="654" y="376" width="152" height="68" rx="9"/>
+    <text class="state-label-terminal" x="730" y="416" text-anchor="middle">interrupted</text>
+
+    <!-- edges -->
+    <!-- created → running -->
+    <line class="edge" x1="270" y1="80" x2="378" y2="80"/>
+    <rect class="label-bg" x="282" y="64" width="84" height="14"/>
+    <text class="edge-label-mono" x="324" y="76" text-anchor="middle">start()</text>
+
+    <!-- running → done -->
+    <line class="edge" x1="500" y1="92" x2="658" y2="114"/>
+    <rect class="label-bg" x="514" y="92" width="124" height="14"/>
+    <text class="edge-label" x="576" y="104" text-anchor="middle">final_answer returned</text>
+
+    <!-- running → failed -->
+    <line class="edge-accent" x1="500" y1="100" x2="658" y2="262"/>
+    <rect class="label-bg" x="510" y="166" width="148" height="14"/>
+    <text class="edge-label-mono" x="584" y="178" text-anchor="middle">UnexpectedError</text>
+
+    <!-- running → interrupted -->
+    <line class="edge" x1="500" y1="92" x2="658" y2="408" />
+    <rect class="label-bg" x="528" y="294" width="156" height="28"/>
+    <text class="edge-label-mono" x="606" y="306" text-anchor="middle">UserFixableError</text>
+    <text class="edge-label" x="606" y="318" text-anchor="middle">or budget exhausted</text>
+
+    <!-- running ↔ paused -->
+    <path class="edge" d="M 430 102 C 410 150, 410 200, 430 218"/>
+    <rect class="label-bg" x="338" y="150" width="76" height="14"/>
+    <text class="edge-label-mono" x="376" y="162" text-anchor="middle">pause()</text>
+
+    <path class="edge" d="M 450 218 C 470 200, 470 150, 450 102"/>
+    <rect class="label-bg" x="466" y="150" width="84" height="14"/>
+    <text class="edge-label-mono" x="508" y="162" text-anchor="middle">resume()</text>
+
+    <!-- paused → interrupted -->
+    <line class="edge" x1="500" y1="248" x2="658" y2="408"/>
+    <rect class="label-bg" x="510" y="338" width="124" height="14"/>
+    <text class="edge-label" x="572" y="350" text-anchor="middle">user interrupt</text>
+
+    <!-- paused → failed -->
+    <path class="edge" d="M 500 232 C 580 232, 620 256, 658 262" />
+    <rect class="label-bg" x="528" y="208" width="124" height="14"/>
+    <text class="edge-label" x="590" y="220" text-anchor="middle">timeout while paused</text>
+
+    <!-- callout: steering queue -->
+    <g>
+      <rect class="callout-box" x="36" y="250" width="306" height="92" rx="3"/>
+      <rect class="callout-tag" x="36" y="250" width="120" height="20"/>
+      <text class="callout-tag-text" x="44" y="264">STEERING QUEUE</text>
+      <text class="callout-text" x="48" y="288">Steering-queue requests deliver into the</text>
+      <text class="callout-text" x="48" y="304"><tspan style="font-family: ui-monospace, monospace;">running ↔ paused</tspan> edges; the queue drains</text>
+      <text class="callout-text" x="48" y="320">on <tspan style="font-family: ui-monospace, monospace;">resume()</tspan>, not while the loop is suspended.</text>
+    </g>
+
+    <!-- callout: failed transitions -->
+    <g>
+      <rect class="callout-box" x="36" y="380" width="306" height="80" rx="3"/>
+      <rect class="callout-tag" x="36" y="380" width="170" height="20"/>
+      <text class="callout-tag-text" x="44" y="394">ERROR-TAXONOMY MAPPING</text>
+      <text class="callout-text" x="48" y="418">See <tspan style="font-family: ui-monospace, monospace;">01-package-structure.md § errors.py</tspan></text>
+      <text class="callout-text" x="48" y="434">for full error class definitions and</text>
+      <text class="callout-text" x="48" y="450"><tspan style="font-family: ui-monospace, monospace;">07-swarm-api.md § Error handling</tspan> for recovery.</text>
+    </g>
+  </svg>
+</section>
+</body>
+</html>

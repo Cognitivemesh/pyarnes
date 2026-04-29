@@ -7,18 +7,35 @@
 > | **Title** | pyarnes_swarm — Package Structure |
 > | **Status** | active |
 > | **Type** | core-runtime |
+> | **Tags** | architecture, packaging, imports |
 > | **Owns** | package boundaries, layer rules, ports.py contracts (TaskMeta, ModelClientPort, ToolHandler), errors.py taxonomy, semver-stable __init__ surface, file/folder architecture |
 > | **Depends on** | 00-overview.md |
 > | **Extends** | — |
 > | **Supersedes** | — |
 > | **Read after** | 00-overview.md |
-> | **Read before** | 02-message-bus.md |
-> | **Not owned here** | runtime loop sequence and recovery semantics (see `04-swarm-api.md`); evaluation contracts (see `07-bench-integrated-axes.md`); hook integration (see `06-hook-integration.md`, `21-loop-hooks.md`); transport adapters (see `22-transport.md`) |
+> | **Read before** | 02-test-strategy.md |
+> | **Not owned here** | runtime loop sequence and recovery semantics (see `07-swarm-api.md`); evaluation contracts (see `15-bench-integrated-axes.md`); hook integration (see `10-hook-integration.md`, `09-loop-hooks.md`); transport adapters (see `12-transport.md`) |
 > | **Last reviewed** | 2026-04-29 |
 
-## Flat layout (18 top-level files + bench/ subpackage)
+## Design Rationale
 
-```
+**Why a single `ports.py` for all Protocols?** When you need to implement a custom backend (model, bus, router), you read one file to understand every contract in the system. Spreading Protocols across files forces readers to hunt — and creates the temptation to define slightly incompatible versions of the same interface in different places.
+
+**Why `ModelClientPort` (Protocol) and `Guardrail` (ABC) instead of one or the other?**
+- `ModelClientPort` uses structural typing (`Protocol`) because model implementations often live in different codebases and inheritance would create a cross-package dependency.
+- `Guardrail` uses an ABC because it provides useful default behaviour (violation logging) that inheritors get for free. A Protocol can't provide defaults.
+
+**Why 18 flat files instead of deep subpackage nesting?** Each file has one clear purpose. If you want to understand routing, read `routing.py` — you don't need to navigate `core/routing/impl/strategies/llm_cost.py`. Flat layouts also mean shorter import paths, which are harder to accidentally break.
+
+**Why is a layer violation a bug, not a style issue?** If `agent.py` imports from `bus.py` (an adapter), then changing the bus implementation requires reading and potentially changing the agent. The whole point of the layer boundary is that domain logic should not know about infra choices. A linter or import checker should catch these violations in CI.
+
+## Specification
+
+> **Diagram:** [Package architecture playground](diagrams/01-package-structure.html). Interactive map of the five packages (core · guardrails · harness · bench · tasks), with layer toggles, connection-type filters (dependency · data-flow · tool-call · event · skill-invoke), and click-to-comment on any module.
+
+### Flat layout (18 top-level files + bench/ subpackage)
+
+```bash
 packages/swarm/
 ├── pyproject.toml
 └── src/
@@ -44,7 +61,8 @@ packages/swarm/
         ├── bus_nats.py       # NatsJetStreamBus (only importable with [nats] extra)
         ├── guardrails.py     # Guardrail ABC (inherit to write a guardrail) +
 │                     #   GuardrailChain + all built-in guardrail classes
-│                     # Note: GuardrailPort (in ports.py) is the injection Protocol —
+│                     # Note: !!! note "GuardrailPort vs. Guardrail"
+    GuardrailPort (in ports.py) is the injection Protocol —
 │                     #   used by Swarm to accept the chain; Guardrail is the ABC callers subclass
         │
         │  ── INFRASTRUCTURE (I/O helpers — no domain logic) ────
@@ -88,19 +106,7 @@ packages/swarm/
                 └── compare.py
 ```
 
-## Design Rationale
-
-**Why a single `ports.py` for all Protocols?** When you need to implement a custom backend (model, bus, router), you read one file to understand every contract in the system. Spreading Protocols across files forces readers to hunt — and creates the temptation to define slightly incompatible versions of the same interface in different places.
-
-**Why `ModelClientPort` (Protocol) and `Guardrail` (ABC) instead of one or the other?**
-- `ModelClientPort` uses structural typing (`Protocol`) because model implementations often live in different codebases and inheritance would create a cross-package dependency.
-- `Guardrail` uses an ABC because it provides useful default behaviour (violation logging) that inheritors get for free. A Protocol can't provide defaults.
-
-**Why 18 flat files instead of deep subpackage nesting?** Each file has one clear purpose. If you want to understand routing, read `routing.py` — you don't need to navigate `core/routing/impl/strategies/llm_cost.py`. Flat layouts also mean shorter import paths, which are harder to accidentally break.
-
-**Why is a layer violation a bug, not a style issue?** If `agent.py` imports from `bus.py` (an adapter), then changing the bus implementation requires reading and potentially changing the agent. The whole point of the layer boundary is that domain logic should not know about infra choices. A linter or import checker should catch these violations in CI.
-
-## Layer rules
+### Layer rules
 
 Each layer may only import from layers above it in the list. Import from a lower layer is a bug.
 
@@ -113,7 +119,7 @@ Each layer may only import from layers above it in the list. Import from a lower
 | `__init__.py` | all |
 | `bench/` | contracts, domain, infrastructure |
 
-## Public API (`__init__.py`) — 14 symbols
+### Public API (`__init__.py`) — 14 symbols
 
 ```python
 from pyarnes_swarm.swarm      import Swarm, AgentSpec
@@ -122,6 +128,7 @@ from pyarnes_swarm.ports      import MessageBus, ModelClientPort, ModelRouter, T
 from pyarnes_swarm.routing    import RuleBasedRouter, LLMCostRouter, ModelTier
 from pyarnes_swarm.bus        import InMemoryBus, TursoMessageBus
 from pyarnes_swarm.guardrails import GuardrailChain
+```
 
 ## Key concepts
 
@@ -165,6 +172,7 @@ class MyRedisAdapter:  # no inheritance — satisfies MessageBus structurally
 
 **Learning**: [PEP 544](https://peps.python.org/pep-0544/) — the proposal that added `Protocol` to Python; explains why it's safer than plain duck typing
 
+```python
 __all__ = [
     "Swarm", "AgentSpec",
     "AgentRuntime", "LoopConfig",
@@ -180,7 +188,7 @@ __all__ = [
 
 Everything else is importable by path (`from pyarnes_swarm.budget import Budget`) but not part of the guaranteed public surface.
 
-## Public API stability and semver
+### Public API stability and semver
 
 The guaranteed top-level public surface is exactly the set exported from `pyarnes_swarm.__init__`. Those symbols are the stable entry points adopters may depend on across minor releases.
 
@@ -207,7 +215,7 @@ Semver expectations:
 
 Anything importable only by deep path (`pyarnes_swarm.<module>`) but not re-exported from `__init__` is a documented implementation surface, not part of the strongest stability guarantee.
 
-## `ports.py` — all Protocols in one file
+### `ports.py` — all Protocols in one file
 
 ```python
 class ToolHandler(Protocol):
@@ -248,7 +256,7 @@ class MessageTransformer(Protocol):
 
 `MessageTransformer` moves here from `harness/transform.py` (its only consumer is `compaction.py`, but the Protocol belongs with contracts). `TransformChain` stays in `agent.py` — it is an implementation, not a contract.
 
-## `errors.py` — complete error taxonomy
+### `errors.py` — complete error taxonomy
 
 ```python
 class TransientError(Exception):
@@ -272,7 +280,7 @@ class Severity(str, Enum):
 
 `Severity` is kept in `errors.py` but removed from `__all__` — internal use only.
 
-## Dependencies (`pyproject.toml`)
+### Dependencies (`pyproject.toml`)
 
 ```toml
 [project]
@@ -291,7 +299,7 @@ otel  = ["opentelemetry-sdk>=1.20", "opentelemetry-exporter-otlp>=1.20"]
 bench = ["pyarnes-swarm[otel]", "pydantic>=2.0"]
 ```
 
-## What moved where
+### What moved where
 
 | Source (monorepo) | Destination |
 |---|---|
@@ -317,7 +325,7 @@ bench = ["pyarnes-swarm[otel]", "pydantic>=2.0"]
 | `harness/secrets.py` (new) | `secrets.py` |
 | `bench/` | `bench/` (mostly verbatim, scorers merged) |
 
-## What was deleted
+### What was deleted
 
 | Deleted | Reason |
 |---|---|
@@ -331,7 +339,7 @@ bench = ["pyarnes-swarm[otel]", "pydantic>=2.0"]
 | `core/dispatch/ports.py` shim | Merged into `ports.py` |
 | `core/types.py` shim | Merged into `ports.py` |
 
-### Layer Violations as CI-Checkable Bugs
+#### Layer Violations as CI-Checkable Bugs
 
 To enforce the layered architecture, layer violations must be treated as explicit, CI-checkable bugs rather than just documentation guidelines. This is enforced using `ruff` rules:
 
