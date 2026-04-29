@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LLMCostRouter pipeline — pyarnes_swarm model routing</title>
+<style>
+  :root {
+    --paper: #faf7f2;
+    --ink: #1c1917;
+    --muted: #6b6b6b;
+    --accent: #b5523a;
+    --hairline: #d4d0c8;
+    --tint: #f1ece2;
+  }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    padding: 32px;
+  }
+  .frame {
+    max-width: 920px;
+    margin: 0 auto;
+    border: 1px solid var(--hairline);
+    background: var(--paper);
+    padding: 28px 28px 16px 28px;
+  }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px 0; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 24px 0; font-size: 13px; }
+  svg { display: block; margin: 0 auto; }
+  .terminator { fill: var(--paper); stroke: var(--ink); stroke-width: 1.2; }
+  .step { fill: var(--tint); stroke: var(--ink); stroke-width: 1.2; }
+  .step-error { fill: var(--paper); stroke: var(--accent); stroke-width: 1.4; }
+  .decision { fill: var(--paper); stroke: var(--ink); stroke-width: 1.2; }
+  .step-label { font-size: 13px; font-weight: 600; fill: var(--ink); }
+  .step-label-accent { font-size: 13px; font-weight: 600; fill: var(--accent); }
+  .step-sublabel { font-size: 10.5px; font-family: ui-monospace, monospace; fill: var(--muted); }
+  .step-sublabel-mono { font-size: 11px; font-family: ui-monospace, monospace; fill: var(--ink); }
+  .edge { stroke: var(--ink); stroke-width: 1.2; fill: none; marker-end: url(#arrow); }
+  .edge-accent { stroke: var(--accent); stroke-width: 1.4; fill: none; marker-end: url(#arrow-accent); }
+  .edge-label-mono { font-size: 11px; font-family: ui-monospace, monospace; fill: var(--ink); }
+  .label-bg { fill: var(--paper); }
+  .filter-tag-rect { fill: var(--paper); stroke: var(--muted); stroke-width: 0.8; }
+  .filter-tag-text { font-size: 9px; font-family: ui-monospace, monospace; fill: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .callout-box { fill: var(--paper); stroke: var(--accent); stroke-width: 1.2; }
+  .callout-tag { fill: var(--accent); }
+  .callout-tag-text { fill: var(--paper); font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .callout-text { font-size: 12px; fill: var(--ink); }
+</style>
+</head>
+<body>
+<section class="frame">
+  <h1>LLMCostRouter pipeline</h1>
+  <p class="sub">Owning spec: <code>03-model-router.md § LLMCostRouter</code>. Two sequential filters narrow the candidate set, then a cost sort picks the cheapest survivor. If no model passes both filters, <code>route()</code> raises <code>UserFixableError</code> so the caller can compact the context or add a larger-context tier.</p>
+
+  <svg viewBox="0 0 880 700" width="880" height="700" role="img" aria-label="LLMCostRouter three-filter pipeline flowchart">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#1c1917"/>
+      </marker>
+      <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#b5523a"/>
+      </marker>
+    </defs>
+
+    <!-- Start oval -->
+    <rect class="terminator" x="180" y="40" width="240" height="44" rx="22"/>
+    <text class="step-label" x="300" y="60" text-anchor="middle">route(spec, TaskMeta)</text>
+    <text class="step-sublabel" x="300" y="76" text-anchor="middle">candidates ← all configured models</text>
+
+    <!-- arrow: start → filter 1 -->
+    <line class="edge" x1="300" y1="84" x2="300" y2="124"/>
+
+    <!-- Filter 1: context window -->
+    <rect class="filter-tag-rect" x="60" y="124" width="80" height="14" rx="2"/>
+    <text class="filter-tag-text" x="100" y="134" text-anchor="middle">FILTER 1</text>
+    <rect class="step" x="180" y="124" width="240" height="60" rx="6"/>
+    <text class="step-label" x="300" y="146" text-anchor="middle">Context-window filter</text>
+    <text class="step-sublabel-mono" x="300" y="162" text-anchor="middle">drop model when</text>
+    <text class="step-sublabel-mono" x="300" y="176" text-anchor="middle">max_tokens &lt; required_context_tokens</text>
+
+    <!-- arrow: filter 1 → filter 2 -->
+    <line class="edge" x1="300" y1="184" x2="300" y2="224"/>
+
+    <!-- Filter 2: complexity tier -->
+    <rect class="filter-tag-rect" x="60" y="224" width="80" height="14" rx="2"/>
+    <text class="filter-tag-text" x="100" y="234" text-anchor="middle">FILTER 2</text>
+    <rect class="step" x="180" y="224" width="240" height="60" rx="6"/>
+    <text class="step-label" x="300" y="246" text-anchor="middle">Complexity-tier filter</text>
+    <text class="step-sublabel-mono" x="300" y="262" text-anchor="middle">select tier where</text>
+    <text class="step-sublabel-mono" x="300" y="276" text-anchor="middle">max_complexity ≥ complexity_score</text>
+
+    <!-- arrow: filter 2 → diamond -->
+    <line class="edge" x1="300" y1="284" x2="300" y2="320"/>
+
+    <!-- Decision: candidates empty? -->
+    <polygon class="decision" points="300,320 408,376 300,432 192,376"/>
+    <text class="step-label" x="300" y="372" text-anchor="middle">candidates</text>
+    <text class="step-label" x="300" y="388" text-anchor="middle">remain?</text>
+
+    <!-- arrow: diamond NO → error terminal (right) -->
+    <line class="edge" x1="408" y1="376" x2="540" y2="376"/>
+    <rect class="label-bg" x="430" y="362" width="84" height="14"/>
+    <text class="edge-label-mono" x="472" y="372" text-anchor="middle">no</text>
+
+    <!-- Error terminal -->
+    <rect class="step-error" x="540" y="346" width="240" height="60" rx="22"/>
+    <text class="step-label-accent" x="660" y="368" text-anchor="middle">raise UserFixableError</text>
+    <text class="step-sublabel" x="660" y="384" text-anchor="middle">caller must compact history or</text>
+    <text class="step-sublabel" x="660" y="396" text-anchor="middle">add a larger-context model tier</text>
+
+    <!-- arrow: diamond YES → sort (down) — accent (happy path) -->
+    <line class="edge-accent" x1="300" y1="432" x2="300" y2="476"/>
+    <rect class="label-bg" x="280" y="444" width="40" height="14"/>
+    <text class="edge-label-mono" x="300" y="454" text-anchor="middle">yes</text>
+
+    <!-- Filter 3: cost sort -->
+    <rect class="filter-tag-rect" x="60" y="476" width="80" height="14" rx="2"/>
+    <text class="filter-tag-text" x="100" y="486" text-anchor="middle">SORT 3</text>
+    <rect class="step" x="180" y="476" width="240" height="60" rx="6"/>
+    <text class="step-label" x="300" y="498" text-anchor="middle">Cost sort</text>
+    <text class="step-sublabel-mono" x="300" y="514" text-anchor="middle">litellm.model_cost</text>
+    <text class="step-sublabel-mono" x="300" y="528" text-anchor="middle">order by input_cost_per_token asc</text>
+
+    <!-- arrow: sort → return -->
+    <line class="edge" x1="300" y1="536" x2="300" y2="576"/>
+
+    <!-- End oval -->
+    <rect class="terminator" x="180" y="576" width="240" height="44" rx="22"/>
+    <text class="step-label" x="300" y="596" text-anchor="middle">return model_id</text>
+    <text class="step-sublabel" x="300" y="612" text-anchor="middle">cheapest survivor of both filters</text>
+
+    <!-- callout: feedback loop -->
+    <g>
+      <rect class="callout-box" x="540" y="60" width="284" height="64" rx="3" style="stroke: var(--muted);"/>
+      <rect class="callout-tag" x="540" y="60" width="180" height="20" style="fill: var(--muted);"/>
+      <text class="callout-tag-text" x="548" y="74">EFFICIENCY FEEDBACK</text>
+      <text class="callout-text" x="552" y="98"><tspan style="font-family: ui-monospace, monospace;">EvalSuite.run()</tspan> reports cost-efficiency per</text>
+      <text class="callout-text" x="552" y="114">model; <tspan style="font-family: ui-monospace, monospace;">router.observe()</tspan> updates routing weights.</text>
+    </g>
+
+    <!-- callout: filter ordering rationale -->
+    <g>
+      <rect class="callout-box" x="540" y="442" width="284" height="92" rx="3"/>
+      <rect class="callout-tag" x="540" y="442" width="180" height="20"/>
+      <text class="callout-tag-text" x="548" y="456">WHY THIS ORDER</text>
+      <text class="callout-text" x="552" y="480">Context-window first prevents picking a</text>
+      <text class="callout-text" x="552" y="496">cheap model that would fail silently or</text>
+      <text class="callout-text" x="552" y="512">truncate the prompt. Cost is the LAST</text>
+      <text class="callout-text" x="552" y="528">filter — never trade correctness for price.</text>
+    </g>
+
+    <!-- callout: alternative router -->
+    <g>
+      <rect class="callout-box" x="36" y="660" width="808" height="32" rx="3" style="stroke: var(--muted);"/>
+      <rect class="callout-tag" x="36" y="660" width="180" height="20" style="fill: var(--muted);"/>
+      <text class="callout-tag-text" x="44" y="674">RULEBASEDROUTER</text>
+      <text class="callout-text" x="220" y="680">Alternate router for explicit, auditable rules — see <tspan style="font-family: ui-monospace, monospace;">RoutingRule</tspan> list. Rules and cost-routing are sibling implementations of the <tspan style="font-family: ui-monospace, monospace;">ModelRouter</tspan> Protocol.</text>
+    </g>
+  </svg>
+</section>
+</body>
+</html>

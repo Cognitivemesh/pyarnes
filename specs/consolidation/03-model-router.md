@@ -84,6 +84,8 @@ router = RuleBasedRouter([
 
 ## `LLMCostRouter` — cost-aware via LiteLLM
 
+> **Diagram:** [LLMCostRouter pipeline](diagrams/03-router-pipeline.html). Two sequential filters narrow candidates; cost sort picks the cheapest survivor; `UserFixableError` if none remain.
+
 Uses `litellm.model_cost` to estimate cost **before dispatching**. Routing applies two sequential filters:
 
 1. **Context window filter** — exclude any model whose `max_tokens` (from `litellm.model_cost`) is less than the task's `required_context_tokens`. A model that cannot fit the context is never selected, regardless of price.
