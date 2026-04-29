@@ -29,6 +29,8 @@ Merging them would produce a class that is simultaneously immutable (for value s
 
 ## Method
 
+> **Diagram:** [Dead-code audit lifecycle](diagrams/05-dead-code-lifecycle.html). Three-pass audit funneling each symbol into one of four terminal outcomes (cut · merged · kept · relocated).
+
 Three-pass audit:
 1. **`uv run tasks vulture`** at 60% confidence — flags unused classes, methods, variables
 2. **Deep callee analysis** — trace each flagged symbol for external callers via `query_graph`
