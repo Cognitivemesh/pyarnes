@@ -183,8 +183,13 @@ class ScriptPlugin(Plugin):
                 ),
             )
         from pyarnes_tasks.strategies import ScriptStrategy  # noqa: PLC0415
+        from pyarnes_tasks.targets import resolve_targets  # noqa: PLC0415
 
-        return ScriptStrategy(plugin_file=self.plugin_file).execute(args, cwd)
+        # Resolved targets prefix the user's args so SCRIPT plugins can
+        # treat them as positional inputs (matching SHELL semantics).
+        resolved = resolve_targets(self.targets, cwd)
+        forwarded = (*resolved, *args)
+        return ScriptStrategy(plugin_file=self.plugin_file).execute(forwarded, cwd)
 
     def run_script(self, argv: list[str]) -> int:
         """Body invoked when the plugin file runs as ``uv run <file>``.
