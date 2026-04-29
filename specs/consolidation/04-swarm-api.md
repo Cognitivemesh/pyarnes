@@ -14,6 +14,7 @@
 > | **Read after** | 03-model-router.md |
 > | **Read before** | 12-token-budget.md |
 > | **Not owned here** | model selection (see `03-model-router.md`); provider config (see `10-provider-config.md`); secrets (see `11-secrets.md`); transport (see `22-transport.md`); evaluation semantics (see `07-bench-integrated-axes.md`); run persistence (see `13-run-logger.md`); template migration (see `17-template-version-control.md`); inter-agent messaging (see `02-message-bus.md`) |
+> | **Extended by** | 05-dead-code-audit.md, 06-hook-integration.md, 07-bench-integrated-axes.md, 08-test-strategy.md, 12-token-budget.md, 16-api-surface-governance.md, 20-message-safety.md, 21-loop-hooks.md, 22-transport.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## Design Rationale

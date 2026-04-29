@@ -14,6 +14,7 @@
 > | **Read after** | 12-token-budget.md |
 > | **Read before** | 06-hook-integration.md |
 > | **Not owned here** | external Claude Code hooks — stdin JSON, exit codes, settings.json registration (see `06-hook-integration.md`); model routing (see `03-model-router.md`); evaluation (see `07-bench-integrated-axes.md`); error taxonomy definitions (see `01-package-structure.md`) |
+> | **Extended by** | 04-swarm-api.md, 06-hook-integration.md, 20-message-safety.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## Design Rationale

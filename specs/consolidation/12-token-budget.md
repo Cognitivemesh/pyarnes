@@ -14,6 +14,7 @@
 > | **Read after** | 04-swarm-api.md |
 > | **Read before** | 06-hook-integration.md |
 > | **Not owned here** | runtime loop sequence (see `04-swarm-api.md`); model selection (see `03-model-router.md`); evaluation result schema (see `07-bench-integrated-axes.md`); run persistence (see `13-run-logger.md`); error taxonomy definitions (see `01-package-structure.md`) |
+> | **Extended by** | 03-model-router.md, 04-swarm-api.md, 07-bench-integrated-axes.md, 13-run-logger.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## Design Rationale

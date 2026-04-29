@@ -14,6 +14,7 @@
 > | **Read after** | 21-loop-hooks.md |
 > | **Read before** | 20-message-safety.md |
 > | **Not owned here** | internal in-process hooks / PreToolHook / PostToolHook (see `21-loop-hooks.md`); model selection (see `03-model-router.md`); evaluation semantics (see `07-bench-integrated-axes.md`); message-safety pipeline (see `20-message-safety.md`); judge-plugin design notes (see `19-claude-judge-plugin.md`, deferred appendix) |
+> | **Extended by** | 13-run-logger.md, 17-template-version-control.md, 19-claude-judge-plugin.md, 23-graph-package.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## Design Rationale

@@ -14,6 +14,7 @@
 > | **Read after** | 11-secrets.md |
 > | **Read before** | 13-run-logger.md |
 > | **Not owned here** | error taxonomy definitions (see `01-package-structure.md`); recovery semantics (see `04-swarm-api.md`); run persistence schema (see `13-run-logger.md`); model routing (see `03-model-router.md`); evaluation-taxonomy reference appendix (see `18-evaluation-taxonomy.md`); graph-based scorers (see `23-graph-package.md`) |
+> | **Extended by** | 13-run-logger.md, 18-evaluation-taxonomy.md, 23-graph-package.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## Design Rationale

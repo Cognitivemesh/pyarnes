@@ -14,6 +14,7 @@
 > | **Read after** | 10-provider-config.md |
 > | **Read before** | 07-bench-integrated-axes.md |
 > | **Not owned here** | provider config (see `10-provider-config.md`); transport (see `22-transport.md`); error taxonomy definitions (see `01-package-structure.md`); message-safety pipeline (see `20-message-safety.md`) |
+> | **Extended by** | 10-provider-config.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## Design Rationale

@@ -14,6 +14,7 @@
 > | **Read after** | 00-overview.md |
 > | **Read before** | 02-message-bus.md |
 > | **Not owned here** | runtime loop sequence and recovery semantics (see `04-swarm-api.md`); evaluation contracts (see `07-bench-integrated-axes.md`); hook integration (see `06-hook-integration.md`, `21-loop-hooks.md`); transport adapters (see `22-transport.md`) |
+> | **Extended by** | 02-message-bus.md, 03-model-router.md, 04-swarm-api.md, 05-dead-code-audit.md, 08-test-strategy.md, 15-tooling-artifacts.md, 16-api-surface-governance.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## Flat layout (18 top-level files + bench/ subpackage)

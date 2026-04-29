@@ -14,6 +14,7 @@
 > | **Read after** | 22-transport.md |
 > | **Read before** | 11-secrets.md |
 > | **Not owned here** | model selection (see `03-model-router.md`); transport adapters / schema conversion (see `22-transport.md`); secrets storage (see `11-secrets.md`); evaluation cost calculation (see `07-bench-integrated-axes.md`) |
+> | **Extended by** | 11-secrets.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## Design Rationale
