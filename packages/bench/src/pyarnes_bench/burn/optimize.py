@@ -28,7 +28,7 @@ from pyarnes_bench.burn.normalize import normalize_tool
 from pyarnes_bench.burn.types import Cost
 from pyarnes_core.atomic_write import write_private
 from pyarnes_core.errors import Severity
-from pyarnes_core.observability import dumps, iso_now, to_jsonable
+from pyarnes_core.observability import dumps, estimate_tokens, iso_now, to_jsonable
 from pyarnes_harness.capture.tool_log import ToolCallEntry
 
 __all__ = [
@@ -208,7 +208,7 @@ def detect_uncapped_bash(
                     severity=Severity.MEDIUM,
                     title=f"Bash output {len(result):,} bytes (no head/tail)",
                     detail="Large Bash outputs blow up context; cap with `| head -n 200` or pipe through `wc`.",
-                    est_tokens_saved=len(result) // 4,
+                    est_tokens_saved=estimate_tokens(result),
                     fix=f"Run `{cmd} | head -n 200` (or similar) instead.",
                     evidence=[s.session_id],
                 )

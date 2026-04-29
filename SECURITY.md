@@ -31,7 +31,6 @@ In scope:
 
 Out of scope:
 
-- Vulnerabilities in transitive dependencies reachable only via the opt-in `graph` dependency group (`code-review-graph`, `graphifyy`) — report those upstream.
 - Behaviour of adopter projects generated from the template — those are the adopter's responsibility once scaffolded.
 - Hypothetical issues requiring an attacker who already has write access to the repository.
 
