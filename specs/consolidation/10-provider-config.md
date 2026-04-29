@@ -157,6 +157,16 @@ Within a tier, `LLMCostRouter` picks the model with the lowest `litellm.model_co
 
 `estimated_cost_per_1k(model_id)` returns the current LiteLLM pricing in EUR for external inspection.
 
+### Provider prefix lookup
+
+`litellm.model_cost` keys vary by provider — the same underlying model has different keys depending on which provider serves it. Reference for the supported providers:
+
+| Provider / Router | Model Prefix | Example Config Key | Look-up Pattern |
+|---|---|---|---|
+| **OpenRouter** | `openrouter/` | `openrouter/claude-3-5-sonnet` | `litellm.model_cost["openrouter/claude-3-5-sonnet"]` |
+| **Anthropic** | `anthropic/` | `anthropic/claude-3-5-sonnet-20240620` | `litellm.model_cost["claude-3-5-sonnet-20241022"]` |
+| **OpenAI** | `openai/` | `openai/gpt-4o` | `litellm.model_cost["gpt-4o"]` |
+
 ## CI configuration
 
 For CI, store secrets as GitHub Actions environment secrets:
@@ -184,16 +194,6 @@ No code changes to `pyarnes_swarm` are required. LiteLLM handles the rest.
 ## Streaming transport
 
 For streaming responses, implement `StreamingProviderTransport` (a sub-protocol of `ProviderTransport`; see `22-transport.md`). Non-streaming providers only need `ProviderTransport`.
-
-## Cross-Provider Cost Comparison
-
-To securely switch between model providers (OpenAI, Anthropic, Gemini), the `ModelRouter` abstracts configurations utilizing `litellm` routing bindings. Cost discovery is actively performed via dynamic `litellm.model_cost` rather than hardcoding static prices per environment.
-
-| Provider / Router | Model Prefix | Example Config Key | Look-up Pattern |
-|---|---|---|---|
-| **OpenRouter** | `openrouter/` | `openrouter/claude-3-5-sonnet` | `litellm.model_cost["openrouter/claude-3-5-sonnet"]` |
-| **Anthropic** | `anthropic/` | `anthropic/claude-3-5-sonnet-20240620` | `litellm.model_cost["claude-3-5-sonnet-20241022"]` |
-| **OpenAI** | `openai/` | `openai/gpt-4o` | `litellm.model_cost["gpt-4o"]` |
 
 ## Open questions or deferred items
 
