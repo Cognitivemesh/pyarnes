@@ -17,8 +17,12 @@ import tomllib
 from pathlib import Path
 from typing import NoReturn
 
+from pyarnes_tasks.plugin_loader import load_plugins
+from pyarnes_tasks.registry import global_registry
+
 DEFAULT_SOURCES = ["src"]
 DEFAULT_TESTS = ["tests"]
+DEFAULT_PLUGIN_DIRS = ["plugins"]
 
 # Tasks that run pytest collection — pytest exit code 5 ("no tests collected")
 # is treated as success for these, so an empty tests/ directory doesn't fail
@@ -55,6 +59,18 @@ def _load_config() -> tuple[list[str], list[str], Path]:
     sources = list(tool.get("sources", DEFAULT_SOURCES))
     tests = list(tool.get("tests", DEFAULT_TESTS))
     return sources, tests, pyproject.parent
+
+
+def _plugin_dirs(root: Path) -> list[Path]:
+    """Return the plugin directories declared in ``[tool.pyarnes-tasks]``."""
+    pyproject = root / "pyproject.toml"
+    if not pyproject.is_file():
+        return [root / d for d in DEFAULT_PLUGIN_DIRS]
+    with pyproject.open("rb") as fh:
+        data = tomllib.load(fh)
+    tool = data.get("tool", {}).get("pyarnes-tasks", {})
+    dirs = list(tool.get("plugin_dirs", DEFAULT_PLUGIN_DIRS))
+    return [root / d for d in dirs]
 
 
 def _existing(paths: list[str], root: Path) -> list[str]:
@@ -151,6 +167,23 @@ def _print_help(tasks: dict[str, list[str]]) -> None:
         print(f"  {comp:<16} -> {' + '.join(parts)}")  # noqa: T201
 
 
+def _dispatch(name: str, legacy: dict[str, list[str]], root: Path, extra: tuple[str, ...]) -> int:
+    """Dispatch *name* to the registry first, falling back to *legacy* dict.
+
+    During the migration window, plugins in ``/plugins/`` shadow entries
+    in the legacy dict. As tasks are ported, registry entries replace
+    legacy ones automatically. Once every task is in the registry the
+    fallback (and ``_build_tasks`` itself) gets deleted.
+    """
+    plugin = global_registry().get(name)
+    if plugin is not None:
+        print(f"\n{'─' * 60}")  # noqa: T201
+        print(f"  ▶ {name}")  # noqa: T201
+        print(f"{'─' * 60}\n")  # noqa: T201
+        return plugin.run(extra, root)
+    return _run_task(name, legacy, root, extra)
+
+
 def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: tuple[str, ...] = ()) -> int:  # noqa: PLR0911
     # Composite tasks ignore `extra` — they dispatch to sub-tasks that each take their own args.
     if name in COMPOSITE_TASKS:
@@ -192,6 +225,9 @@ def main() -> NoReturn:
     ``--`` forwards everything after it to the last task.
     """
     tasks, root = _build_tasks()
+    for plugin_dir in _plugin_dirs(root):
+        load_plugins(plugin_dir)
+
     args = sys.argv[1:]
     if not args or args[0] in {"--help", "-h", "help"}:
         _print_help(tasks)
@@ -206,7 +242,7 @@ def main() -> NoReturn:
 
     last = len(task_names) - 1
     for i, task_name in enumerate(task_names):
-        code = _run_task(task_name, tasks, root, extra if i == last else ())
+        code = _dispatch(task_name, tasks, root, extra if i == last else ())
         if code != 0:
             raise SystemExit(code)
     raise SystemExit(0)
