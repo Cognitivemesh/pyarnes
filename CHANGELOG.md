@@ -54,6 +54,13 @@ documented in `docs/packages/tasks.md`, not a Python API.
 
 ### Added
 
+- **Code-audit CI gate** — `.github/workflows/ci.yml` now runs
+  `tasks audit:build` followed by `tasks audit:check` after the composite
+  CI task. The audit gate exits non-zero on any HIGH finding (circular
+  imports, unused dependencies, boundary violations, complexity hotspots,
+  duplicate blocks), so the lint/format debt that accumulated under #53
+  cannot recur silently. `tool.pyarnes-audit` configuration in
+  `pyproject.toml` defines the scan roots and exclude patterns.
 - `pyarnes_bench.FactEvaluator` — post-hoc FACT (Factual Abundance and Citation
   Trustworthiness) evaluator for finished reports. Extracts cited claims via an
   LLM-as-judge, deduplicates exact and near-duplicate pairs (similarity ≥ 0.97
@@ -99,6 +106,14 @@ documented in `docs/packages/tasks.md`, not a Python API.
 
 ### Changed
 
+- **Branch & PR cleanup (2026-04-30)** — integrated all open PRs and pruned
+  stale branches: PR #66 unblocked `main`'s CI (4 ruff format misses + 28
+  lint errors + 8 ty type-check errors + 1100-line `uv.lock` orphan
+  cleanup); PR #65 absorbed the `/simplify` audit refactor; PRs
+  #58 / #56 / #64 / #54 / #61 each rebased onto fresh `main` and
+  squash-merged; PR #63 closed as superseded by #66. Net result: a single
+  linear `main` head, no open PRs except the hygiene-gate, and every
+  format / lint / typecheck gate green at HEAD.
 - Documentation now includes a "Stable API surface" section under
   `docs/development/evolving.md` mirroring this policy for contributor
   discoverability.
