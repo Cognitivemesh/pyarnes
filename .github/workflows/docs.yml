@@ -42,7 +42,7 @@ jobs:
         run: uv sync --frozen
 
       - name: Validate redirect targets
-        run: uv run python scripts/validate_redirects.py
+        run: uv run tasks check:redirects
 
       - name: Build docs (strict)
         # Strict mode fails on any broken internal link, missing nav target,
