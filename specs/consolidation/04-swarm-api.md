@@ -223,7 +223,20 @@ result = await runtime.run([{"role": "user", "content": "..."}])
 
 > **Diagram:** [Lifecycle state machine](diagrams/04-lifecycle-fsm.html).
 
-`AgentRuntime` tracks the run lifecycle through six states with the transitions shown in the diagram: `created`, `running`, `paused`, `done`, `failed`, `interrupted`. The terminal states (`done`, `failed`, `interrupted`) are mutually exclusive — exactly one is reached per run. The `running ↔ paused` edge is driven by the steering queue, which drains on `resume()`. The transition triggers (which method call / event causes which transition) are partially captured as edge labels; full tabulation is tracked under `## Open questions or deferred items` below.
+`AgentRuntime` tracks the run lifecycle through six states with the transitions shown in the diagram: `created`, `running`, `paused`, `done`, `failed`, `interrupted`. The terminal states (`done`, `failed`, `interrupted`) are mutually exclusive — exactly one is reached per run. The `running ↔ paused` edge is driven by the steering queue, which drains on `resume()`.
+
+| From | To | Trigger | Error class | Notes |
+|---|---|---|---|---|
+| `created` | `running` | `AgentRuntime.start()` returns | — | Single entry transition; one-shot per run. |
+| `running` | `paused` | `pause()` call **or** steering-queue request | — | Steering queue holds pending instructions; not drained until `resume()`. |
+| `paused` | `running` | `resume()` call | — | Steering queue drained as part of resume. |
+| `running` | `done` | `final_answer` returned by `ModelClient.next_action()` | — | Terminal. Exactly one of `done`/`failed`/`interrupted` reached per run. |
+| `running` | `failed` | Exception bubbles up unhandled | `UnexpectedError` | Terminal. Pages on-call; see error taxonomy in [01-package-structure.md](01-package-structure.md). |
+| `running` | `interrupted` | Guardrail rejection or budget halts the loop | `UserFixableError` | Terminal. Returned to caller for human fix; e.g. token budget exhausted, guardrail rejection requiring user action. |
+| `paused` | `interrupted` | User cancellation while paused | `UserFixableError` | Terminal. |
+| `paused` | `failed` | Idle timeout while paused | `TransientError` (cap reached) | Terminal. Rare; only if `pause_timeout_s` is configured. |
+
+Error classes follow the taxonomy in [01-package-structure.md](01-package-structure.md); recovery semantics are in [`## Error handling`](#error-handling) below.
 
 ## Error handling
 
@@ -502,5 +515,4 @@ If a tool handler logic requires more than 30 lines, the core logic should be ab
 - **Adopter migration guide.** Several breaking changes have landed without a written migration story:
   - `Scorer.score()` return type changed from `float` to `ScoreResult` (covered briefly in `07-bench-integrated-axes.md`; needs a how-to-update for adopter custom scorers).
   - `LoopConfig` field set evolved from the legacy harness; adopters pinning to old versions need a step-by-step.
-- **Lifecycle FSM transition table.** The states are diagrammed in [diagrams/04-lifecycle-fsm.html](diagrams/04-lifecycle-fsm.html), but the precise *triggers* for each transition (which method call / event causes which transition) need to be tabulated, not just shown as edge labels.
 - **Parallel tool execution failure modes.** Spec describes happy-path concurrency via `asyncio.Semaphore`. The behaviour when one of N parallel tool calls raises `UnexpectedError` while others are still running is implementation-defined today.
