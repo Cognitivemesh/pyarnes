@@ -10,7 +10,6 @@ Missing paths are dropped from each command line, so a fresh project with no
 
 from __future__ import annotations
 
-import shutil
 import subprocess  # nosec B404
 import sys
 import tomllib
@@ -103,9 +102,11 @@ def _build_tasks() -> tuple[dict[str, list[str]], Path]:
         "docs:serve": [py, "-m", "mkdocs", "serve"],
         "docs:build": [py, "-m", "mkdocs", "build"],
         "check:redirects": [py, str(root / "scripts" / "check_redirects.py")],
-        # Graph tools (opt-in group: `uv sync --group graph` first).
-        "graph:render": ["graphify", "."],
-        "graph:blast": ["code-review-graph", "blast"],
+        # Audit: in-tree code-graph + audit subpackage (pyarnes_bench.audit).
+        "audit:build": [py, "-m", "pyarnes_tasks.audit_build"],
+        "audit:show": [py, "-m", "pyarnes_tasks.audit_show"],
+        "audit:analyze": [py, "-m", "pyarnes_tasks.audit_analyze"],
+        "audit:check": [py, "-m", "pyarnes_tasks.audit_check"],
         # Bench: drive a pyarnes-bench EvalSuite and read back the JSONL log.
         "bench:run": [py, "-m", "pyarnes_tasks.bench_run"],
         "bench:report": [py, "-m", "pyarnes_tasks.bench_report"],
@@ -164,12 +165,6 @@ def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: tuple[s
     if cmd is None:
         print(f"Unknown task: {name}", file=sys.stderr)  # noqa: T201
         _print_help(tasks)
-        return 1
-
-    if name in {"graph:render", "graph:blast"} and not shutil.which(cmd[0]):
-        print(f"\nMissing graph binary: {cmd[0]}", file=sys.stderr)  # noqa: T201
-        print(f"To run {name}, you must install the optional graph tools.", file=sys.stderr)  # noqa: T201
-        print("Run `uv sync --group graph` (or `uv add --group dev pyarnes-tasks[graph]`) first.\n", file=sys.stderr)  # noqa: T201
         return 1
 
     print(f"\n{'─' * 60}")  # noqa: T201

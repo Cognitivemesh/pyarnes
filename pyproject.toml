@@ -95,11 +95,28 @@ dev = [
     "copier>=9.4",
 ]
 
-# Kept separate from `dev` — pulls heavy native deps (tree-sitter, Whisper).
-graph = [
-    "code-review-graph>=2.3.2",
-    "graphifyy>=0.5.0",  # PyPI name has two y's; CLI is `graphify`
+# ---------------------------------------------------------------------------
+# pyarnes_bench.audit — code-graph + audit subpackage
+# Source-controlled config; consumed by `tasks audit:*`.
+# ---------------------------------------------------------------------------
+[tool.pyarnes-audit]
+graph_path = ".pyarnes/audit/graph.json"
+roots = [
+    "packages/core/src",
+    "packages/harness/src",
+    "packages/guardrails/src",
+    "packages/bench/src",
+    "packages/tasks/src",
 ]
+exclude = [".venv", ".pyarnes", "__pycache__", "node_modules", ".git"]
+forbidden_edges = [
+    # core must stay layer-zero — no upward edges into other packages
+    ["pyarnes_core", "pyarnes_harness"],
+    ["pyarnes_core", "pyarnes_guardrails"],
+    ["pyarnes_core", "pyarnes_bench"],
+]
+flag_pattern = "feature_flag\\(['\"](\\w+)['\"]\\)"
+duplicate_min_tokens = 40
 
 # ---------------------------------------------------------------------------
 # Ruff  –  linting + formatting
@@ -107,7 +124,6 @@ graph = [
 [tool.ruff]
 target-version = "py313"
 exclude = [
-    ".code-review-graph",
     ".claude",
     ".pyarnes",
     "site",
