@@ -2,6 +2,10 @@ Feature: AgentLoop full runtime path — integration validation
   These scenarios complement unit tests by exercising the complete
   harness stack with retry semantics, observability, and guardrail integration.
 
+  # Use this feature for contracts that produce visible artifacts or combine
+  # multiple layers: JSONL logging, guarded execution, and live retry behavior.
+  # Do not move pure helper tests here.
+
   Scenario: Flaky tool is retried the exact configured number of times
     Given a flaky tool that fails twice then succeeds
     And an integration loop with max_retries 2
