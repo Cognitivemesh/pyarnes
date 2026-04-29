@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Graph schema (ER) — pyarnes_swarm graph package</title>
+<style>
+  :root {
+    --paper: #faf7f2;
+    --ink: #1c1917;
+    --muted: #6b6b6b;
+    --accent: #b5523a;
+    --hairline: #d4d0c8;
+    --tint: #f1ece2;
+  }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    padding: 32px;
+  }
+  .frame {
+    max-width: 1040px;
+    margin: 0 auto;
+    border: 1px solid var(--hairline);
+    background: var(--paper);
+    padding: 28px 28px 16px 28px;
+  }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px 0; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 24px 0; font-size: 13px; }
+  svg { display: block; margin: 0 auto; }
+  .table { fill: var(--paper); stroke: var(--ink); stroke-width: 1.2; }
+  .table-header { fill: var(--ink); }
+  .table-header-text { fill: var(--paper); font-size: 13px; font-weight: 700; }
+  .table-row-divider { stroke: var(--hairline); stroke-width: 1; }
+  .col-name { font-size: 11.5px; font-family: ui-monospace, "JetBrains Mono", monospace; fill: var(--ink); }
+  .col-type { font-size: 11px; font-family: ui-monospace, monospace; fill: var(--muted); }
+  .col-pk { font-size: 9.5px; font-weight: 700; fill: var(--accent); letter-spacing: 0.04em; }
+  .col-fk { font-size: 9.5px; font-weight: 700; fill: var(--muted); letter-spacing: 0.04em; }
+  .rel-line { stroke: var(--ink); stroke-width: 1.2; fill: none; }
+  .rel-label-bg { fill: var(--paper); }
+  .rel-label { font-size: 11px; fill: var(--ink); font-style: italic; }
+  .crow-many { font-size: 14px; fill: var(--ink); font-weight: 700; }
+  .crow-one { font-size: 14px; fill: var(--ink); font-weight: 700; }
+  .callout-box { fill: var(--paper); stroke: var(--accent); stroke-width: 1.2; }
+  .callout-tag { fill: var(--accent); }
+  .callout-tag-text { fill: var(--paper); font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .callout-text { font-size: 12px; fill: var(--ink); }
+  .footer-note { font-size: 11.5px; fill: var(--muted); }
+</style>
+</head>
+<body>
+<section class="frame">
+  <h1>Graph schema — three SQLModel tables (ER)</h1>
+  <p class="sub">Owning spec: <code>20-graph-package.md § Storage layer</code>. <code>GraphNode</code> stores symbols (modules, classes, functions, methods, why-comments). <code>GraphEdge</code> connects two nodes with a typed relationship. <code>IndexMeta</code> drives incremental skip in the indexer.</p>
+
+  <svg viewBox="0 0 1000 580" width="1000" height="580" role="img" aria-label="Three SQLModel tables and their relationships">
+    <!-- GraphNode (left) -->
+    <g>
+      <rect class="table-header" x="40" y="40" width="240" height="32"/>
+      <text class="table-header-text" x="56" y="61">GraphNode</text>
+      <rect class="table" x="40" y="72" width="240" height="232"/>
+      <line class="table-row-divider" x1="40" y1="100" x2="280" y2="100"/>
+      <text class="col-pk" x="56" y="92">PK</text>
+      <text class="col-name" x="92" y="92">id</text>
+      <text class="col-type" x="200" y="92">str</text>
+
+      <line class="table-row-divider" x1="40" y1="124" x2="280" y2="124"/>
+      <text class="col-name" x="56" y="116">kind</text>
+      <text class="col-type" x="200" y="116">NodeKind</text>
+
+      <line class="table-row-divider" x1="40" y1="148" x2="280" y2="148"/>
+      <text class="col-name" x="56" y="140">name</text>
+      <text class="col-type" x="200" y="140">str</text>
+
+      <line class="table-row-divider" x1="40" y1="172" x2="280" y2="172"/>
+      <text class="col-name" x="56" y="164">file_path</text>
+      <text class="col-type" x="200" y="164">str</text>
+
+      <line class="table-row-divider" x1="40" y1="196" x2="280" y2="196"/>
+      <text class="col-name" x="56" y="188">sha256</text>
+      <text class="col-type" x="200" y="188">str</text>
+
+      <line class="table-row-divider" x1="40" y1="220" x2="280" y2="220"/>
+      <text class="col-name" x="56" y="212">confidence</text>
+      <text class="col-type" x="200" y="212">Confidence</text>
+
+      <text class="col-name" x="56" y="244">extra</text>
+      <text class="col-type" x="200" y="244">dict (JSON)</text>
+
+      <text class="col-type" x="56" y="280">NodeKind = MODULE | CLASS</text>
+      <text class="col-type" x="56" y="294">  | FUNCTION | METHOD | WHY_COMMENT</text>
+    </g>
+
+    <!-- GraphEdge (centre) -->
+    <g>
+      <rect class="table-header" x="380" y="40" width="240" height="32"/>
+      <text class="table-header-text" x="396" y="61">GraphEdge</text>
+      <rect class="table" x="380" y="72" width="240" height="160"/>
+
+      <line class="table-row-divider" x1="380" y1="100" x2="620" y2="100"/>
+      <text class="col-fk" x="396" y="92">FK</text>
+      <text class="col-name" x="432" y="92">src_id</text>
+      <text class="col-type" x="540" y="92">str</text>
+
+      <line class="table-row-divider" x1="380" y1="124" x2="620" y2="124"/>
+      <text class="col-fk" x="396" y="116">FK</text>
+      <text class="col-name" x="432" y="116">dst_id</text>
+      <text class="col-type" x="540" y="116">str</text>
+
+      <line class="table-row-divider" x1="380" y1="148" x2="620" y2="148"/>
+      <text class="col-name" x="396" y="140">kind</text>
+      <text class="col-type" x="540" y="140">EdgeKind</text>
+
+      <line class="table-row-divider" x1="380" y1="172" x2="620" y2="172"/>
+      <text class="col-name" x="396" y="164">confidence</text>
+      <text class="col-type" x="540" y="164">Confidence</text>
+
+      <text class="col-name" x="396" y="200">extra</text>
+      <text class="col-type" x="540" y="200">dict (JSON)</text>
+
+      <text class="col-type" x="396" y="252">EdgeKind = DEFINES | CALLS</text>
+      <text class="col-type" x="396" y="266">  | IMPORTS | INHERITS | DOCUMENTS</text>
+    </g>
+
+    <!-- IndexMeta (right) -->
+    <g>
+      <rect class="table-header" x="720" y="40" width="240" height="32"/>
+      <text class="table-header-text" x="736" y="61">IndexMeta</text>
+      <rect class="table" x="720" y="72" width="240" height="120"/>
+
+      <line class="table-row-divider" x1="720" y1="100" x2="960" y2="100"/>
+      <text class="col-pk" x="736" y="92">PK</text>
+      <text class="col-name" x="772" y="92">file_path</text>
+      <text class="col-type" x="880" y="92">str</text>
+
+      <line class="table-row-divider" x1="720" y1="124" x2="960" y2="124"/>
+      <text class="col-name" x="736" y="116">sha256</text>
+      <text class="col-type" x="880" y="116">str</text>
+
+      <line class="table-row-divider" x1="720" y1="148" x2="960" y2="148"/>
+      <text class="col-name" x="736" y="140">parser_version</text>
+      <text class="col-type" x="880" y="140">str</text>
+
+      <text class="col-name" x="736" y="172">indexed_at</text>
+      <text class="col-type" x="880" y="172">datetime</text>
+    </g>
+
+    <!-- Relationships: GraphEdge.src_id → GraphNode.id (many-to-one) -->
+    <path class="rel-line" d="M 380 100 C 340 100, 320 88, 280 88"/>
+    <text class="crow-many" x="378" y="106" text-anchor="end">∗</text>
+    <text class="crow-one" x="282" y="86">1</text>
+    <rect class="rel-label-bg" x="296" y="76" width="74" height="14"/>
+    <text class="rel-label" x="333" y="86" text-anchor="middle">src_id → id</text>
+
+    <!-- GraphEdge.dst_id → GraphNode.id -->
+    <path class="rel-line" d="M 380 124 C 340 124, 320 252, 280 252"/>
+    <text class="crow-many" x="378" y="130" text-anchor="end">∗</text>
+    <text class="crow-one" x="282" y="252">1</text>
+    <rect class="rel-label-bg" x="296" y="240" width="74" height="14"/>
+    <text class="rel-label" x="333" y="250" text-anchor="middle">dst_id → id</text>
+
+    <!-- IndexMeta callout (no FK) -->
+    <g>
+      <rect class="callout-box" x="720" y="216" width="240" height="76" rx="3"/>
+      <rect class="callout-tag" x="720" y="216" width="160" height="20"/>
+      <text class="callout-tag-text" x="728" y="230">NO FK — DRIVES INCREMENTAL</text>
+      <text class="callout-text" x="732" y="252">One row per <tspan style="font-family: ui-monospace, monospace;">file_path</tspan>. The indexer</text>
+      <text class="callout-text" x="732" y="268">compares <tspan style="font-family: ui-monospace, monospace;">sha256</tspan> against on-disk hash to</text>
+      <text class="callout-text" x="732" y="284">decide skip vs re-parse.</text>
+    </g>
+
+    <!-- Anti-patterns / failure modes callout -->
+    <g>
+      <rect class="callout-box" x="40" y="340" width="920" height="84" rx="3" style="stroke: var(--muted);"/>
+      <rect class="callout-tag" x="40" y="340" width="170" height="20" style="fill: var(--muted);"/>
+      <text class="callout-tag-text" x="48" y="354">FAILURE MODES (TAXONOMY)</text>
+      <text class="callout-text" x="56" y="378"><tspan style="font-family: ui-monospace, monospace; font-weight: 600;">TransientError</tspan>: lock contention on the underlying SQLite/libsql file (retry with backoff).</text>
+      <text class="callout-text" x="56" y="396"><tspan style="font-family: ui-monospace, monospace; font-weight: 600;">UserFixableError</tspan>: missing libsql / Turso driver (operator must install the optional dep).</text>
+      <text class="callout-text" x="56" y="414"><tspan style="font-family: ui-monospace, monospace; font-weight: 600;">UnexpectedError</tspan>: corrupt DB file (bubbles to operator; rebuild from source).</text>
+    </g>
+
+    <!-- Storage-layer note -->
+    <g>
+      <text class="footer-note" x="40" y="468">All three tables live in a single libsql/SQLite database under <tspan style="font-family: ui-monospace, monospace;">.code-review-graph/graph.db</tspan>.</text>
+      <text class="footer-note" x="40" y="486">Persistence is via SQLModel <tspan style="font-family: ui-monospace, monospace;">session.merge()</tspan> for upserts; reads use SQLModel select chains.</text>
+      <text class="footer-note" x="40" y="504">Pipeline producing these rows: see <tspan style="font-family: ui-monospace, monospace;">20-graph-pipeline.html</tspan>.</text>
+    </g>
+  </svg>
+</section>
+</body>
+</html>
