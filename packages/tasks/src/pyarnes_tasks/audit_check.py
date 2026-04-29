@@ -5,8 +5,8 @@ from __future__ import annotations
 import sys
 from collections import defaultdict
 
-from pyarnes_bench.audit import audit_graph, load_graph, summarize
-from pyarnes_tasks._audit_common import bootstrap
+from pyarnes_bench.audit import audit_graph, summarize
+from pyarnes_tasks._audit_common import bootstrap, require_graph
 
 _DISPLAY_LIMIT = 10  # max rows shown per category before "and N more" tail
 
@@ -14,15 +14,10 @@ _DISPLAY_LIMIT = 10  # max rows shown per category before "and N more" tail
 def main() -> int:
     """Run all audit detectors against the persisted graph; return non-zero on HIGH findings."""
     ctx = bootstrap("tasks audit:check")
-    graph_path = ctx.config.graph_path
-    if not graph_path.is_file():
-        print(  # noqa: T201
-            f"audit:check  graph file not found at {graph_path}; run `tasks audit:build` first.",
-            file=sys.stderr,
-        )
-        return 1
+    graph = require_graph(ctx, "audit:check")
+    if isinstance(graph, int):
+        return graph
 
-    graph = load_graph(graph_path)
     findings = audit_graph(
         graph,
         config=ctx.config,

@@ -22,9 +22,12 @@ from collections import defaultdict
 import networkx as nx
 
 from pyarnes_bench.audit.findings import Finding
+from pyarnes_bench.audit.schema import NodeKind
 from pyarnes_core.observability import estimate_tokens
 
 __all__ = ["detect_duplicates"]
+
+_CALLABLE_KINDS = {NodeKind.FUNCTION.value, NodeKind.METHOD.value}
 
 
 def _normalised_body(body: str) -> str | None:
@@ -60,9 +63,11 @@ def detect_duplicates(graph: nx.DiGraph, *, min_tokens: int) -> list[Finding]:
     """Return MEDIUM findings for function bodies that share a normalised hash."""
     by_hash: dict[str, list[str]] = defaultdict(list)
     for node_id, attrs in graph.nodes(data=True):
-        if attrs.get("kind") not in {"function", "method"}:
+        if attrs.get("kind") not in _CALLABLE_KINDS:
             continue
-        body = attrs.get("extra", {}).get("body")
+        # ``extra`` is always a dict (Node.extra has a default_factory), so
+        # the second .get can index directly without an `or {}` fallback.
+        body = attrs["extra"].get("body") if "extra" in attrs else None
         if not isinstance(body, str):
             continue
         normalised = _normalised_body(body)

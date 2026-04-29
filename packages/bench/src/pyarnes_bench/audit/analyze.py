@@ -11,15 +11,18 @@ from collections.abc import Iterable
 import networkx as nx
 from networkx.algorithms import community as nx_community
 
+from pyarnes_bench.audit.schema import NodeKind
+
 __all__ = ["god_nodes", "suggested_questions", "surprising_connections"]
 
 
 _BETWEENNESS_SAMPLE_THRESHOLD = 5_000
+_KIND_FILE = NodeKind.FILE.value
 
 
 def _real_nodes(graph: nx.DiGraph) -> list[str]:
     """Nodes that represent real code entities (not synthetic FILE markers)."""
-    return [n for n, attrs in graph.nodes(data=True) if attrs.get("kind") != "file"]
+    return [n for n, attrs in graph.nodes(data=True) if attrs.get("kind") != _KIND_FILE]
 
 
 def god_nodes(graph: nx.DiGraph, *, top_n: int = 10) -> list[dict[str, int | str]]:
