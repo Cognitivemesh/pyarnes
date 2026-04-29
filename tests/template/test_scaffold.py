@@ -7,6 +7,8 @@ in ``conftest.py``.
 
 from __future__ import annotations
 
+import importlib.util
+import sys
 import tomllib
 from pathlib import Path
 
@@ -78,9 +80,6 @@ def test_scaffold_generates(shape: str, run_copy, tmp_path: Path) -> None:
 
     # The agent_kit pipeline must be importable without throwing a ModuleNotFoundError
     # for the shape-specific guardrails and tools.
-    import sys
-    import importlib.util
-
     pipeline_path = agent_kit / "pipeline.py"
     spec = importlib.util.spec_from_file_location("pipeline", pipeline_path)
     pipeline_mod = importlib.util.module_from_spec(spec)

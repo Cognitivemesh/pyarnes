@@ -421,7 +421,7 @@ class AgentLoop:
                 terminate = isinstance(result, dict) and bool(result.get("terminate"))
                 content = redact(
                     str(result.get("content", result) if isinstance(result, dict) and terminate else result)
-                )  # noqa: E501
+                )
                 msg = ToolMessage(
                     tool_call_id=tool_call_id,
                     content=content,
