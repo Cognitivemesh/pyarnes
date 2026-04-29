@@ -15,8 +15,8 @@ _subdirectory: template
 # add "src/**" here — that would also mask the template's own
 # `src/{{project_module}}/` source tree, leaving generated projects empty.
 _exclude:
-  - ".code-review-graph"
-  - ".code-review-graph/**"
+  - ".pyarnes"
+  - ".pyarnes/**"
   - ".claude"
   - ".claude/**"
   - "uv.lock"
