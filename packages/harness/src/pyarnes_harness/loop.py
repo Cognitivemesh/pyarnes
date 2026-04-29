@@ -340,33 +340,16 @@ class AgentLoop:
                 # Re-expand in case TransientError raised the cap mid-loop.
                 max_attempts = policy.max_retries + 1
                 if attempt >= policy.max_retries:
-                    logger.exception(
-                        "tool.transient_exhausted tool={tool} attempts={attempts}",
-                        tool=name,
-                        attempts=attempt + 1,
-                    )
-                    msg = ToolMessage(
+                    return await self._tool_transient_exhausted(
+                        name=name,
                         tool_call_id=tool_call_id,
-                        content=f"Transient failure after {attempt + 1} attempts: {exc}",
-                        is_error=True,
-                    )
-                    await self._log_tool_call(
-                        name,
-                        arguments,
-                        msg,
+                        arguments=arguments,
+                        attempt=attempt,
+                        exc=exc,
                         started_at=started_at,
                         start_mono=start_mono,
                     )
-                    return msg
-                delay = next_delay(policy, attempt)
-                log_warning(
-                    logger,
-                    "tool.transient_retry",
-                    tool=name,
-                    attempt=attempt,
-                    delay=delay,
-                )
-                await asyncio.sleep(delay)
+                await self._tool_transient_backoff(name, attempt, policy)
                 attempt += 1
                 continue
 
@@ -415,30 +398,72 @@ class AgentLoop:
                 ) from exc
 
             else:
-                log_event(logger, "tool.success", tool=name, attempt=attempt)
-                if self.hook_chain is not None:
-                    result = await self.hook_chain.run_post(name, arguments, result, is_error=False)
-                terminate = isinstance(result, dict) and bool(result.get("terminate"))
-                content = redact(
-                    str(result.get("content", result) if isinstance(result, dict) and terminate else result)
-                )
-                msg = ToolMessage(
+                return await self._tool_success(
+                    name=name,
                     tool_call_id=tool_call_id,
-                    content=content,
-                    raw_result=result,
-                    terminate=terminate,
-                )
-                await self._log_tool_call(
-                    name,
-                    arguments,
-                    msg,
+                    arguments=arguments,
+                    result=result,
+                    attempt=attempt,
                     started_at=started_at,
                     start_mono=start_mono,
                 )
-                return msg
 
         msg = "Retry loop exited without returning — this should be unreachable"  # pragma: no cover
         raise AssertionError(msg)  # pragma: no cover
+
+    async def _tool_transient_exhausted(  # noqa: PLR0913
+        self,
+        *,
+        name: str,
+        tool_call_id: str,
+        arguments: dict[str, Any],
+        attempt: int,
+        exc: TransientError,
+        started_at: str,
+        start_mono: float,
+    ) -> ToolMessage:
+        logger.exception(
+            "tool.transient_exhausted tool={tool} attempts={attempts}",
+            tool=name,
+            attempts=attempt + 1,
+        )
+        msg = ToolMessage(
+            tool_call_id=tool_call_id,
+            content=f"Transient failure after {attempt + 1} attempts: {exc}",
+            is_error=True,
+        )
+        await self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
+        return msg
+
+    async def _tool_transient_backoff(self, name: str, attempt: int, policy: Any) -> None:
+        delay = next_delay(policy, attempt)
+        log_warning(logger, "tool.transient_retry", tool=name, attempt=attempt, delay=delay)
+        await asyncio.sleep(delay)
+
+    async def _tool_success(  # noqa: PLR0913
+        self,
+        *,
+        name: str,
+        tool_call_id: str,
+        arguments: dict[str, Any],
+        result: Any,
+        attempt: int,
+        started_at: str,
+        start_mono: float,
+    ) -> ToolMessage:
+        log_event(logger, "tool.success", tool=name, attempt=attempt)
+        if self.hook_chain is not None:
+            result = await self.hook_chain.run_post(name, arguments, result, is_error=False)
+        terminate = isinstance(result, dict) and bool(result.get("terminate"))
+        content = redact(str(result.get("content", result) if isinstance(result, dict) and terminate else result))
+        msg = ToolMessage(
+            tool_call_id=tool_call_id,
+            content=content,
+            raw_result=result,
+            terminate=terminate,
+        )
+        await self._log_tool_call(name, arguments, msg, started_at=started_at, start_mono=start_mono)
+        return msg
 
     # ── internals ──────────────────────────────────────────────────────
 
