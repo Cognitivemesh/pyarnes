@@ -32,7 +32,7 @@ def test_grows_with_payload_size() -> None:
 def test_handles_non_json_native_types_via_default_str() -> None:
     # ``datetime`` and ``Path`` are not JSON-native; the estimator must not
     # raise — it falls back to ``str`` via ``json.dumps(default=str)``.
-    payload = {"when": datetime(2026, 1, 1, tzinfo=UTC), "where": Path("/tmp/x")}
+    payload = {"when": datetime(2026, 1, 1, tzinfo=UTC), "where": Path("/tmp/x")}  # noqa: S108 — placeholder, never written
     assert estimate_tokens(payload) > 0
 
 

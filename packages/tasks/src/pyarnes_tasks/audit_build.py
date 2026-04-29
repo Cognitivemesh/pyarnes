@@ -9,6 +9,7 @@ from pyarnes_tasks._audit_common import bootstrap
 
 
 def main() -> int:
+    """Entry point for ``uv run tasks audit:build``."""
     ctx = bootstrap("tasks audit:build")
     graph = build_graph(
         config=ctx.config,

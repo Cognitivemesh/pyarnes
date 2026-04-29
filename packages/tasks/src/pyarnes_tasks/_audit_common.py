@@ -11,6 +11,7 @@ import argparse
 import sys
 import uuid
 from dataclasses import dataclass
+from dataclasses import replace as _dataclass_replace
 from pathlib import Path
 
 from pyarnes_bench.audit import AuditConfig
@@ -58,9 +59,7 @@ def bootstrap(prog: str, *, default_step: int = 0) -> AuditTaskContext:
         # Replace just the graph_path while leaving the rest of the config
         # untouched. Keep the dataclass frozen by going through dataclass
         # ``replace`` (cheap, no mutation).
-        from dataclasses import replace as _replace
-
-        config = _replace(config, graph_path=Path(args.graph).resolve())
+        config = _dataclass_replace(config, graph_path=Path(args.graph).resolve())
 
     configure_logging(level="INFO", fmt=LogFormat.JSON, stream=sys.stderr)
     logger = get_logger(prog)

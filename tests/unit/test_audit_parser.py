@@ -16,11 +16,16 @@ def _write(tmp_path: Path, name: str, body: str) -> Path:
 
 
 def test_parser_extracts_class_function_and_call(tmp_path: Path) -> None:
-    src = _write(
-        tmp_path,
-        "src/pkg/mod.py",
-        "import os\nfrom pathlib import Path\n\nclass A:\n    def m(self):\n        return os.getcwd()\n\ndef f():\n    return Path('.')\n",
+    body = (
+        "import os\n"
+        "from pathlib import Path\n\n"
+        "class A:\n"
+        "    def m(self):\n"
+        "        return os.getcwd()\n\n"
+        "def f():\n"
+        "    return Path('.')\n"
     )
+    src = _write(tmp_path, "src/pkg/mod.py", body)
     parser = PythonParser()
     nodes, edges = parser.parse_file(src, project_root=tmp_path)
 

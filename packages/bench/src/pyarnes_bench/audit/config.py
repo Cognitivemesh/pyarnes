@@ -66,7 +66,7 @@ class AuditConfig:
         forbidden_edges: list[tuple[str, str]] = [
             (str(pair[0]), str(pair[1]))
             for pair in forbidden_raw
-            if isinstance(pair, (list, tuple)) and len(pair) == 2
+            if isinstance(pair, (list, tuple)) and len(pair) == 2  # noqa: PLR2004 — pair = (src, dst)
         ]
 
         flag_pattern = str(table.get("flag_pattern", _DEFAULT_FLAG_PATTERN))

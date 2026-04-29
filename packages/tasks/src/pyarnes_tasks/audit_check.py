@@ -8,8 +8,11 @@ from collections import defaultdict
 from pyarnes_bench.audit import audit_graph, load_graph, summarize
 from pyarnes_tasks._audit_common import bootstrap
 
+_PREVIEW_LIMIT = 10  # rows shown per category before the truncation tail
+
 
 def main() -> int:
+    """Entry point for ``uv run tasks audit:check``."""
     ctx = bootstrap("tasks audit:check")
     graph_path = ctx.config.graph_path
     if not graph_path.is_file():
@@ -44,10 +47,10 @@ def main() -> int:
         grouped[f.category].append(line)
     for category, rows in sorted(grouped.items()):
         print(f"\n  {category} ({len(rows)})")  # noqa: T201
-        for row in rows[:10]:
+        for row in rows[:_PREVIEW_LIMIT]:
             print(f"    {row}")  # noqa: T201
-        if len(rows) > 10:
-            print(f"    ... and {len(rows) - 10} more")  # noqa: T201
+        if len(rows) > _PREVIEW_LIMIT:
+            print(f"    ... and {len(rows) - _PREVIEW_LIMIT} more")  # noqa: T201
 
     return 1 if summary.has_high else 0
 

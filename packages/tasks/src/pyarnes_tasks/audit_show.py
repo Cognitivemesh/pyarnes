@@ -13,6 +13,7 @@ from pyarnes_tasks._audit_common import bootstrap
 
 
 def main() -> int:
+    """Entry point for ``uv run tasks audit:show``."""
     ctx = bootstrap("tasks audit:show")
     graph_path = ctx.config.graph_path
     if not graph_path.is_file():

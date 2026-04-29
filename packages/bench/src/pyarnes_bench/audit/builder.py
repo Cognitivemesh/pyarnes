@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
 import networkx as nx
 
@@ -69,7 +70,8 @@ def build_graph(  # noqa: PLR0913
         for path in iter_python_files(root, exclude=config.exclude):
             try:
                 nodes, edges = parser.parse_file(path, project_root=config.project_root)
-            except Exception:  # noqa: BLE001 — best-effort parse; skip broken files.
+            except Exception as exc:
+                logger.warning("audit.parse_failure path=%s err=%s", path, exc)
                 continue
             files += 1
             _add_nodes(graph, nodes)
@@ -120,7 +122,7 @@ def _add_edges(graph: nx.DiGraph, edges: list[Edge]) -> None:
         )
 
 
-def _resolve_imports(graph: nx.DiGraph) -> None:
+def _resolve_imports(graph: nx.DiGraph) -> None:  # noqa: C901 — multi-pass import resolution is intentionally branchy
     """Rewrite import edges to point at module nodes by qualname.
 
     The parser emits IMPORTS / IMPORTS_FROM edges with the imported name as

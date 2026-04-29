@@ -152,7 +152,7 @@ def _print_help(tasks: dict[str, list[str]]) -> None:
         print(f"  {comp:<16} -> {' + '.join(parts)}")  # noqa: T201
 
 
-def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: tuple[str, ...] = ()) -> int:  # noqa: PLR0911
+def _run_task(name: str, tasks: dict[str, list[str]], root: Path, extra: tuple[str, ...] = ()) -> int:
     # Composite tasks ignore `extra` — they dispatch to sub-tasks that each take their own args.
     if name in COMPOSITE_TASKS:
         for sub in COMPOSITE_TASKS[name]:
