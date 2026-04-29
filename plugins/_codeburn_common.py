@@ -1,9 +1,9 @@
-"""Shared helpers for the ``codeburn:*`` tasks.
+"""Shared helpers for the ``codeburn:*`` plugins.
 
-Lives under ``pyarnes_tasks`` so each task module imports it directly
-rather than reaching across packages. Domain logic stays in
-``pyarnes_bench.burn``; this file only owns CLI plumbing (logging
-setup, session discovery, slug filtering).
+This module is loaded as a sibling file by the codeburn plugins (which
+prepend the plugins directory to ``sys.path`` inside their ``call()``).
+The leading underscore tells the plugin loader to skip this file
+(see ``plugin_loader.py``).
 """
 
 from __future__ import annotations
@@ -23,7 +23,6 @@ from pyarnes_bench.burn import (
 from pyarnes_core.observability import log_warning
 from pyarnes_core.observe.logger import configure_logging, get_logger
 from pyarnes_harness.capture.tool_log import ToolCallEntry
-from pyarnes_tasks.burn_report import short_name
 
 __all__ = [
     "DiscoveredSession",
@@ -31,7 +30,58 @@ __all__ = [
     "filter_by_project",
     "filter_excludes",
     "load_sessions",
+    "render_table",
+    "short_name",
 ]
+
+
+def render_table(rows, totals) -> None:  # type: ignore[no-untyped-def]
+    """Render a small column-aligned table to stdout. Used by burn/codeburn plugins."""
+    headers = list(totals.keys())
+    all_rows = [*rows, totals]
+    widths = [max(len(h), *(len(str(r[h])) for r in all_rows)) for h in headers]
+    sep = "  "
+    fmt = sep.join(f"{{:<{w}}}" for w in widths)
+    divider = sep.join("-" * w for w in widths)
+    print(fmt.format(*headers))  # noqa: T201
+    print(divider)  # noqa: T201
+    for row in rows:
+        print(fmt.format(*[str(row[h]) for h in headers]))  # noqa: T201
+    print(divider)  # noqa: T201
+    print(fmt.format(*[str(totals[h]) for h in headers]))  # noqa: T201
+
+
+_WORKSPACE_DIRS = frozenset(
+    {
+        "GitHub",
+        "GitLab",
+        "Bitbucket",
+        "repos",
+        "projects",
+        "code",
+        "dev",
+        "workspace",
+        "src",
+        "work",
+    }
+)
+
+
+def short_name(project: str) -> str:
+    """Decode an encoded project directory name to a human-readable slug.
+
+    Claude Code encodes ``/Users/x/GitHub/my-app`` as ``-Users-x-GitHub-my-app``.
+    We find the last known workspace directory and take everything after it,
+    preserving hyphens that are part of the project name.
+    Falls back to the last dash-segment for non-standard layouts.
+    """
+    parts = project.lstrip("-").split("-")
+    for i in range(len(parts) - 1, 0, -1):
+        if parts[i] in _WORKSPACE_DIRS:
+            remainder = parts[i + 1 :]
+            if remainder:
+                return "-".join(remainder)
+    return parts[-1] if parts else project
 
 
 @dataclass(frozen=True, slots=True)

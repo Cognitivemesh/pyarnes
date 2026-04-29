@@ -59,8 +59,11 @@ def _print_help() -> None:
     print("Usage: uv run tasks <task> [task ...] [-- extra-args]\n")  # noqa: T201
 
     by_kind: dict[str, list] = defaultdict(list)
-    for name in global_registry().names:
-        plugin = global_registry().get(name)
+    registry = global_registry()
+    for name in registry.names:
+        plugin = registry.get(name)
+        if plugin is None:
+            continue  # registry.names returned it; race with unregister is impossible here.
         by_kind[str(plugin.kind)].append(plugin)
 
     for kind in sorted(by_kind):
