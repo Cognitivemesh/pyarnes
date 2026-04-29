@@ -14,6 +14,7 @@
 > | **Read after** | 07-bench-integrated-axes.md |
 > | **Read before** | 23-graph-package.md |
 > | **Not owned here** | evaluation semantics — `ScoreResult` and `EvalResult` schemas (see `07-bench-integrated-axes.md`); external hook contract (see `06-hook-integration.md`); token counting (see `12-token-budget.md`) |
+> | **Extended by** | 07-bench-integrated-axes.md, 23-graph-package.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## Design Rationale

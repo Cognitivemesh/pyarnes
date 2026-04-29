@@ -14,6 +14,7 @@
 > | **Read after** | 05-dead-code-audit.md |
 > | **Read before** | 09-test-map.md |
 > | **Not owned here** | test-to-module migration map (see `09-test-map.md`); dead-code audit policy (see `05-dead-code-audit.md`); tooling exclusions (see `15-tooling-artifacts.md`) |
+> | **Extended by** | 05-dead-code-audit.md, 09-test-map.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## Design Rationale

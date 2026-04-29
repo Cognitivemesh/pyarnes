@@ -14,6 +14,7 @@
 > | **Read after** | 16-api-surface-governance.md |
 > | **Read before** | — |
 > | **Not owned here** | external hook contract (see `06-hook-integration.md`); api-surface stability (see `16-api-surface-governance.md`); package structure (see `01-package-structure.md`) |
+> | **Extended by** | 15-tooling-artifacts.md |
 > | **Last reviewed** | 2026-04-29 |
 
 > See also `06-hook-integration.md` § Adopter shapes (Copier template) — full adopter shapes and dev-time hook details.

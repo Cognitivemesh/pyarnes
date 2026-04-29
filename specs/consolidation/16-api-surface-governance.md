@@ -14,6 +14,7 @@
 > | **Read after** | 15-tooling-artifacts.md |
 > | **Read before** | 17-template-version-control.md |
 > | **Not owned here** | actual symbol definitions / package layout (see `01-package-structure.md`); runtime symbols (see `04-swarm-api.md`); evaluation symbols (see `07-bench-integrated-axes.md`); template versioning (see `17-template-version-control.md`) |
+> | **Extended by** | 17-template-version-control.md |
 > | **Last reviewed** | 2026-04-29 |
 
 > See also `04-swarm-api.md` § Stable public API surface — full symbol inventory and semver policy.

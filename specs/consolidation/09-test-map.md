@@ -14,6 +14,7 @@
 > | **Read after** | 08-test-strategy.md |
 > | **Read before** | 15-tooling-artifacts.md |
 > | **Not owned here** | TDD discipline (see `08-test-strategy.md`); dead-code audit (see `05-dead-code-audit.md`); tooling exclusions (see `15-tooling-artifacts.md`) |
+> | **Extended by** | 08-test-strategy.md |
 > | **Last reviewed** | 2026-04-29 |
 
 Maps every existing test file to its replacement in `tests/swarm/` or a deletion reason. Column definitions:

@@ -14,6 +14,7 @@
 > | **Read after** | 20-message-safety.md |
 > | **Read before** | 10-provider-config.md |
 > | **Not owned here** | model selection (see `03-model-router.md`); provider config (see `10-provider-config.md`); secrets (see `11-secrets.md`); inter-agent message bus (see `02-message-bus.md`) — bus is for cross-process messaging, transport is for model-call plumbing |
+> | **Extended by** | 04-swarm-api.md, 10-provider-config.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## Design Rationale

@@ -14,6 +14,7 @@
 > | **Read after** | 06-hook-integration.md |
 > | **Read before** | 22-transport.md |
 > | **Not owned here** | external hook contract (see `06-hook-integration.md`); internal hook insertion points (see `21-loop-hooks.md`); evaluation semantics (see `07-bench-integrated-axes.md`); transport (see `22-transport.md`) |
+> | **Extended by** | 04-swarm-api.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## Design Rationale

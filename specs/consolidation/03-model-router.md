@@ -14,6 +14,7 @@
 > | **Read after** | 02-message-bus.md |
 > | **Read before** | 04-swarm-api.md |
 > | **Not owned here** | provider config / API keys / rate limits (see `10-provider-config.md`); transport adapter / schema conversion (see `22-transport.md`); token counting primitives (see `12-token-budget.md`) |
+> | **Extended by** | 04-swarm-api.md, 10-provider-config.md, 12-token-budget.md, 22-transport.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## Why a ModelRouter?

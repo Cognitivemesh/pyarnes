@@ -14,6 +14,7 @@
 > | **Read after** | — |
 > | **Read before** | 01-package-structure.md |
 > | **Not owned here** | implementation contracts of each subsystem — see the inventory table above for the canonical owner of every concept |
+> | **Extended by** | 01-package-structure.md, 14-deferred-features.md |
 > | **Last reviewed** | 2026-04-29 |
 
 ## What problem does it solve?
@@ -124,7 +125,7 @@ AgentLoop.run()
     │        │
     │        ▼
     │   GuardrailChain.check()
-    │        │ violation → UserFixableError (bubble up to human)
+    │        │ violation → varies per rule (e.g. InjectionGuardrail → LLMRecoverableError → ToolMessage; PathGuardrail → UserFixableError → interrupt)
     │        │
     │        ▼
     │   ToolHandler.execute()
