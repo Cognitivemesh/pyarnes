@@ -48,7 +48,7 @@ tests = ["tests"]
 [dependency-groups]
 dev = [
     # Type checking
-    "ty>=0.0.32",
+    "ty>=0.0.33",
     # Testing
     "pytest>=8.0",
     "pytest-bdd>=8.0",
@@ -56,9 +56,9 @@ dev = [
     "pytest-watch>=4.2",
     "pytest-asyncio>=0.25",
     "pytest-sugar>=1.0",
-    "hypothesis>=6.152.2",
+    "hypothesis>=6.152.4",
     # Linting & formatting
-    "ruff>=0.11",
+    "ruff>=0.15.12",
     "pylint>=3.0",
     # Security analysis
     "bandit>=1.9",
@@ -73,7 +73,7 @@ dev = [
     # Documentation site
     "mike>=2.1",
     "mkdocs-material>=9.6",
-    "mkdocstrings[python]>=0.30",
+    "mkdocstrings[python]>=1.0.4",
     "mkdocs-monorepo-plugin>=1.1",
     "mkdocs-coverage>=1.1",
     "mkdocs-section-index>=0.3",
@@ -82,7 +82,7 @@ dev = [
     "mkdocs-git-revision-date-localized-plugin>=1.2",
     # Explicit floor to avoid GHSA-x2qx-6953-8485 and GHSA-rpm5-65cw-6hj4 (both patched in 3.1.47).
     # mkdocs-git-revision-date-localized-plugin pulls in GitPython as a transitive dep.
-    "gitpython>=3.1.47",
+    "gitpython>=3.1.49",
     # Markdown & YAML
     "pymarkdownlnt>=0.9",
     "mdformat>=1.0",
@@ -92,7 +92,7 @@ dev = [
     # File watching
     "watchfiles>=1.0",
     # Template smoke tests (tests/template/)
-    "copier>=9.4",
+    "copier>=9.15.0",
 ]
 
 # ---------------------------------------------------------------------------
